@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* @import url("https://fonts.googleapis.com/css2?family=Marcellus&family=Outfit:wght@300;400;500;600;700&display=swap"); */
+
+:root {
+  font-family: "Outfit", sans-serif;
+  --font-body: "Outfit", sans-serif;
+  --font-heading: "Marcellus", serif;
+  --color-primary: #9abe0c;
+  --color-heading: #131217;
+  --xb-track-color: #16171b;
+  --color-dark: #0f172a;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-default: #a8a8a8;
+  --color-gray: #f8f8f8;
+  --color-border: #eff5f8;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global dark theme */
+@layer base {
+  html, body {
+    @apply bg-black text-white min-h-screen;
+  }
+  
+  h1, h2, h3, h4, h5, h6  {
+    font-family: var(--font-heading);
+  }
+}
+
+/* Custom animations for the home page */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Custom animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Add new animations for the Jobs page */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s ease-out forwards;
+}
+
+/* Yellow glow effect for buttons */
+.yellow-glow {
+  box-shadow: 0 0 15px 5px rgba(250, 204, 21, 0.2);
+  transition: all 0.3s ease;
+}
+
+.yellow-glow:hover {
+  box-shadow: 0 0 20px 5px rgba(250, 204, 21, 0.4);
+}
+
+/* Custom perspective and 3D effect utilities */
+.perspective-500 {
+  perspective: 500px;
+}
+
+.transform-gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.rotate-y-12:hover {
+  transform: rotateY(12deg);
+}
+
+/* Hover effects for cards */
+.hover-lift {
+  transition: transform 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4ade80;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a3e635;
+}
+
