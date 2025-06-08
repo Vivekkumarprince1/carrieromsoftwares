@@ -639,7 +639,8 @@ const JobForm = () => {
                           {app.resumeUrl && (
                             <button
                               className="px-3 py-1.5 bg-gray-700 text-white text-xs font-medium rounded hover:bg-gray-600 transition"
-                              onClick={() => window.open(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'}${app.resumeUrl}`, '_blank')}
+                             onClick={() => window.open(app.resumeUrl, '_blank')}
+
                             >
                               View Resume
                             </button>

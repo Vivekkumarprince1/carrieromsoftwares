@@ -123,10 +123,26 @@ const uploadFile = async (fileInput, folder = 'resumes', resourceType = 'raw', o
         invalidate: true
       };
 
-      if (originalName) {
-        // Remove extension and use as public_id
+      // For raw files like resumes, preserve the original filename and extension
+      if (originalName && resourceType === 'raw') {
+        // Remove any path information and keep just the filename
+        const fileName = originalName.split('/').pop().split('\\').pop();
+        const nameWithoutExt = fileName.split('.')[0];
+        const extension = fileName.split('.').pop();
+        
+        // Create a custom public_id that includes the extension
+        const timestamp = Date.now();
+        uploadOptions.public_id = `${nameWithoutExt}_${timestamp}.${extension}`;
+        uploadOptions.use_filename = false;
+        uploadOptions.unique_filename = false;
+        
+        console.log(`Setting public_id for raw file: ${uploadOptions.public_id}`);
+      } else if (originalName) {
+        // For non-raw files (images/videos), use custom naming without extension
         const nameWithoutExt = originalName.split('.')[0];
         uploadOptions.public_id = `${nameWithoutExt}-${Date.now()}`;
+        uploadOptions.use_filename = false;
+        uploadOptions.unique_filename = false;
       }
 
       // Handle both Buffer and file path inputs
@@ -230,9 +246,27 @@ const uploadQuestionFile = async (fileBuffer, folder = 'question-files', fileNam
       if (fileName) {
         uploadOptions.public_id = fileName;
       } else if (originalName) {
-        // Remove extension and use as public_id
-        const nameWithoutExt = originalName.split('.')[0];
-        uploadOptions.public_id = `${nameWithoutExt}-${Date.now()}`;
+        // For raw files like PDFs, DOCs, preserve the original filename and extension
+        if (resourceType === 'raw') {
+          // Remove any path information and keep just the filename
+          const cleanFileName = originalName.split('/').pop().split('\\').pop();
+          const nameWithoutExt = cleanFileName.split('.')[0];
+          const extension = cleanFileName.split('.').pop();
+          
+          // Create a custom public_id that includes the extension
+          const timestamp = Date.now();
+          uploadOptions.public_id = `${nameWithoutExt}_${timestamp}.${extension}`;
+          uploadOptions.use_filename = false;
+          uploadOptions.unique_filename = false;
+          
+          console.log(`Setting public_id for raw question file: ${uploadOptions.public_id}`);
+        } else {
+          // For non-raw files (like images), use custom public_id without extension
+          const nameWithoutExt = originalName.split('.')[0];
+          uploadOptions.public_id = `${nameWithoutExt}-${Date.now()}`;
+          uploadOptions.use_filename = false;
+          uploadOptions.unique_filename = false;
+        }
       }
 
       // Add transformations for images
