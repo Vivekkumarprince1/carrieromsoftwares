@@ -1,21 +1,22 @@
 const Job = require("../models/job");
 const fs = require('fs');
 const path = require('path');
+const { uploadImage, deleteImage, extractPublicId } = require('../config/cloudinary');
 
 // Create job
 exports.createJob = async (req, res) => {
   console.log("Job: new");
   try {
-    const { title, company, description, requirements, responsibilities, location, type, salary, questions } = req.body;
+    const { title, company, description, requirements, responsibilities, position, department, location, type, salary, questions } = req.body;
     console.log(`Job: ${title}`);
     
     if (!title || !description) {
       console.log("Missing fields");
       return res.status(400).json({ message: "Title and description are required" });
     }
-
+    
     console.log('ReqBody:', req.body);
-
+    
     // Parse questions if string
     let parsedQuestions = [];
     if (questions) {
@@ -31,7 +32,7 @@ exports.createJob = async (req, res) => {
         parsedQuestions = questions;
       }
     }
-
+    
     // Create job
     const job = new Job({
       title,
@@ -40,19 +41,51 @@ exports.createJob = async (req, res) => {
       requirements: requirements || [],
       responsibilities: responsibilities || [],
       location,
+      position,
+      department,
       type,
       salary,
       questions: parsedQuestions,
       postedBy: req.user._id
     });
-
-    // Handle image
+    
+    // Handle image upload to Cloudinary
     if (req.file) {
-      console.log("Img:", req.file.filename);
-      job.image = req.file.path;
-      job.imageUrl = `/uploads/jobs/${req.file.filename}`;
+      console.log("Uploading image to Cloudinary...");
+      console.log(`Image details: ${req.file.originalname}, Size: ${(req.file.size / 1024 / 1024).toFixed(2)}MB`);
+      
+      let uploadAttempt = 0;
+      const maxRetries = 3;
+      
+      while (uploadAttempt < maxRetries) {
+        try {
+          // Upload directly from buffer to Cloudinary
+          const cloudinaryResult = await uploadImage(req.file.buffer, 'job-images');
+          
+          // Store Cloudinary URL and public ID
+          job.imageUrl = cloudinaryResult.secure_url;
+          job.cloudinaryPublicId = cloudinaryResult.public_id;
+          console.log("Image uploaded to Cloudinary successfully:", cloudinaryResult.secure_url);
+          break; // Success, exit retry loop
+          
+        } catch (uploadError) {
+          uploadAttempt++;
+          console.error(`Cloudinary upload attempt ${uploadAttempt} failed:`, uploadError.message);
+          
+          if (uploadAttempt >= maxRetries) {
+            console.error("All upload attempts failed");
+            return res.status(500).json({ 
+              message: "Failed to upload image after multiple attempts", 
+              error: uploadError.message 
+            });
+          }
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 2000 * uploadAttempt));
+        }
+      }
     }
-
+    
     console.log("Saving job");
     const savedJob = await job.save();
     console.log(`Created: ${savedJob._id}`);
@@ -61,6 +94,7 @@ exports.createJob = async (req, res) => {
       message: "Job posted successfully",
       job: savedJob
     });
+    
   } catch (error) {
     console.error("Error:", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -142,30 +176,55 @@ exports.updateJob = async (req, res) => {
       }
     }
     
-    // Handle image
+    // Handle image upload to Cloudinary
     if (req.file) {
-      console.log("Img updated:", req.file.filename);
-      // Set new paths
-      updates.image = req.file.path;
-      updates.imageUrl = `/uploads/jobs/${req.file.filename}`;
+      console.log("Uploading new image to Cloudinary...");
+      console.log(`Image details: ${req.file.originalname}, Size: ${(req.file.size / 1024 / 1024).toFixed(2)}MB`);
       
-      // Delete old
-      if (existingJob.image) {
+      let uploadAttempt = 0;
+      const maxRetries = 3;
+      
+      while (uploadAttempt < maxRetries) {
         try {
-          if (fs.existsSync(existingJob.image)) {
-            fs.unlinkSync(existingJob.image);
-            console.log("Old img deleted");
-          } else {
-            console.log("Old img not found");
+          // Upload directly from buffer to Cloudinary
+          const cloudinaryResult = await uploadImage(req.file.buffer, 'job-images');
+          
+          // Delete old image from Cloudinary if it exists
+          if (existingJob.cloudinaryPublicId) {
+            try {
+              await deleteImage(existingJob.cloudinaryPublicId);
+              console.log("Old image deleted from Cloudinary");
+            } catch (deleteError) {
+              console.warn("Failed to delete old image from Cloudinary:", deleteError.message);
+            }
           }
-        } catch (err) {
-          console.error("Delete err:", err);
+          
+          // Update with new Cloudinary data
+          updates.imageUrl = cloudinaryResult.secure_url;
+          updates.cloudinaryPublicId = cloudinaryResult.public_id;
+          console.log("New image uploaded to Cloudinary successfully:", cloudinaryResult.secure_url);
+          break; // Success, exit retry loop
+          
+        } catch (uploadError) {
+          uploadAttempt++;
+          console.error(`Cloudinary upload attempt ${uploadAttempt} failed:`, uploadError.message);
+          
+          if (uploadAttempt >= maxRetries) {
+            console.error("All upload attempts failed");
+            return res.status(500).json({ 
+              message: "Failed to upload image after multiple attempts", 
+              error: uploadError.message 
+            });
+          }
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 2000 * uploadAttempt));
         }
       }
     } else {
-      // Keep existing images
-      delete updates.image;
+      // Keep existing images if no new image uploaded
       delete updates.imageUrl;
+      delete updates.cloudinaryPublicId;
     }
     
     // Update job

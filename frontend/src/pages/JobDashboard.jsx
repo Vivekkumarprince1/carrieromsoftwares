@@ -10,6 +10,8 @@ const JobForm = () => {
   const [loading, setLoading] = useState(id ? true : false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     company: '',
@@ -19,6 +21,8 @@ const JobForm = () => {
     responsibilities: '',
     salary: '',
     type: 'Full-time',
+    department: '',
+    position: '',
     questions: [],
     image: null
   });
@@ -58,6 +62,8 @@ const JobForm = () => {
         responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities.join('\n') : job.responsibilities || '',
         salary: job.salary || '',
         type: job.type || 'Full-time',
+        department: job.department || '',
+        position: job.position || '',
         questions: job.questions || []
       });
       
@@ -113,6 +119,14 @@ const JobForm = () => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
+    setUploadProgress(0);
+
+    // Check if we have an image to upload
+    const hasImageUpload = formData.image && formData.image instanceof File;
+    
+    if (hasImageUpload) {
+      setIsUploading(true);
+    }
 
     try {
       const formattedData = {
@@ -125,18 +139,36 @@ const JobForm = () => {
           formData.responsibilities,
       };
 
+      // Setup progress callback for image uploads
+      const onUploadProgress = (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        setUploadProgress(percentCompleted);
+      };
+
       if (id) {
-        await jobService.updateJob(id, formattedData);
+        await jobService.updateJob(id, formattedData, hasImageUpload ? onUploadProgress : null);
         setSuccessMessage('Job updated successfully!');
       } else {
-        const response = await jobService.createJob(formattedData);
+        const response = await jobService.createJob(formattedData, hasImageUpload ? onUploadProgress : null);
         setSuccessMessage('Job created successfully!');
         setTimeout(() => {
           navigate(`/jobs/edit/${response.data.job._id}`);
         }, 1500);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Error saving job');
+      console.error('Job submission error:', err);
+      
+      // Handle timeout errors specifically
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('Upload is taking longer than expected. Please wait a moment and check if the job was created successfully.');
+      } else {
+        setError(err.response?.data?.message || 'Error saving job');
+      }
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -306,7 +338,33 @@ const JobForm = () => {
                   name="salary"
                   value={formData.salary}
                   onChange={handleChange}
-                  placeholder="e.g., $50,000 - $70,000 per year"
+                  placeholder="e.g., ₹50,000 - ₹70,000 per year"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="department" className="block text-sm font-medium text-gray-300 mb-1">Department</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-white"
+                  id="department"
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  placeholder="e.g., Engineering, Marketing, Sales"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="position" className="block text-sm font-medium text-gray-300 mb-1">Position</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-white"
+                  id="position"
+                  name="position"
+                  value={formData.position}
+                  onChange={handleChange}
+                  placeholder="e.g., Manager, SDE, Team Lead"
                 />
               </div>
             </div>
@@ -336,8 +394,11 @@ const JobForm = () => {
                     id="image"
                     accept="image/*"
                     onChange={handleImageChange}
+                    disabled={isUploading}
                   />
-                  <p className="mt-1 text-sm text-gray-500">Upload an image to represent this job (max 5MB).</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Upload an image to represent this job (max 20MB). Large images may take a moment to upload.
+                  </p>
                 </div>
                 
                 {imagePreview && (
@@ -395,19 +456,58 @@ const JobForm = () => {
             <div className="flex justify-between mt-8">
               <button
                 type="submit"
-                className="px-6 py-3 bg-primary text-black font-medium rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-900"
+                disabled={isUploading}
+                className={`px-6 py-3 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-900 flex items-center gap-2 ${
+                  isUploading 
+                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed' 
+                    : 'bg-primary bg-slate-700 text-white hover:bg-primary/90'
+                }`}
               >
-                {id ? 'Update Job' : 'Create Job'}
+                {isUploading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Uploading image...'}
+                  </>
+                ) : (
+                  id ? 'Update Job' : 'Create Job'
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-6 py-3 bg-gray-700 text-white font-medium rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                disabled={isUploading}
+                className={`px-6 py-3 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                  isUploading 
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                    : 'bg-gray-700 text-white hover:bg-gray-600'
+                }`}
               >
                 Cancel
               </button>
             </div>
+
+            {/* Upload Progress Bar */}
+            {isUploading && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
+                  <span>Uploading image to cloud storage...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out" 
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  Please wait while we upload your image. This may take a moment for larger files.
+                </p>
+              </div>
+            )}
           </form>
         </div>
       )}

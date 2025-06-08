@@ -24,13 +24,19 @@ exports.register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         console.log("Register: creating user");
-        const savedUser = await User.create({
-            name, email, password: hashedPassword, role: role || "user"
-        });
+        const userData = {
+            name, 
+            email, 
+            password: hashedPassword, 
+            role: role || "user"
+        };
+
+        const savedUser = await User.create(userData);
         console.log(`Register: created ${savedUser._id}`);
         
         res.status(201).json({
-            message: "User created successfully", userId: savedUser._id
+            message: "User created successfully", 
+            userId: savedUser._id
         });
     } catch (error) {
         console.error("Register error:", error.message);
@@ -75,13 +81,16 @@ exports.login = async (req, res) => {
             sameSite: "strict",
             maxAge: getCookieMaxAge(),
         });
-        
-        res.status(200).json({
+          res.status(200).json({
             token, user: {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                employeeStatus: user.employeeStatus,
+                employeeId: user.employeeId,
+                department: user.department,
+                position: user.position
             }
         });
     } catch (error) {

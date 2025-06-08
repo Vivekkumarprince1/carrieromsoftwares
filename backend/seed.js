@@ -4,6 +4,9 @@ const User = require('./models/user');
 const Job = require('./models/job');
 const Application = require('./models/application');
 const Certificate = require('./models/certificate');
+const OfferLetter = require('./models/offerLetter');
+const Review = require('./models/review');
+const Recommendation = require('./models/recommendation');
 const connectDB = require('./config/database');
 require('dotenv').config();
 
@@ -13,25 +16,46 @@ const users = [
     name: 'Admin User',
     email: 'admin@example.com',
     password: 'admin123',
-    role: 'admin'
+    role: 'admin',
+    employeeStatus: 'employee',
+    department: 'IT',
+    position: 'IT Manager',
+    employeeId: 'EMP001'
   },
   {
     name: 'Regular User',
     email: 'user@example.com',
     password: 'user123',
-    role: 'user'
+    role: 'user',
+    employeeStatus: 'applicant'
   },
   {
     name: 'John Doe',
     email: 'john@example.com',
     password: 'john123',
-    role: 'user'
+    role: 'user',
+    employeeStatus: 'employee',
+    department: 'Development',
+    position: 'Senior Developer',
+    employeeId: 'EMP002'
   },
   {
     name: 'Jane Smith',
     email: 'jane@example.com',
     password: 'jane123',
-    role: 'user'
+    role: 'user',
+    employeeStatus: 'offer_recipient',
+    department: 'Development',
+    position: 'Backend Developer'
+  },
+  {
+    name: 'Emily Davis',
+    email: 'emily@example.com',
+    password: 'emily123',
+    role: 'user',
+    employeeStatus: 'former_employee',
+    department: 'Development',
+    position: 'Frontend Developer Intern'
   }
 ];
 
@@ -55,6 +79,8 @@ const jobs = [
     location: 'Remote',
     type: 'Full-time',
     salary: '$70,000 - $90,000',
+    department: 'Development',
+    position: 'Frontend Developer',
     questions: [
       {
         questionText: 'What is your experience with React?',
@@ -98,6 +124,8 @@ const jobs = [
     location: 'New Delhi, India',
     type: 'Full-time',
     salary: '$80,000 - $100,000',
+    department: 'Development',
+    position: 'Backend Developer',
     questions: [
       {
         questionText: 'What backend frameworks have you worked with?',
@@ -134,6 +162,8 @@ const jobs = [
     location: 'Bangalore, India',
     type: 'Full-time',
     salary: '$65,000 - $85,000',
+    department: 'Design',
+    position: 'UI/UX Designer',
     questions: [
       {
         questionText: 'Please share a link to your portfolio',
@@ -170,6 +200,47 @@ const jobs = [
     location: 'Remote',
     type: 'Contract',
     salary: '$90,000 - $110,000',
+    department: 'Operations',
+    position: 'DevOps Engineer',
+    isActive: true
+  },
+  {
+    title: 'Data Science Intern',
+    company: 'OM Softwares',
+    description: 'Join our data science team as an intern to gain hands-on experience with machine learning and data analysis.',
+    requirements: [
+      'Basic knowledge of Python and statistics',
+      'Familiarity with data analysis libraries',
+      'Understanding of machine learning concepts',
+      'Strong analytical and problem-solving skills'
+    ],
+    responsibilities: [
+      'Assist in data collection and preprocessing',
+      'Support machine learning model development',
+      'Create data visualizations and reports',
+      'Learn from senior data scientists'
+    ],
+    location: 'Hybrid',
+    type: 'Internship',
+    salary: '$1,500 - $2,000',
+    department: 'Data Science',
+    position: 'Data Science Intern',
+    questions: [
+      {
+        questionText: 'What programming languages are you familiar with?',
+        questionType: 'checkbox',
+        required: true,
+        options: ['Python', 'R', 'SQL', 'Java', 'JavaScript'],
+        order: 0
+      },
+      {
+        questionText: 'Rate your statistics knowledge',
+        questionType: 'rating',
+        required: true,
+        maxRating: 5,
+        order: 1
+      }
+    ],
     isActive: true
   }
 ];
@@ -183,6 +254,7 @@ const applications = [
     education: 'Bachelor of Science in Computer Science, University of Technology (2015)',
     skills: ['JavaScript', 'React', 'HTML', 'CSS', 'Git'],
     coverLetter: 'I am excited to apply for the Frontend Developer position at OM Softwares. With my experience in React and responsive design, I believe I would be a great fit for your team.',
+    isReferred: false,
     status: 'reviewing'
   },
   {
@@ -193,6 +265,11 @@ const applications = [
     education: 'Master of Science in Software Engineering, Tech University (2019)\nBachelor of Engineering in Computer Science, State University (2017)',
     skills: ['Node.js', 'Express', 'MongoDB', 'SQL', 'Python'],
     coverLetter: 'I am applying for the Backend Developer position. My experience with Node.js and database management makes me confident that I can contribute effectively to your team.',
+    isReferred: true,
+    referrerEmployeeId: 'EMP002',
+    referrerName: 'John Doe',
+    referrerEmail: 'john@example.com',
+    referralMessage: 'Sarah is an excellent backend developer who I worked with at my previous company. She has strong technical skills and would be a great addition to our team.',
     status: 'shortlisted'
   },
   {
@@ -203,7 +280,19 @@ const applications = [
     education: 'Bachelor of Fine Arts in Graphic Design, Art Institute (2017)',
     skills: ['Figma', 'Sketch', 'Adobe XD', 'Prototyping', 'User Research'],
     coverLetter: 'I am interested in the UI/UX Designer position. My portfolio demonstrates my ability to create intuitive and visually appealing user interfaces.',
+    isReferred: false,
     status: 'pending'
+  },
+  {
+    fullName: 'Alex Rodriguez',
+    email: 'alex@example.com',
+    phone: '444-555-6666',
+    experience: 'Recent Computer Science graduate with internship experience at StartupTech (Summer 2023)',
+    education: 'Bachelor of Science in Computer Science, State University (2023)',
+    skills: ['Python', 'SQL', 'Pandas', 'Scikit-learn', 'Jupyter'],
+    coverLetter: 'I am excited to apply for the Data Science Intern position. As a recent graduate with a strong foundation in statistics and Python, I am eager to gain hands-on experience in machine learning.',
+    isReferred: false,
+    status: 'offered'
   }
 ];
 
@@ -234,6 +323,123 @@ const certificates = [
   }
 ];
 
+const offerLetters = [
+  {
+    candidateName: 'Alex Rodriguez',
+    email: 'alex@example.com',
+    position: 'Data Science Intern',
+    department: 'Data Science',
+    salary: 24000, // Annual salary
+    startDate: new Date('2024-07-01'),
+    joiningLocation: 'Remote',
+    workType: 'Remote',
+    benefits: ['Health Insurance', 'Learning Allowance', 'Flexible Hours'],
+    reportingManager: 'Dr. Sarah Johnson',
+    companyName: 'OM Softwares',
+    hrContactName: 'HR Team',
+    hrContactEmail: 'hr@omsoftwares.com',
+    hrContactPhone: '+91-9876543210',
+    issuedBy: 'OM Softwares',
+    status: 'Pending',
+    validUntil: new Date('2024-06-15'),
+    additionalNotes: 'This is a 6-month internship program with possibility of full-time conversion based on performance.'
+  },
+  {
+    candidateName: 'Jane Smith',
+    email: 'jane@example.com',
+    position: 'Backend Developer',
+    department: 'Development',
+    salary: 85000,
+    startDate: new Date('2024-06-15'),
+    joiningLocation: 'New Delhi, India',
+    workType: 'On-site',
+    benefits: ['Health Insurance', 'PF', 'Paid Leave', 'Performance Bonus'],
+    reportingManager: 'John Doe',
+    companyName: 'OM Softwares',
+    hrContactName: 'HR Team',
+    hrContactEmail: 'hr@omsoftwares.com',
+    hrContactPhone: '+91-9876543210',
+    issuedBy: 'OM Softwares',
+    status: 'Accepted',
+    validUntil: new Date('2024-06-01'),
+    additionalNotes: 'Welcome to our development team! We look forward to working with you.'
+  }
+];
+
+const reviews = [
+  {
+    userEmail: 'john@example.com',
+    userName: 'John Doe',
+    rating: 5,
+    title: 'Excellent work environment and growth opportunities',
+    content: 'OM Softwares provides an excellent work environment with great learning opportunities. The team is supportive and management is understanding. The projects are challenging and help in skill development.',
+    department: 'Development',
+    position: 'Senior Developer',
+    workType: 'On-site',
+    employmentDuration: '2+ years',
+    pros: 'Great work-life balance, supportive team, challenging projects, good compensation',
+    cons: 'Sometimes project deadlines can be tight',
+    advice: 'Be ready to learn new technologies and take on challenging projects',
+    status: 'approved',
+    reviewerType: 'employee',
+    isAnonymous: false
+  },
+  {
+    userEmail: 'emily@example.com',
+    userName: 'Emily Davis',
+    rating: 4,
+    title: 'Great place for interns to learn and grow',
+    content: 'My internship at OM Softwares was a wonderful experience. I learned a lot about frontend development and got hands-on experience with real projects. The mentorship program is excellent.',
+    department: 'Development',
+    position: 'Frontend Developer Intern',
+    workType: 'Hybrid',
+    employmentDuration: '3 months (Internship)',
+    pros: 'Excellent mentorship, real project experience, friendly team',
+    cons: 'Limited intern positions available',
+    advice: 'Make the most of the mentorship program and ask questions',
+    status: 'approved',
+    reviewerType: 'employee',
+    isAnonymous: false
+  },
+  {
+    userEmail: 'jane@example.com',
+    userName: 'Jane Smith',
+    rating: 5,
+    title: 'Excited to join the team!',
+    content: 'I recently received an offer from OM Softwares and I am thrilled to join the backend development team. The interview process was smooth and professional. Looking forward to contributing to innovative projects.',
+    department: 'Development',
+    position: 'Backend Developer',
+    workType: 'On-site',
+    employmentDuration: 'Offer Recipient',
+    pros: 'Professional interview process, competitive offer, exciting projects',
+    cons: 'None so far',
+    advice: 'Great company to work for, highly recommended',
+    status: 'pending',
+    reviewerType: 'offer_recipient',
+    isAnonymous: false
+  }
+];
+
+const recommendations = [
+  {
+    recommenderId: 'EMP002',
+    recommendedUserEmail: 'mark.thompson@example.com',
+    recommendedUserName: 'Mark Thompson',
+    jobTitle: 'Senior Full Stack Developer', // This will be used to find the job
+    status: 'pending',
+    recommendationMessage: 'Mark is an excellent full-stack developer with strong problem-solving skills. He has worked with me on several projects and has consistently delivered high-quality code. He would be a great addition to our development team.'
+  },
+  {
+    recommenderId: 'EMP001',
+    recommendedUserEmail: 'lisa.wang@example.com',
+    recommendedUserName: 'Lisa Wang',
+    jobTitle: 'UI/UX Designer', // This will be used to find the job
+    status: 'reviewed',
+    recommendationMessage: 'Lisa is a talented UI/UX designer with a keen eye for user experience. She has excellent design skills and understands modern design principles. I highly recommend her for any design position.',
+    adminNotes: 'Excellent recommendation. Lisa\'s portfolio is impressive and aligns with our design needs.'
+  }
+];
+
 // Seed function
 const seedDatabase = async () => {
   try {
@@ -246,6 +452,9 @@ const seedDatabase = async () => {
     await Job.deleteMany({});
     await Application.deleteMany({});
     await Certificate.deleteMany({});
+    await OfferLetter.deleteMany({});
+    await Review.deleteMany({});
+    await Recommendation.deleteMany({});
     console.log('🧹 Cleared existing data');
 
     // Create users with hashed passwords
@@ -295,7 +504,135 @@ const seedDatabase = async () => {
     const createdCertificates = await Certificate.insertMany(certificatesWithUserId);
     console.log(`🏆 Created ${createdCertificates.length} certificates`);
 
+    // Create offer letters linked to users
+    const janeUser = createdUsers.find(user => user.email === 'jane@example.com');
+    const alexApplication = createdApplications.find(app => app.email === 'alex@example.com');
+    const offerLettersWithUserId = offerLetters.map(offer => {
+      let userId = null;
+      if (offer.email === 'jane@example.com') {
+        userId = janeUser._id;
+      } else if (offer.email === 'alex@example.com' && alexApplication) {
+        userId = alexApplication.userId;
+      }
+      return {
+        ...offer,
+        userId
+      };
+    });
+    const createdOfferLetters = await OfferLetter.insertMany(offerLettersWithUserId);
+    console.log(`📋 Created ${createdOfferLetters.length} offer letters`);
+
+    // Create reviews linked to users
+    const johnUser = createdUsers.find(user => user.email === 'john@example.com');
+    const emilyUser = createdUsers.find(user => user.email === 'emily@example.com');
+    const reviewsWithUserId = reviews.map(review => {
+      let userId = null;
+      let approvedBy = null;
+      let approvedAt = null;
+
+      if (review.userEmail === 'john@example.com') {
+        userId = johnUser._id;
+      } else if (review.userEmail === 'emily@example.com') {
+        userId = emilyUser._id;
+      } else if (review.userEmail === 'jane@example.com') {
+        userId = janeUser._id;
+      }
+
+      // Set approval details for approved reviews
+      if (review.status === 'approved') {
+        approvedBy = adminUser._id;
+        approvedAt = new Date();
+      }
+
+      return {
+        ...review,
+        userId,
+        approvedBy,
+        approvedAt
+      };
+    });
+    const createdReviews = await Review.insertMany(reviewsWithUserId);
+    console.log(`⭐ Created ${createdReviews.length} reviews`);
+
+    // Create additional users for recommendations
+    const additionalUsers = [
+      {
+        name: 'Mark Thompson',
+        email: 'mark.thompson@example.com',
+        password: await bcrypt.hash('mark123', 10),
+        role: 'user',
+        employeeStatus: 'applicant'
+      },
+      {
+        name: 'Lisa Wang',
+        email: 'lisa.wang@example.com',
+        password: await bcrypt.hash('lisa123', 10),
+        role: 'user',
+        employeeStatus: 'applicant'
+      }
+    ];
+    const createdAdditionalUsers = await User.insertMany(additionalUsers);
+    console.log(`👥 Created ${createdAdditionalUsers.length} additional users for recommendations`);
+
+    // Create recommendations linked to users
+    const markUser = createdAdditionalUsers.find(user => user.email === 'mark.thompson@example.com');
+    const lisaUser = createdAdditionalUsers.find(user => user.email === 'lisa.wang@example.com');
+    
+    const recommendationsWithUserId = recommendations.map(recommendation => {
+      let recommenderId = null;
+      let recommendedUserId = null;
+      let reviewedBy = null;
+      let reviewedAt = null;
+
+      if (recommendation.recommenderId === 'EMP002') {
+        recommenderId = johnUser._id;
+      } else if (recommendation.recommenderId === 'EMP001') {
+        recommenderId = adminUser._id;
+      }
+
+      if (recommendation.recommendedUserEmail === 'mark.thompson@example.com') {
+        recommendedUserId = markUser._id;
+      } else if (recommendation.recommendedUserEmail === 'lisa.wang@example.com') {
+        recommendedUserId = lisaUser._id;
+      }
+
+      // Set review details for reviewed recommendations
+      if (recommendation.status === 'reviewed') {
+        reviewedBy = adminUser._id;
+        reviewedAt = new Date();
+      }
+
+      // Find the job by title
+      let jobId = null;
+      if (recommendation.jobTitle) {
+        const job = createdJobs.find(j => j.title === recommendation.jobTitle);
+        if (job) {
+          jobId = job._id;
+        }
+      }
+
+      return {
+        ...recommendation,
+        recommender: recommenderId,
+        recommendedUser: recommendedUserId,
+        jobId: jobId,
+        reviewedBy,
+        reviewedAt
+      };
+    });
+    const createdRecommendations = await Recommendation.insertMany(recommendationsWithUserId);
+    console.log(`🤝 Created ${createdRecommendations.length} recommendations`);
+
     console.log('✅ Database seeded successfully');
+    console.log('\n📊 Summary:');
+    console.log(`   Users: ${createdUsers.length + createdAdditionalUsers.length}`);
+    console.log(`   Jobs: ${createdJobs.length}`);
+    console.log(`   Applications: ${createdApplications.length}`);
+    console.log(`   Certificates: ${createdCertificates.length}`);
+    console.log(`   Offer Letters: ${createdOfferLetters.length}`);
+    console.log(`   Reviews: ${createdReviews.length}`);
+    console.log(`   Recommendations: ${createdRecommendations.length}`);
+    
     process.exit(0);
   } catch (error) {
     console.error('❌ Error seeding database:', error);

@@ -34,6 +34,28 @@ const VerifyForm = () => {
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      const response = await certificateService.downloadCertificate(certificate._id);
+      
+      // Create blob URL and download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `certificate-${certificate._id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback to window.open with full URL
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      window.open(`${API_URL}/api/certification/download/${certificate._id}`, '_blank');
+    }
+  };
+
   return (
     <div className="bg-secondary-black rounded-lg shadow-md border border-dark-gray">
       <div className="p-6">
@@ -94,10 +116,10 @@ const VerifyForm = () => {
                 <div className="text-gray-400 font-medium md:col-span-1">Domain:</div>
                 <div className="text-white md:col-span-3">{certificate.domain}</div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-y-3 mt-3">
+              {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-y-3 mt-3">
                 <div className="text-gray-400 font-medium md:col-span-1">Internship Title:</div>
                 <div className="text-white md:col-span-3">{certificate.internshipTitle}</div>
-              </div>
+              </div> */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-y-3 mt-3">
                 <div className="text-gray-400 font-medium md:col-span-1">Duration:</div>
                 <div className="text-white md:col-span-3">
@@ -115,7 +137,7 @@ const VerifyForm = () => {
               <div className="mt-5">
                 <button 
                   className="px-4 py-2 bg-transparent text-lime-400 border border-lime-400 hover:bg-lime-400/10 rounded-md text-sm font-medium transition-colors"
-                  onClick={() => window.open(`/api/certification/download/${certificate._id}`, '_blank')}
+                  onClick={handleDownload}
                 >
                   Download Certificate
                 </button>
