@@ -314,7 +314,7 @@ const ApplicationDetail = () => {
                 <div>
                   <p className="text-gray-400 text-sm mb-2">Resume</p>
                   <a 
-                    href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'}${application.resumeUrl}`}
+                    href={application.resumeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition"

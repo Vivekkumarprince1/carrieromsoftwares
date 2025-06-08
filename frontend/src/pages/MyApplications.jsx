@@ -12,6 +12,7 @@ const MyApplications = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [copiedId, setCopiedId] = useState(null);
   
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -32,6 +33,14 @@ const MyApplications = () => {
     
     loadMyApplications();
   }, [currentUser, location, navigate]);
+
+  // Add effect to reset copied ID notification after 3 seconds
+  useEffect(() => {
+    if (copiedId) {
+      const timer = setTimeout(() => setCopiedId(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [copiedId]);
 
   const loadMyApplications = async () => {
     setLoading(true);
@@ -141,6 +150,18 @@ const MyApplications = () => {
       case 'hired': return 'bg-gradient-to-r from-green-600 to-emerald-700';
       default: return 'bg-gradient-to-r from-gray-500 to-gray-600';
     }
+  };
+
+  // Add function to copy application ID to clipboard
+  const copyApplicationId = (id, e) => {
+    e.stopPropagation(); // Prevent triggering the parent onClick
+    navigator.clipboard.writeText(id)
+      .then(() => {
+        setCopiedId(id);
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+      });
   };
 
   if (loading) {
@@ -318,7 +339,35 @@ const MyApplications = () => {
                             </div>
                           ) : (
                             <div>
-                              {/* Removing the job title, company, location, and dates section as requested */}
+                              {/* Application ID with copy button */}
+                              <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50 flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <span className="font-medium text-gray-400 mr-2">Application ID:</span>
+                                  <span className="text-primary-yellow font-mono">{application._id}</span>
+                                </div>
+                                <button 
+                                  onClick={(e) => copyApplicationId(application._id, e)}
+                                  className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-xs flex items-center transition-all duration-300"
+                                  title="Copy Application ID"
+                                >
+                                  {copiedId === application._id ? (
+                                    <>
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                      Copied!
+                                    </>
+                                  ) : (
+                                    <>
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                      </svg>
+                                      Copy ID
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                              
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
                                   <h4 className="font-medium text-primary-yellow mb-3 flex items-center text-lg">

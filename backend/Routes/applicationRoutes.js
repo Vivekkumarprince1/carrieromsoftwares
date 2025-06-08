@@ -5,29 +5,10 @@ const { verifyAdmin, auth } = require("../middleware/authMiddleware");
 const multer = require("multer");
 const path = require("path");
 
-// Configure multer for resume uploads
-const resumeStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../uploads/resumes"));
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
-  }
-});
-
-// Configure multer for question file uploads
-const questionFileStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../uploads/question-files"));
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
-  }
-});
-
+// Configure multer for resume uploads (memory storage for Cloudinary)
 const resumeUpload = multer({
-  storage: resumeStorage,
-  limits: { fileSize: 5000000 }, // 5MB max
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
   fileFilter: (req, file, cb) => {
     const filetypes = /pdf|doc|docx/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -42,10 +23,10 @@ const resumeUpload = multer({
 
 // More flexible file filter for question answers (allows more file types)
 const questionFileUpload = multer({
-  storage: questionFileStorage,
-  limits: { fileSize: 10000000 }, // 10MB max
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
   fileFilter: (req, file, cb) => {
-    const filetypes = /pdf|doc|docx|jpg|jpeg|png|gif|mp3|mp4/;
+    const filetypes = /pdf|doc|docx|jpg|jpeg|png|gif|mp3|mp4|txt/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
     if (extname) {
       return cb(null, true);
@@ -62,6 +43,7 @@ router.post("/submit", resumeUpload.single("resume"), applicationController.subm
 router.post("/", auth, resumeUpload.single("resume"), applicationController.createApplication);
 router.post("/parse-resume", auth, resumeUpload.single("resume"), applicationController.parseResume);
 router.get("/my", auth, applicationController.getMyApplications);
+router.get("/for-recommendation", auth, applicationController.getApplicationsForRecommendation);
 
 // New routes for question handling
 router.post("/upload-question-file", auth, questionFileUpload.single("file"), applicationController.uploadQuestionFile);

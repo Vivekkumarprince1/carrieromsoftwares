@@ -9,7 +9,7 @@ const authConfig = {
   
   // Environment
   nodeEnv: process.env.NODE_ENV || 'development',
-  port: process.env.PORT || 4000,
+  port: process.env.PORT || 4001, // Changed from 4000 to 4001 to avoid port conflict
   
   // Database
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/careers',

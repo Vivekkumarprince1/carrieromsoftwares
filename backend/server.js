@@ -8,6 +8,9 @@ const authRoutes = require("./Routes/authRoute");
 const certificationRoutes = require("./Routes/CertificationRoute");
 const jobRoutes = require("./Routes/jobRoutes");
 const applicationRoutes = require("./Routes/applicationRoutes");
+const reviewRoutes = require("./Routes/reviewRoutes");
+const userRoutes = require("./Routes/userRoutes");
+const recommendationRoutes = require("./Routes/recommendationRoutes");
 
 console.log("Starting API server...");
 
@@ -19,7 +22,8 @@ const uploadDirs = [
   "./uploads",
   "./uploads/resumes",
   "./uploads/certificates",
-  "./uploads/offers"
+  "./uploads/offers",
+  "./temp" // Temporary directory for Cloudinary uploads
 ];
 
 console.log("Creating upload dirs...");
@@ -64,6 +68,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/certification", certificationRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/applications", applicationRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 
 const PORT = authConfig.port;

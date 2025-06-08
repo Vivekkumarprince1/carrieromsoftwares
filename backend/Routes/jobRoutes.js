@@ -4,23 +4,14 @@ const jobController = require("../Controllers/jobController");
 const { verifyAdmin, auth } = require("../middleware/authMiddleware");
 const multer = require("multer");
 const path = require("path");
+const { uploadImage, deleteImage, extractPublicId } = require('../config/cloudinary');
 
-// Configure multer for job image uploads
-const jobImageStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../uploads/jobs"));
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, 'job-' + uniqueSuffix + ext);
-  }
-});
 
+// Configure multer for job image uploads (memory storage for Cloudinary)
 const jobImageUpload = multer({
-  storage: jobImageStorage,
+  storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB file size limit
+    fileSize: 20 * 1024 * 1024 // 20MB file size limit
   },
   fileFilter: function (req, file, cb) {
     // Accept only image files

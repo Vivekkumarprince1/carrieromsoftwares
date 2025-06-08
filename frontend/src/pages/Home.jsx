@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { jobService } from '../services/api';
+import { jobService, reviewService } from '../services/api';
 import HeroSection from '../components/hero/HeroSection';
 
 // Animation imports
@@ -8,25 +8,63 @@ import { motion } from 'framer-motion';
 
 const Home = () => {
   const [featuredJobs, setFeaturedJobs] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchFeaturedJobs = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await jobService.getFeatured();
-        setFeaturedJobs(response.data);
+        
+        // Fetch featured jobs
+        const jobsResponse = await jobService.getFeatured();
+        setFeaturedJobs(jobsResponse.data);
+        
+        // Fetch approved reviews
+        const reviewsResponse = await reviewService.getApprovedReviews({ limit: 10 });
+        setReviews(reviewsResponse.data.reviews || []);
+        
       } catch (err) {
-        console.error('Error fetching featured jobs:', err);
-        setError('Failed to load featured jobs');
+        console.error('Error fetching data:', err);
+        setError('Failed to load data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFeaturedJobs();
+    fetchData();
   }, []);
+
+  // Auto-slide reviews every 5 seconds
+  useEffect(() => {
+    if (reviews.length > 3) {
+      const interval = setInterval(() => {
+        setCurrentReviewIndex((prevIndex) => 
+          prevIndex + 3 >= reviews.length ? 0 : prevIndex + 3
+        );
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [reviews.length]);
+
+  const nextReviews = () => {
+    setCurrentReviewIndex((prevIndex) => 
+      prevIndex + 3 >= reviews.length ? 0 : prevIndex + 3
+    );
+  };
+
+  const prevReviews = () => {
+    setCurrentReviewIndex((prevIndex) => 
+      prevIndex - 3 < 0 ? Math.max(0, reviews.length - 3) : prevIndex - 3
+    );
+  };
+
+  const getDisplayedReviews = () => {
+    return reviews.slice(currentReviewIndex, currentReviewIndex + 3);
+  };
 
   return (
     <div className="bg-black text-white overflow-hidden">
@@ -415,20 +453,20 @@ const Home = () => {
                 <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-lime-400 transition-colors">{step.title}</h3>
                 <p className="text-gray-300 leading-relaxed">{step.description}</p>
                 
-                {/* <div className="mt-6 pt-4">
+                <div className="mt-6 pt-4">
                   <div className="w-8 h-8 rounded-full bg-gray-800 group-hover:bg-lime-500/20 flex items-center justify-center transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-lime-400" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </div>
-                </div> */}
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Reviews/Testimonials Section */}
       <section className="py-12 md:py-16 bg-black relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-gray-950 to-transparent"></div>
         <div className="absolute inset-0 overflow-hidden">
@@ -445,74 +483,149 @@ const Home = () => {
             transition={{ duration: 0.7 }}
           >
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
-              Success <span className="text-lime-400">Stories</span>
+              Employee <span className="text-lime-400">Reviews</span>
             </h2>
             <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-              Hear from professionals who found their dream jobs through our platform
+              Hear from our employees and team members about their experience working with us
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {[
-              {
-                name: "Sarah Johnson",
-                position: "Senior Software Engineer",
-                company: "TechGlobal Inc.",
-                quote: "The personalized job recommendations were spot on. I found my dream job at a tech giant within just three weeks!"
-              },
-              {
-                name: "Michael Rodriguez",
-                position: "Marketing Director",
-                company: "CreativeMinds Agency",
-                quote: "The interview preparation resources gave me the confidence I needed. The mock interviews helped me ace my actual interviews."
-              },
-              {
-                name: "Aisha Patel",
-                position: "Product Manager",
-                company: "InnovateTech",
-                quote: "I was able to showcase my skills with digital certificates that employers could verify instantly. This definitely gave me an edge."
-              }
-            ].map((testimonial, index) => (
-              <motion.div
-                key={index}
-                className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-8 shadow-lg border border-gray-800"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
-              >
-                {/* Quote symbol */}
-                <div className="text-lime-500 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M12 12a1 1 0 0 0 1-1V8.558a1 1 0 0 0-1-1h-1.388c0-.351.021-.703.062-1.054.062-.372.166-.703.31-.992.145-.29.331-.517.559-.683.227-.186.516-.279.868-.279V3c-.579 0-1.085.124-1.52.372a3.322 3.322 0 0 0-1.085.992 4.92 4.92 0 0 0-.62 1.458A7.712 7.712 0 0 0 9 7.558V11a1 1 0 0 0 1 1h2Zm-6 0a1 1 0 0 0 1-1V8.558a1 1 0 0 0-1-1H4.612c0-.351.021-.703.062-1.054.062-.372.166-.703.31-.992.145-.29.331-.517.559-.683.227-.186.516-.279.868-.279V3c-.579 0-1.085.124-1.52.372a3.322 3.322 0 0 0-1.085.992 4.92 4.92 0 0 0-.62 1.458A7.712 7.712 0 0 0 3 7.558V11a1 1 0 0 0 1 1h2Z" />
+          {reviews.length > 0 ? (
+            <div className="relative max-w-6xl mx-auto">
+              {/* Navigation Arrows */}
+              {reviews.length > 3 && (
+                <>
+                  <button
+                    onClick={prevReviews}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-20 bg-lime-500 hover:bg-lime-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 group"
+                  >
+                    <svg className="w-6 h-6 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={nextReviews}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-20 bg-lime-500 hover:bg-lime-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 group"
+                  >
+                    <svg className="w-6 h-6 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </>
+              )}
+
+              {/* Reviews Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {getDisplayedReviews().map((review, index) => (
+                  <motion.div
+                    key={review._id}
+                    className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-8 shadow-lg border border-gray-800 h-full flex flex-col"
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    {/* Quote symbol */}
+                    <div className="text-lime-500 mb-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M12 12a1 1 0 0 0 1-1V8.558a1 1 0 0 0-1-1h-1.388c0-.351.021-.703.062-1.054.062-.372.166-.703.31-.992.145-.29.331-.517.559-.683.227-.186.516-.279.868-.279V3c-.579 0-1.085.124-1.52.372a3.322 3.322 0 0 0-1.085.992 4.92 4.92 0 0 0-.62 1.458A7.712 7.712 0 0 0 9 7.558V11a1 1 0 0 0 1 1h2Zm-6 0a1 1 0 0 0 1-1V8.558a1 1 0 0 0-1-1H4.612c0-.351.021-.703.062-1.054.062-.372.166-.703.31-.992.145-.29.331-.517.559-.683.227-.186.516-.279.868-.279V3c-.579 0-1.085.124-1.52.372a3.322 3.322 0 0 0-1.085.992 4.92 4.92 0 0 0-.62 1.458A7.712 7.712 0 0 0 3 7.558V11a1 1 0 0 0 1 1h2Z" />
+                      </svg>
+                    </div>
+
+                    <div className="flex-grow">
+                      {/* Star rating */}
+                      <div className="flex mb-4">
+                        {[...Array(5)].map((_, i) => (
+                          <svg 
+                            key={i} 
+                            className={`w-5 h-5 ${i < review.rating ? 'text-yellow-400' : 'text-gray-600'}`} 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            viewBox="0 0 24 24" 
+                            fill="currentColor"
+                          >
+                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                          </svg>
+                        ))}
+                      </div>
+
+                      {/* Review Title */}
+                      <h3 className="text-lg font-semibold text-white mb-3">{review.title}</h3>
+
+                      {/* Review Content */}
+                      <p className="text-gray-300 mb-6 italic">"{review.content}"</p>
+                      
+                      {/* Pros if available */}
+                      {review.pros && (
+                        <div className="mb-4">
+                          <p className="text-sm text-green-400 font-semibold mb-1">Pros:</p>
+                          <p className="text-sm text-gray-400">{review.pros}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Author Info */}
+                    <div className="flex items-center border-t border-gray-700 pt-4 mt-auto">
+                      <div className="w-12 h-12 bg-gradient-to-br from-lime-400 to-green-600 rounded-full flex items-center justify-center mr-4 text-xl font-bold text-white">
+                        {review.isAnonymous ? 'A' : review.userName.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-white">
+                          {review.isAnonymous ? 'Anonymous Employee' : review.userName}
+                        </h4>
+                        <p className="text-sm text-gray-400">
+                          {review.position && review.department 
+                            ? `${review.position}, ${review.department}`
+                            : review.position || review.department || 'Employee'
+                          }
+                        </p>
+                        {review.workType && (
+                          <p className="text-xs text-gray-500">{review.workType}</p>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Pagination Dots */}
+              {reviews.length > 3 && (
+                <div className="flex justify-center mt-8 space-x-2">
+                  {Array.from({ length: Math.ceil(reviews.length / 3) }).map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentReviewIndex(index * 3)}
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                        Math.floor(currentReviewIndex / 3) === index
+                          ? 'bg-lime-500 scale-125'
+                          : 'bg-gray-600 hover:bg-gray-500'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            // Fallback content when no reviews are available
+            <div className="text-center py-12">
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-12 max-w-2xl mx-auto border border-gray-800">
+                <div className="text-gray-400 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 8h10m0 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m10 0v10a2 2 0 01-2 2H9a2 2 0 01-2-2V8m10 0H7m5 5v3m0 0h-3m3 0h3" />
                   </svg>
                 </div>
-
-                <div className="mb-6">
-                  {/* Star rating */}
-                  <div className="flex mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <svg key={i} className="w-5 h-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
-                      </svg>
-                    ))}
-                  </div>
-
-                  <p className="text-gray-300 mb-6 italic">"{testimonial.quote}"</p>
-                </div>
-
-                <div className="flex items-center border-t border-gray-700 pt-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-lime-400 to-green-600 rounded-full flex items-center justify-center mr-4 text-xl font-bold text-white">
-                    {testimonial.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-400">{testimonial.position}, {testimonial.company}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                <h3 className="text-xl font-semibold text-white mb-2">No Reviews Yet</h3>
+                <p className="text-gray-400">
+                  Be the first to share your experience working with us!
+                </p>
+                <Link 
+                  to="/reviews/submit" 
+                  className="inline-block mt-4 bg-lime-500 hover:bg-lime-600 text-white px-6 py-2 rounded-lg transition-colors duration-300"
+                >
+                  Submit Review
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </div>

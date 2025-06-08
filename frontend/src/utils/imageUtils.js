@@ -4,19 +4,25 @@
 
 /**
  * Constructs the proper URL for an image path from the backend
- * @param {string} imagePath - The relative image path from the backend (e.g. "/uploads/jobs/image.jpg")
+ * @param {string} imagePath - The image path (Cloudinary URL or relative path from backend)
  * @returns {string} The complete URL to the image
  */
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   
-  // Use API_BASE_URL from environment if available, otherwise assume same origin
+  // If it's already a complete URL (Cloudinary URL), return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    console.log(`Direct URL: ${imagePath}`);
+    return imagePath;
+  }
+  
+  // For legacy local images, use API_BASE_URL from environment if available
   const baseUrl = import.meta.env.VITE_BASE_URL || '';
   console.log(baseUrl);
   
   // Make sure path starts with slash if it doesn't already
   const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  console.log(`Image URL: ${baseUrl}${normalizedPath}`);
+  console.log(`Legacy image URL: ${baseUrl}${normalizedPath}`);
   
   return `${baseUrl}${normalizedPath}`;
 };

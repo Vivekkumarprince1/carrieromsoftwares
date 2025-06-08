@@ -44,8 +44,13 @@ const Login = () => {
     setLoading(true);
     
     try {
-      await login(formData);
-      navigate(from);
+      const response = await login(formData);
+      // Check if user is admin and redirect accordingly
+      if (response.user && response.user.role === 'admin') {
+        navigate('/dashboard');
+      } else {
+        navigate(from);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid login credentials');
     } finally {

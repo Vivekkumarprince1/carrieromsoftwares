@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import Home from './pages/Home';
@@ -13,6 +15,12 @@ import Dashboard from './pages/Dashboard';
 import Certificates from './pages/Certificates';
 // import OfferLetters from './pages/OfferLetters';
 import VerifyCertificate from './pages/VerifyCertificate';
+import Contact from './pages/Contact';
+import SubmitReview from './pages/SubmitReview';
+import AdminReviewManagement from './components/reviews/AdminReviewManagement';
+import EmployeeManagement from './pages/admin/EmployeeManagement';
+import RecommendationManagement from './pages/admin/RecommendationManagement';
+import EmployeeProfile from './pages/EmployeeProfile';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 import ApplicationDetail from './pages/ApplicationDetail';
@@ -92,10 +100,74 @@ function App() {
               {/* Public certificate verification routes */}
               <Route path="/verify" element={<VerifyCertificate />} />
               <Route path="/verify/:id" element={<VerifyCertificate />} />
+              
+              {/* Contact page */}
+              <Route path="/contact" element={<Contact />} />
+              
+              {/* Review routes */}
+              <Route 
+                path="/reviews/submit" 
+                element={
+                  <PrivateRoute>
+                    <SubmitReview />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/admin/reviews" 
+                element={
+                  <AdminRoute>
+                    <AdminReviewManagement />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/admin/employees" 
+                element={
+                  <AdminRoute>
+                    <EmployeeManagement />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/admin/recommendations" 
+                element={
+                  <AdminRoute>
+                    <RecommendationManagement />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/employee/profile" 
+                element={
+                  <PrivateRoute>
+                    <EmployeeProfile />
+                  </PrivateRoute>
+                } 
+              />
+              
+              
+              
+              
+              
+              
+              
             </Routes>
           </main>
 
           <Footer />
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+          />
         </div>
       </AuthProvider>
     </Router>

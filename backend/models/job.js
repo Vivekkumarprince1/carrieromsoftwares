@@ -9,8 +9,11 @@ const jobSchema = new mongoose.Schema({
   location: String,
   type: { type: String, enum: ["Full-time", "Part-time", "Contract", "Internship"] },
   salary: { type: String },
-  // Add image fields
-  imageUrl: { type: String }, // URL to access the image
+  department: { type: String },
+  position: { type: String },
+  // Cloudinary image fields
+  imageUrl: { type: String }, // Cloudinary URL to access the image
+  cloudinaryPublicId: { type: String }, // Cloudinary public ID for deletion
   postedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   isActive: { type: Boolean, default: true },
   // Adding questions field for application form

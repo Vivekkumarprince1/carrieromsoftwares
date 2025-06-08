@@ -15,8 +15,11 @@ const Register = () => {
   const { register } = useAuth();
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -31,7 +34,8 @@ const Register = () => {
     
     try {
       const { name, email, password } = formData;
-      await register({ name, email, password });
+      const registrationData = { name, email, password };
+      await register(registrationData);
       navigate('/login');
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred during registration');
@@ -116,7 +120,7 @@ const Register = () => {
                 placeholder="••••••••"
               />
             </div>
-            
+
             <div>
               <button 
                 type="submit" 

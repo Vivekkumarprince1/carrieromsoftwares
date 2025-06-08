@@ -15,6 +15,8 @@ const Apply = () => {
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -84,8 +86,11 @@ const Apply = () => {
   }, [jobId, currentUser, navigate]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
     
     if (formErrors[name]) {
       setFormErrors(prev => ({ ...prev, [name]: null }));
@@ -119,21 +124,66 @@ const Apply = () => {
         return;
       }
       
-      setParseSuccess(true);
-      setTimeout(() => setParseSuccess(false), 3000);
+      // Track what was successfully extracted
+      const extractedFields = [];
+      const updatedFormData = { ...formData, resume: file };
       
-      setFormData(prev => ({
-        ...prev,
-        fullName: response.data.fullName || prev.fullName,
-        email: response.data.email || prev.email,
-        phone: response.data.phone || prev.phone,
-        skills: response.data.skills || prev.skills,
-        education: response.data.education || prev.education,
-        experience: response.data.experience || prev.experience
-      }));
+      // Only update fields that have meaningful content and don't overwrite existing user input
+      if (response.data.fullName && response.data.fullName.trim() && !formData.fullName.trim()) {
+        updatedFormData.fullName = response.data.fullName;
+        extractedFields.push('name');
+      }
+      
+      if (response.data.email && response.data.email.trim() && !formData.email.trim()) {
+        updatedFormData.email = response.data.email;
+        extractedFields.push('email');
+      }
+      
+      if (response.data.phone && response.data.phone.trim() && !formData.phone.trim()) {
+        updatedFormData.phone = response.data.phone;
+        extractedFields.push('phone');
+      }
+      
+      if (response.data.skills && response.data.skills.trim() && !formData.skills.trim()) {
+        // Format skills as comma-separated if it's an array
+        const skillsText = Array.isArray(response.data.skills) 
+          ? response.data.skills.join(', ') 
+          : response.data.skills;
+        updatedFormData.skills = skillsText;
+        extractedFields.push('skills');
+      }
+      
+      if (response.data.education && response.data.education.trim() && !formData.education.trim()) {
+        updatedFormData.education = response.data.education;
+        extractedFields.push('education');
+      }
+      
+      if (response.data.experience && response.data.experience.trim() && !formData.experience.trim()) {
+        updatedFormData.experience = response.data.experience;
+        extractedFields.push('experience');
+      }
+      
+      setFormData(updatedFormData);
+      
+      // Show success message with details
+      if (extractedFields.length > 0) {
+        setParseSuccess(`✓ Successfully extracted: ${extractedFields.join(', ')}`);
+        setTimeout(() => setParseSuccess(false), 5000);
+      } else {
+        setParseError('Resume uploaded but no additional data could be extracted. Please fill the form manually.');
+      }
+      
     } catch (err) {
       console.error('Failed to parse resume:', err);
-      setParseError('Could not automatically extract data from your resume. You can still fill the form manually.');
+      
+      // Handle different types of parsing errors
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setParseError('Resume parsing is taking longer than expected. The file has been uploaded, but automatic data extraction timed out. Please fill the form manually.');
+      } else if (err.response?.status === 413) {
+        setParseError('Resume file is too large for automatic parsing. Please fill the form manually or try with a smaller file.');
+      } else {
+        setParseError('Could not automatically extract data from your resume. You can still fill the form manually.');
+      }
     } finally {
       setParsing(false);
     }
@@ -184,7 +234,8 @@ const Apply = () => {
       errors.coverLetter = 'Cover letter is required';
       isValid = false;
     }
-    
+
+    // Validate job question answers
     jobQuestions.forEach(question => {
       if (question.required) {
         const answer = questionAnswers.find(a => a.questionId === question._id);
@@ -198,7 +249,9 @@ const Apply = () => {
         }
       }
     });
-    
+
+    setFormErrors(errors);
+    return isValid;
     setFormErrors(errors);
     return isValid;
   };
@@ -216,6 +269,8 @@ const Apply = () => {
     }
     
     setSubmitting(true);
+    setIsUploading(true);
+    setUploadProgress(0);
     
     try {
       const applicationFormData = new FormData();
@@ -228,6 +283,15 @@ const Apply = () => {
       applicationFormData.append('skills', formData.skills);
       applicationFormData.append('coverLetter', formData.coverLetter);
       
+      // Add referral data if provided
+      if (formData.isReferred) {
+        applicationFormData.append('isReferred', 'true');
+        applicationFormData.append('referrerEmployeeId', formData.referrerEmployeeId);
+        applicationFormData.append('referrerName', formData.referrerName);
+        applicationFormData.append('referrerEmail', formData.referrerEmail);
+        applicationFormData.append('referralMessage', formData.referralMessage);
+      }
+      
       if (formData.resume) {
         applicationFormData.append('resume', formData.resume);
       }
@@ -236,13 +300,35 @@ const Apply = () => {
         applicationFormData.append('questionAnswers', JSON.stringify(questionAnswers));
       }
       
-      await applicationService.createApplication(applicationFormData);
+      // Setup progress callback
+      const onUploadProgress = (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        setUploadProgress(percentCompleted);
+      };
+      
+      await applicationService.createApplication(applicationFormData, onUploadProgress);
       navigate('/jobs', { state: { success: true, message: 'Your application has been submitted successfully!' } });
     } catch (err) {
-      setError(err.response?.data?.message || 'Error submitting application');
+      console.error('Application submission error:', err);
+      
+      // Handle different types of errors with specific messages
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('Upload is taking longer than expected. This might be due to file size or network conditions. Please wait a moment and check if your application was submitted successfully, or try again with a smaller file.');
+      } else if (err.response?.status === 413) {
+        setError('Your resume file is too large. Please try with a smaller file (under 10MB).');
+      } else if (err.response?.status === 500 && err.response?.data?.message?.includes('Cloudinary')) {
+        setError('There was an issue uploading your resume. Please try again, or contact support if the problem persists.');
+      } else {
+        setError(err.response?.data?.message || 'Error submitting application. Please try again.');
+      }
+      
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSubmitting(false);
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -297,6 +383,18 @@ const Apply = () => {
                   <h4 className="uppercase text-gray-400 text-sm font-medium">LOCATION</h4>
                   <p className="text-white">{job.location}</p>
                 </div>
+                {job.department && (
+                  <div>
+                    <h4 className="uppercase text-gray-400 text-sm font-medium">DEPARTMENT</h4>
+                    <p className="text-white">{job.department}</p>
+                  </div>
+                )}
+                {job.position && (
+                  <div>
+                    <h4 className="uppercase text-gray-400 text-sm font-medium">POSITION</h4>
+                    <p className="text-white">{job.position}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -350,7 +448,11 @@ const Apply = () => {
                         Extracting data from your resume...
                       </div>
                     )}
-                    {parseSuccess && <div className="text-green-500 mt-2">✓ Resume parsed successfully! Form fields have been auto-filled.</div>}
+                    {parseSuccess && (
+                      <div className="text-green-500 mt-2">
+                        {typeof parseSuccess === 'string' ? parseSuccess : '✓ Resume parsed successfully! Form fields have been auto-filled.'}
+                      </div>
+                    )}
                     {parseError && <div className="text-yellow-500 mt-2">⚠️ {parseError}</div>}
                     {resumeUploaded && !parsing && !parseError && !parseSuccess && 
                       <div className="text-green-500 mt-2">Resume uploaded successfully.</div>}
