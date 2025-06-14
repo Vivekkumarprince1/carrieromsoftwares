@@ -42,7 +42,7 @@
   --color-primary: #c4ef17;
   --color-heading: #131217;
   --xb-track-color: #16171b;
-  --color-dark: #0f172a;
+  --color-dark: #000000;
   --color-white: #fff;
   --color-black: #000;
   --color-default: #a8a8a8;
@@ -404,6 +404,25 @@ span {
 }
 
 /* global css end */
+
+/* Global Section Backgrounds - Force all sections to black */
+section {
+  background-color: var(--color-black) !important;
+}
+
+/* Override any gray backgrounds on main content areas */
+.bg-gray-900,
+.bg-gray-800,
+div[class*="bg-gray"] {
+  background-color: var(--color-black) !important;
+}
+
+/* Ensure main content containers are black */
+main,
+.main-content,
+.content-wrapper {
+  background-color: var(--color-black) !important;
+}
 .body_wrap {
   position: relative;
   overflow: hidden;

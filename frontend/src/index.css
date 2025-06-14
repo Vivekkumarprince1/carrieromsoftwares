@@ -39,6 +39,80 @@
   h1, h2, h3, h4, h5, h6  {
     font-family: var(--font-heading);
   }
+
+  /* Ensure all sections have black background */
+  section {
+    @apply bg-black;
+  }
+}
+
+/* Page Alignment System */
+@layer components {
+  /* Main page container for consistent alignment */
+  .page-container {
+    @apply min-h-screen bg-black text-white;
+  }
+  
+  /* Content wrapper with consistent padding and max-width */
+  .content-wrapper {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Page header alignment */
+  .page-header {
+    @apply text-center py-12 lg:py-16;
+  }
+  
+  .page-title {
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-white;
+    font-family: var(--font-heading);
+  }
+  
+  .page-subtitle {
+    @apply text-lg md:text-xl text-gray-400 max-w-3xl mx-auto;
+  }
+  
+  /* Section alignment */
+  .section-padding {
+    @apply py-12 lg:py-16;
+  }
+  
+  .section-padding-sm {
+    @apply py-8 lg:py-12;
+  }
+  
+  /* Form alignment */
+  .form-container {
+    @apply max-w-md mx-auto bg-gray-900 rounded-lg p-8 shadow-xl;
+  }
+  
+  .form-container-lg {
+    @apply max-w-2xl mx-auto bg-gray-900 rounded-lg p-8 shadow-xl;
+  }
+  
+  /* Card alignment */
+  .card-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8;
+  }
+  
+  .card-grid-2 {
+    @apply grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8;
+  }
+  
+  /* Button alignment */
+  .btn-center {
+    @apply flex justify-center items-center;
+  }
+  
+  /* Text alignment utilities */
+  .text-center-mobile {
+    @apply text-center md:text-left;
+  }
+  
+  /* Responsive spacing */
+  .space-y-responsive {
+    @apply space-y-6 lg:space-y-8;
+  }
 }
 
 /* Custom animations for the home page */
@@ -174,5 +248,58 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a3e635;
+}
+
+/* Line clamp utilities for text truncation */
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.line-clamp-4 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+/* Review slider specific animations */
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in-right {
+  animation: slideInFromRight 0.5s ease-out;
+}
+
+.slide-in-left {
+  animation: slideInFromLeft 0.5s ease-out;
 }
 
