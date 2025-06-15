@@ -135,8 +135,10 @@ const Footer = () => {
             </div>
           </div>
            {/* Logo Section */}
+         
           <div className="lg:col-span-1 flex justify-center lg:justify-start">
             <div className="relative">
+                <a href="https://omsoftwares.in/contact">
               <div 
                 className="h-[22rem] w-[22rem] bg-lime-400 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-lime-400/30 hover:-translate-y-2 transform-gpu"
                 onClick={scrollToTop}
@@ -150,6 +152,7 @@ const Footer = () => {
                   </h2>
                 </div>
               </div>
+              </a>
             </div>
           </div>
         </div>
@@ -159,17 +162,17 @@ const Footer = () => {
         <div className="border-t border-gray-700 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-gray-400 text-sm">
-              Copyright © 2020-2025 <span className="text-white">Om Softwares</span>. All rights reserved.
+              Copyright © 2020-2025 <a href="https://omsoftwares.in/" className="text-white">Om Softwares</a>. All rights reserved.
             </p>
             <div className="flex space-x-8">
               <a 
-                href="#" 
+                href="https://omsoftwares.in/terms" 
                 className="text-gray-400 hover:text-white transition-colors duration-300 text-sm"
               >
                 Terms and Conditions
               </a>
               <a 
-                href="#" 
+                href="https://omsoftwares.in/terms" 
                 className="text-gray-400 hover:text-white transition-colors duration-300 text-sm"
               >
                 Privacy Policy
