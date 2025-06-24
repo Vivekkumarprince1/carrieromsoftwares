@@ -18,7 +18,9 @@ router.get("/offer-letters", auth, verifyAdmin, OfferLetterController.getAllOffe
 router.get("/offer-letters/:id", auth, verifyAdmin, OfferLetterController.getOfferLetterById);
 router.patch("/offer-letters/:id/status", auth,verifyAdmin, OfferLetterController.updateOfferLetterStatus);
 router.patch("/offer-letters/:id/extend", auth, verifyAdmin, OfferLetterController.extendOfferLetter);
-router.get("/offer-letters/:id/download",verifyAdmin, OfferLetterController.downloadOfferLetter);
+router.get("/offer-letters/:id/download", auth, OfferLetterController.downloadOfferLetter);
 router.post("/offer-letters/:id/send-email", auth, verifyAdmin, OfferLetterController.sendOfferLetterEmail);
+router.post("/offer-letters/:id/regenerate-token", auth, verifyAdmin, OfferLetterController.regenerateAcceptanceToken);
+router.post("/offer-letters/add-tokens", auth, verifyAdmin, OfferLetterController.addAcceptanceTokensToExisting);
 
 module.exports = router;

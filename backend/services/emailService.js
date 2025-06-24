@@ -81,3 +81,156 @@ exports.sendApplicationConfirmation = async (applicantDetails, jobTitle) => {
     throw error;
   }
 };
+
+// Contract-related email functions
+exports.sendContractStatusUpdate = async (contractDetails, adminComments) => {
+  console.log(`Contract status update to: ${contractDetails.email}`);
+  try {
+    const statusMessages = {
+      'Under_Review': {
+        subject: 'Contract Under Review',
+        message: 'Your employment contract is currently under review by our HR team. We will notify you once the review is complete.'
+      },
+      'Approved': {
+        subject: 'Contract Approved - Welcome to OM Softwares!',
+        message: 'Congratulations! Your employment contract has been approved. Welcome to the OM Softwares team! Our HR team will contact you soon with your next steps and onboarding information.'
+      },
+      'Rejected': {
+        subject: 'Contract Review Update',
+        message: 'After reviewing your contract, we need to discuss some details with you. Please contact our HR team for further information.'
+      },
+      'Requires_Clarification': {
+        subject: 'Contract Requires Clarification',
+        message: 'We need some additional information or clarification regarding your employment contract. Please review the comments below and contact our HR team.'
+      }
+    };
+
+    const statusInfo = statusMessages[contractDetails.status] || {
+      subject: 'Contract Status Update',
+      message: 'There has been an update to your employment contract status.'
+    };
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: contractDetails.email,
+      subject: statusInfo.subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+          <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #2563eb; margin: 0; font-size: 28px;">OM Softwares</h1>
+              <p style="color: #6b7280; margin: 5px 0 0 0;">Human Resources Department</p>
+            </div>
+            
+            <h2 style="color: #1f2937; margin-bottom: 20px;">${statusInfo.subject}</h2>
+            
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">Dear ${contractDetails.candidateName},</p>
+            
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">${statusInfo.message}</p>
+            
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin: 20px 0;">
+              <h3 style="color: #1f2937; margin: 0 0 10px 0; font-size: 16px;">Contract Details:</h3>
+              <p style="margin: 5px 0; color: #6b7280;"><strong>Position:</strong> ${contractDetails.position}</p>
+              <p style="margin: 5px 0; color: #6b7280;"><strong>Department:</strong> ${contractDetails.department}</p>
+              <p style="margin: 5px 0; color: #6b7280;"><strong>Status:</strong> ${contractDetails.status.replace('_', ' ')}</p>
+            </div>
+            
+            ${adminComments ? `
+              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0;">
+                <h3 style="color: #92400e; margin: 0 0 10px 0; font-size: 16px;">Comments from HR:</h3>
+                <p style="color: #92400e; margin: 0; line-height: 1.6;">${adminComments}</p>
+              </div>
+            ` : ''}
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                If you have any questions, please contact our HR team at <a href="mailto:hr@omsoftwares.com" style="color: #2563eb;">hr@omsoftwares.com</a>
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                Best regards,<br>
+                <strong>HR Team</strong><br>
+                OM Softwares
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+    
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Contract status email sent to: ${contractDetails.email}`);
+    return result;
+  } catch (error) {
+    console.error('Failed to send contract status email:', error);
+    throw error;
+  }
+};
+
+exports.sendContractSubmissionConfirmation = async (contractDetails) => {
+  console.log(`Contract submission confirmation to: ${contractDetails.email}`);
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: contractDetails.email,
+      subject: 'Contract Submitted Successfully',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+          <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #2563eb; margin: 0; font-size: 28px;">OM Softwares</h1>
+              <p style="color: #6b7280; margin: 5px 0 0 0;">Human Resources Department</p>
+            </div>
+            
+            <h2 style="color: #059669; margin-bottom: 20px;">✅ Contract Submitted Successfully</h2>
+            
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">Dear ${contractDetails.candidateName},</p>
+            
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">
+              Thank you for submitting your employment contract! We have successfully received all your information and documents.
+            </p>
+            
+            <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0;">
+              <h3 style="color: #065f46; margin: 0 0 10px 0; font-size: 16px;">What's Next?</h3>
+              <ul style="color: #065f46; margin: 0; padding-left: 20px; line-height: 1.6;">
+                <li>Our HR team will review your contract within 2-3 business days</li>
+                <li>You will receive email updates on the review status</li>
+                <li>Once approved, we'll send you onboarding information</li>
+              </ul>
+            </div>
+            
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin: 20px 0;">
+              <h3 style="color: #1f2937; margin: 0 0 10px 0; font-size: 16px;">Contract Summary:</h3>
+              <p style="margin: 5px 0; color: #6b7280;"><strong>Position:</strong> ${contractDetails.position}</p>
+              <p style="margin: 5px 0; color: #6b7280;"><strong>Department:</strong> ${contractDetails.department}</p>
+              <p style="margin: 5px 0; color: #6b7280;"><strong>Submitted:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                If you have any questions, please contact our HR team at <a href="mailto:hr@omsoftwares.com" style="color: #2563eb;">hr@omsoftwares.com</a>
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                Best regards,<br>
+                <strong>HR Team</strong><br>
+                OM Softwares
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+    
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Contract submission confirmation sent to: ${contractDetails.email}`);
+    return result;
+  } catch (error) {
+    console.error('Failed to send contract submission confirmation:', error);
+    throw error;
+  }
+};

@@ -13,7 +13,7 @@ import Apply from './pages/Apply';
 import MyApplications from './pages/MyApplications';
 import Dashboard from './pages/Dashboard';
 import Certificates from './pages/Certificates';
-// import OfferLetters from './pages/OfferLetters';
+import OfferLetters from './pages/OfferLetters';
 import VerifyCertificate from './pages/VerifyCertificate';
 import Contact from './pages/Contact';
 import SubmitReview from './pages/SubmitReview';
@@ -24,6 +24,8 @@ import EmployeeProfile from './pages/EmployeeProfile';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 import ApplicationDetail from './pages/ApplicationDetail';
+import OfferAcceptance from './pages/OfferAcceptance';
+
 import './index.css';
 // import './App.css';
 
@@ -89,14 +91,14 @@ function App() {
                   </AdminRoute>
                 } 
               />
-              {/* <Route 
+              <Route 
                 path="/offer-letters" 
                 element={
                   <AdminRoute>
                     <OfferLetters />
                   </AdminRoute>
                 } 
-              /> */}
+              />
               {/* Public certificate verification routes */}
               <Route path="/verify" element={<VerifyCertificate />} />
               <Route path="/verify/:id" element={<VerifyCertificate />} />
@@ -146,11 +148,8 @@ function App() {
                 } 
               />
               
-              
-              
-              
-              
-              
+              {/* Public offer acceptance route */}
+              <Route path="/offer/accept/:token" element={<OfferAcceptance />} />
               
             </Routes>
           </main>

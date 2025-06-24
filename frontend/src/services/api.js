@@ -53,7 +53,10 @@ api.interceptors.response.use(
     console.error('API Error:', error.config?.url, error.response?.status, error.response?.data);
     
     // Handle session expiry or unauthorized access
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+    if (error.response && error.response.status === 401) {
+      // Only redirect on 401 (Unauthorized), not 403 (Forbidden)
+      // 403 can be a legitimate response for resources that don't exist or aren't accessible
+      
       // Clear stored authentication data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -80,7 +83,9 @@ apiFileUpload.interceptors.response.use(
     console.error('File Upload API Error:', error.config?.url, error.response?.status, error.response?.data);
     
     // Handle session expiry or unauthorized access
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+    if (error.response && error.response.status === 401) {
+      // Only redirect on 401 (Unauthorized), not 403 (Forbidden)
+      
       // Clear stored authentication data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -228,6 +233,7 @@ export const applicationService = {
   // Application status management
   updateApplicationStatus: (id, statusData) => api.put(`/api/applications/${id}/status`, statusData),
   generateOfferLetter: (applicationId, offerDetails) => api.post(`/api/applications/${applicationId}/offer`, offerDetails),
+  getApplicationOfferLetter: (applicationId) => api.get(`/api/applications/my/${applicationId}/offer-letter`),
   rejectApplication: (applicationId, rejectionData) => api.post(`/api/applications/${applicationId}/reject`, rejectionData),
   sendWelcomeEmail: (applicationId, welcomeData) => api.post(`/api/applications/${applicationId}/welcome`, welcomeData),
   
@@ -424,6 +430,102 @@ export const offerLetterService = {
   },
 };
 
+// Contract services for offer letter acceptance and contract signing
+export const contractService = {
+  // Public endpoints for offer acceptance (no auth required)
+  getOfferForAcceptance: (token) => {
+    return fetch(`${API_URL}/api/contracts/offer/accept/${token}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }).then(response => response.json());
+  },
+  
+  acceptOffer: (token, data) => {
+    return fetch(`${API_URL}/api/contracts/offer/accept/${token}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    }).then(response => response.json());
+  },
+  
+  rejectOffer: (token, data) => {
+    return fetch(`${API_URL}/api/contracts/offer/reject/${token}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    }).then(response => response.json());
+  },
+  
+  submitContract: (token, contractData) => {
+    return fetch(`${API_URL}/api/contracts/offer/${token}/contract`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(contractData)
+    }).then(response => response.json());
+  },
+  
+  uploadDocument: (formData) => {
+    return fetch(`${API_URL}/api/contracts/upload-document`, {
+      method: 'POST',
+      body: formData
+    }).then(response => response.json());
+  },
+  
+  uploadContractDocument: (contractId, file, documentType) => {
+    const formData = new FormData();
+    formData.append('document', file);
+    formData.append('documentType', documentType);
+    
+    return fetch(`${API_URL}/api/contracts/${contractId}/upload`, {
+      method: 'POST',
+      body: formData
+    }).then(response => response.json());
+  },
+  
+  // Admin endpoints
+  getAllContracts: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/api/contracts?${queryString}`);
+  },
+  
+  getContractById: (contractId) => api.get(`/api/contracts/${contractId}`),
+  
+  getContractByApplicationId: (applicationId) => api.get(`/api/contracts/application/${applicationId}`),
+  
+  updateContractStatus: (contractId, data) => api.put(`/api/contracts/${contractId}/status`, data),
+  
+  generateContractPDF: (contractId) => {
+    return fetch(`${API_URL}/api/contracts/${contractId}/pdf`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/pdf',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.blob().then(blobData => {
+        return {
+          data: blobData,
+          status: response.status,
+          headers: {
+            'content-type': response.headers.get('content-type')
+          }
+        };
+      });
+    });
+  }
+};
+
 // Review service
 export const reviewService = {
   // Public endpoints
@@ -460,6 +562,8 @@ export const userService = {
   getUserById: (id) => api.get(`/api/users/${id}`),
   updateUserStatus: (id, userData) => api.put(`/api/users/${id}/status`, userData),
   updateAccountStatus: (id, accountStatusData) => api.put(`/api/users/${id}/account-status`, accountStatusData),
+  updateUserRole: (id, roleData) => api.put(`/api/users/${id}/role`, roleData),
+  updateSpecialAuthority: (id, specialAuthorityData) => api.put(`/api/users/${id}/special-authority`, specialAuthorityData),
   deleteUser: (id) => api.delete(`/api/users/${id}`)
 };
 

@@ -5,11 +5,13 @@ import CertificateList from '../components/certificates/CertificateList';
 import VerifyForm from '../components/certificates/VerifyForm';
 import OfferLetterForm from '../components/certificates/OfferLetterForm';
 import OfferLetterList from '../components/certificates/OfferLetterList';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const Certificates = () => {
-  const [activeTab, setActiveTab] = useState('issue');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam || 'issue');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -49,6 +51,13 @@ const Certificates = () => {
     fetchCertificates();
     fetchOfferLetters();
   }, [navigate, currentUser]);
+
+  // Handle tab parameter changes
+  useEffect(() => {
+    if (tabParam && ['issue', 'offer', 'all', 'alloffers', 'verify'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   const handleIssue = async (certificateData) => {
     setLoading(true);

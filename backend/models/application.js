@@ -34,7 +34,8 @@ const applicationSchema = new mongoose.Schema({
     enum: ["pending", "reviewing", "shortlisted", "rejected", "offered", "hired"], 
     default: "pending" 
   },
-  offerLetter: { type: String }, // Path to generated offer letter
+  offerLetter: { type: String }, // Path to generated offer letter (legacy)
+  offerLetterId: { type: mongoose.Schema.Types.ObjectId, ref: "OfferLetter" }, // Reference to offer letter record
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

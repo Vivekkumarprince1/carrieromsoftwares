@@ -1,0 +1,931 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { contractService } from '../services/api';
+
+const OfferAcceptance = () => {
+  const { token } = useParams();
+  const navigate = useNavigate();
+  
+  const [loading, setLoading] = useState(true);
+  const [offerLetter, setOfferLetter] = useState(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  
+  const [step, setStep] = useState(1); // 1: Review Offer, 2: Personal Info, 3: Banking Info, 4: Documents
+  const [acceptanceDecision, setAcceptanceDecision] = useState(''); // 'accept' or 'reject'
+  
+  // Form data
+  const [formData, setFormData] = useState({
+    phone: '',
+    personalInfo: {
+      dateOfBirth: '',
+      nationality: 'Indian',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'India'
+      },
+      emergencyContact: {
+        name: '',
+        relationship: '',
+        phone: '',
+        email: ''
+      },
+      identificationDocuments: {
+        idType: 'Aadhar',
+        idNumber: ''
+      }
+    },
+    bankingInfo: {
+      accountHolderName: '',
+      accountNumber: '',
+      bankName: '',
+      ifscCode: '',
+      accountType: 'Savings',
+      branch: ''
+    },
+    acceptanceComments: '',
+    agreementTerms: {
+      termsAccepted: false,
+      privacyPolicyAccepted: false
+    }
+  });
+  
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  useEffect(() => {
+    loadOfferDetails();
+  }, [token]);
+
+  const loadOfferDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await contractService.getOfferForAcceptance(token);
+      
+      if (response.success === false) {
+        setError(response.message || 'Failed to load offer details');
+        return;
+      }
+      
+      setOfferLetter(response.offerLetter);
+      
+      // Pre-fill form with offer letter data
+      setFormData(prev => ({
+        ...prev,
+        bankingInfo: {
+          ...prev.bankingInfo,
+          accountHolderName: response.offerLetter.candidateName
+        }
+      }));
+      
+    } catch (err) {
+      setError(err.message || 'Failed to load offer details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (path, value) => {
+    setFormData(prev => {
+      const newData = { ...prev };
+      const keys = path.split('.');
+      let current = newData;
+      
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!current[keys[i]]) current[keys[i]] = {};
+        current = current[keys[i]];
+      }
+      
+      current[keys[keys.length - 1]] = value;
+      return newData;
+    });
+  };
+
+  const validateStep = (stepNumber) => {
+    switch (stepNumber) {
+      case 2:
+        const { personalInfo, phone } = formData;
+        return phone && 
+               personalInfo.dateOfBirth && 
+               personalInfo.nationality &&
+               personalInfo.address.street &&
+               personalInfo.address.city &&
+               personalInfo.address.state &&
+               personalInfo.address.zipCode &&
+               personalInfo.emergencyContact.name &&
+               personalInfo.emergencyContact.relationship &&
+               personalInfo.emergencyContact.phone &&
+               personalInfo.identificationDocuments.idType &&
+               personalInfo.identificationDocuments.idNumber;
+      case 3:
+        const { bankingInfo } = formData;
+        return bankingInfo.accountHolderName &&
+               bankingInfo.accountNumber &&
+               bankingInfo.bankName &&
+               bankingInfo.ifscCode &&
+               bankingInfo.accountType &&
+               bankingInfo.branch;
+      case 4:
+        return formData.agreementTerms.termsAccepted && 
+               formData.agreementTerms.privacyPolicyAccepted;
+      default:
+        return true;
+    }
+  };
+
+  const handleAcceptOffer = async () => {
+    if (!validateStep(4)) {
+      setError('Please complete all required fields and accept the terms');
+      return;
+    }
+    
+    try {
+      setSubmitting(true);
+      setError('');
+      
+      const contractData = {
+        ...formData,
+        agreementTerms: {
+          ...formData.agreementTerms,
+          acceptedAt: new Date(),
+          ipAddress: 'client-ip' // In real app, get actual IP
+        }
+      };
+      
+      const response = await contractService.acceptOffer(token, contractData);
+      
+      setSuccess('Offer accepted successfully! Redirecting to home page...');
+      
+      // Navigate to home page with success message after delay
+      setTimeout(() => {
+        navigate('/', { 
+          state: { 
+            successMessage: 'Offer accepted successfully! Your application is now under review. You will receive updates via email.',
+            contractId: response.contractId,
+            candidateName: offerLetter.candidateName 
+          } 
+        });
+      }, 2000);
+      
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to accept offer');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRejectOffer = async () => {
+    if (!rejectionReason.trim()) {
+      setError('Please provide a reason for rejection');
+      return;
+    }
+    
+    try {
+      setSubmitting(true);
+      setError('');
+      
+      await contractService.rejectOffer(token, { rejectionReason });
+      
+      setSuccess('Offer rejected successfully. Thank you for your consideration.');
+      
+      // Navigate away after delay
+      setTimeout(() => {
+        navigate('/');
+      }, 3000);
+      
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to reject offer');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const nextStep = () => {
+    if (validateStep(step)) {
+      setStep(step + 1);
+      setError('');
+    } else {
+      setError('Please complete all required fields before proceeding');
+    }
+  };
+
+  const prevStep = () => {
+    setStep(step - 1);
+    setError('');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-primary-black flex items-center justify-center">
+        <div className="text-white text-xl">Loading offer details...</div>
+      </div>
+    );
+  }
+
+  if (error && !offerLetter) {
+    return (
+      <div className="min-h-screen bg-primary-black flex items-center justify-center">
+        <div className="max-w-md w-full bg-secondary-black p-8 rounded-lg border border-dark-gray">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-400 mb-4">Error</h1>
+            <p className="text-gray-300 mb-6">{error}</p>
+            <button 
+              onClick={() => navigate('/')}
+              className="px-6 py-2 bg-lime-400 text-black rounded-md hover:bg-lime-500 transition-colors"
+            >
+              Go Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!offerLetter) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-primary-black py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        {/* Header */}
+        <div className="bg-secondary-black rounded-lg border border-dark-gray p-6 mb-6 py-12">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-white mb-2">Job Offer Response</h1>
+            <p className="text-gray-400">
+              Offer from {offerLetter.companyName || 'OM Softwares'}
+            </p>
+          </div>
+        </div>
+
+        {/* Messages */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-900 border border-red-700 rounded-lg">
+            <span className="text-red-200">{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 p-4 bg-green-900 border border-green-700 rounded-lg">
+            <span className="text-green-200">{success}</span>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <div className="bg-secondary-black rounded-lg border border-dark-gray">
+          {step === 1 && (
+            <OfferReviewStep 
+              offerLetter={offerLetter}
+              onAccept={() => {
+                setAcceptanceDecision('accept');
+                nextStep();
+              }}
+              onReject={() => setAcceptanceDecision('reject')}
+              rejectionReason={rejectionReason}
+              setRejectionReason={setRejectionReason}
+              onSubmitRejection={handleRejectOffer}
+              submitting={submitting}
+              acceptanceDecision={acceptanceDecision}
+            />
+          )}
+
+          {step === 2 && acceptanceDecision === 'accept' && (
+            <PersonalInfoStep 
+              formData={formData}
+              onChange={handleInputChange}
+              onNext={nextStep}
+              onPrev={prevStep}
+            />
+          )}
+
+          {step === 3 && acceptanceDecision === 'accept' && (
+            <BankingInfoStep 
+              formData={formData}
+              onChange={handleInputChange}
+              onNext={nextStep}
+              onPrev={prevStep}
+            />
+          )}
+
+          {step === 4 && acceptanceDecision === 'accept' && (
+            <FinalStep 
+              formData={formData}
+              onChange={handleInputChange}
+              onSubmit={handleAcceptOffer}
+              onPrev={prevStep}
+              submitting={submitting}
+              offerLetter={offerLetter}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Step Components
+const OfferReviewStep = ({ 
+  offerLetter, 
+  onAccept, 
+  onReject, 
+  rejectionReason, 
+  setRejectionReason, 
+  onSubmitRejection, 
+  submitting,
+  acceptanceDecision 
+}) => (
+  <div className="p-6">
+    <h2 className="text-2xl font-bold text-white mb-6">Review Your Job Offer</h2>
+    
+    {/* Offer Details */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="space-y-4">
+        <div>
+          <label className="text-gray-400 text-sm">Position</label>
+          <p className="text-white font-medium">{offerLetter.position}</p>
+        </div>
+        <div>
+          <label className="text-gray-400 text-sm">Department</label>
+          <p className="text-white">{offerLetter.department}</p>
+        </div>
+        <div>
+          <label className="text-gray-400 text-sm">Annual Salary</label>
+          <p className="text-white font-medium">${offerLetter.salary?.toLocaleString()}</p>
+        </div>
+        <div>
+          <label className="text-gray-400 text-sm">Work Type</label>
+          <p className="text-white">{offerLetter.workType}</p>
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="text-gray-400 text-sm">Start Date</label>
+          <p className="text-white">{new Date(offerLetter.startDate).toLocaleDateString()}</p>
+        </div>
+        <div>
+          <label className="text-gray-400 text-sm">Location</label>
+          <p className="text-white">{offerLetter.joiningLocation}</p>
+        </div>
+        <div>
+          <label className="text-gray-400 text-sm">Valid Until</label>
+          <p className="text-white">{new Date(offerLetter.validUntil).toLocaleDateString()}</p>
+        </div>
+        {offerLetter.reportingManager && (
+          <div>
+            <label className="text-gray-400 text-sm">Reporting Manager</label>
+            <p className="text-white">{offerLetter.reportingManager}</p>
+          </div>
+        )}
+      </div>
+    </div>
+
+    {offerLetter.benefits && offerLetter.benefits.length > 0 && (
+      <div className="mb-8">
+        <label className="text-gray-400 text-sm">Benefits</label>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {offerLetter.benefits.map((benefit, index) => (
+            <span 
+              key={index}
+              className="px-3 py-1 bg-gray-700 text-gray-300 text-sm rounded-full"
+            >
+              {benefit}
+            </span>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {acceptanceDecision === 'reject' && (
+      <div className="mb-6">
+        <label className="block text-gray-300 text-sm font-medium mb-2">
+          Reason for Rejection *
+        </label>
+        <textarea
+          value={rejectionReason}
+          onChange={(e) => setRejectionReason(e.target.value)}
+          rows="4"
+          className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
+          placeholder="Please provide a reason for declining this offer..."
+          required
+        />
+      </div>
+    )}
+
+    {/* Action Buttons */}
+    <div className="flex gap-4">
+      {acceptanceDecision === '' && (
+        <>
+          <button
+            onClick={onAccept}
+            className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors"
+          >
+            Accept Offer
+          </button>
+          <button
+            onClick={onReject}
+            className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors"
+          >
+            Decline Offer
+          </button>
+        </>
+      )}
+      
+      {acceptanceDecision === 'reject' && (
+        <div className="flex gap-4 w-full">
+          <button
+            onClick={() => onReject('')}
+            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSubmitRejection}
+            disabled={submitting || !rejectionReason.trim()}
+            className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors disabled:opacity-50"
+          >
+            {submitting ? 'Submitting...' : 'Confirm Rejection'}
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const PersonalInfoStep = ({ formData, onChange, onNext, onPrev }) => (
+  <div className="p-6">
+    <div className="flex items-center justify-between mb-6">
+      <h2 className="text-2xl font-bold text-white">Personal Information</h2>
+      <div className="text-sm text-gray-400">Step 2 of 4</div>
+    </div>
+    
+    <div className="space-y-6">
+      {/* Contact Information */}
+      <div>
+        <h3 className="text-lg font-medium text-white mb-4">Contact Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Phone Number *
+            </label>
+            <input
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => onChange('phone', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              placeholder="+91 9876543210"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Date of Birth *
+            </label>
+            <input
+              type="date"
+              value={formData.personalInfo.dateOfBirth}
+              onChange={(e) => onChange('personalInfo.dateOfBirth', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Nationality *
+            </label>
+            <input
+              type="text"
+              value={formData.personalInfo.nationality}
+              onChange={(e) => onChange('personalInfo.nationality', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Address */}
+      <div>
+        <h3 className="text-lg font-medium text-white mb-4">Address</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Street Address *
+            </label>
+            <input
+              type="text"
+              value={formData.personalInfo.address.street}
+              onChange={(e) => onChange('personalInfo.address.street', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              placeholder="123 Main Street, Apartment/Unit Number"
+              required
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-gray-300 text-sm font-medium mb-2">
+                City *
+              </label>
+              <input
+                type="text"
+                value={formData.personalInfo.address.city}
+                onChange={(e) => onChange('personalInfo.address.city', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-300 text-sm font-medium mb-2">
+                State *
+              </label>
+              <input
+                type="text"
+                value={formData.personalInfo.address.state}
+                onChange={(e) => onChange('personalInfo.address.state', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-300 text-sm font-medium mb-2">
+                ZIP/Postal Code *
+              </label>
+              <input
+                type="text"
+                value={formData.personalInfo.address.zipCode}
+                onChange={(e) => onChange('personalInfo.address.zipCode', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Emergency Contact */}
+      <div>
+        <h3 className="text-lg font-medium text-white mb-4">Emergency Contact</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Full Name *
+            </label>
+            <input
+              type="text"
+              value={formData.personalInfo.emergencyContact.name}
+              onChange={(e) => onChange('personalInfo.emergencyContact.name', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Relationship *
+            </label>
+            <select
+              value={formData.personalInfo.emergencyContact.relationship}
+              onChange={(e) => onChange('personalInfo.emergencyContact.relationship', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              required
+            >
+              <option value="">Select Relationship</option>
+              <option value="Spouse">Spouse</option>
+              <option value="Parent">Parent</option>
+              <option value="Sibling">Sibling</option>
+              <option value="Friend">Friend</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Phone Number *
+            </label>
+            <input
+              type="tel"
+              value={formData.personalInfo.emergencyContact.phone}
+              onChange={(e) => onChange('personalInfo.emergencyContact.phone', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Email (Optional)
+            </label>
+            <input
+              type="email"
+              value={formData.personalInfo.emergencyContact.email}
+              onChange={(e) => onChange('personalInfo.emergencyContact.email', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Identification Documents */}
+      <div>
+        <h3 className="text-lg font-medium text-white mb-4">Identification</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              ID Type *
+            </label>
+            <select
+              value={formData.personalInfo.identificationDocuments.idType}
+              onChange={(e) => onChange('personalInfo.identificationDocuments.idType', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              required
+            >
+              <option value="Aadhar">Aadhar Card</option>
+              <option value="PAN">PAN Card</option>
+              <option value="Passport">Passport</option>
+              <option value="Driving License">Driving License</option>
+              <option value="Voter ID">Voter ID</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              ID Number *
+            </label>
+            <input
+              type="text"
+              value={formData.personalInfo.identificationDocuments.idNumber}
+              onChange={(e) => onChange('personalInfo.identificationDocuments.idNumber', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              required
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Navigation */}
+    <div className="flex gap-4 mt-8">
+      <button
+        onClick={onPrev}
+        className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors"
+      >
+        Previous
+      </button>
+      <button
+        onClick={onNext}
+        className="flex-1 px-6 py-3 bg-lime-400 hover:bg-lime-500 text-black font-medium rounded-md transition-colors"
+      >
+        Next: Banking Information
+      </button>
+    </div>
+  </div>
+);
+
+const BankingInfoStep = ({ formData, onChange, onNext, onPrev }) => (
+  <div className="p-6">
+    <div className="flex items-center justify-between mb-6">
+      <h2 className="text-2xl font-bold text-white">Banking Information</h2>
+      <div className="text-sm text-gray-400">Step 3 of 4</div>
+    </div>
+    
+    <div className="space-y-6">
+      <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4 mb-6">
+        <div className="flex items-start">
+          <svg className="w-5 h-5 text-blue-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+          <div>
+            <h3 className="text-blue-300 font-medium">Secure Banking Information</h3>
+            <p className="text-blue-200 text-sm mt-1">
+              Your banking information is encrypted and secure. This will be used for salary payments.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            Account Holder Name *
+          </label>
+          <input
+            type="text"
+            value={formData.bankingInfo.accountHolderName}
+            onChange={(e) => onChange('bankingInfo.accountHolderName', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+            placeholder="As per bank records"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            Account Type *
+          </label>
+          <select
+            value={formData.bankingInfo.accountType}
+            onChange={(e) => onChange('bankingInfo.accountType', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+            required
+          >
+            <option value="Savings">Savings Account</option>
+            <option value="Current">Current Account</option>
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            Account Number *
+          </label>
+          <input
+            type="text"
+            value={formData.bankingInfo.accountNumber}
+            onChange={(e) => onChange('bankingInfo.accountNumber', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+            placeholder="Enter account number"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            IFSC Code *
+          </label>
+          <input
+            type="text"
+            value={formData.bankingInfo.ifscCode}
+            onChange={(e) => onChange('bankingInfo.ifscCode', e.target.value.toUpperCase())}
+            className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+            placeholder="e.g., SBIN0001234"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            Bank Name *
+          </label>
+          <input
+            type="text"
+            value={formData.bankingInfo.bankName}
+            onChange={(e) => onChange('bankingInfo.bankName', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+            placeholder="e.g., State Bank of India"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            Branch Name *
+          </label>
+          <input
+            type="text"
+            value={formData.bankingInfo.branch}
+            onChange={(e) => onChange('bankingInfo.branch', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+            placeholder="e.g., Mumbai Main Branch"
+            required
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* Navigation */}
+    <div className="flex gap-4 mt-8">
+      <button
+        onClick={onPrev}
+        className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors"
+      >
+        Previous
+      </button>
+      <button
+        onClick={onNext}
+        className="flex-1 px-6 py-3 bg-lime-400 hover:bg-lime-500 text-black font-medium rounded-md transition-colors"
+      >
+        Next: Review & Submit
+      </button>
+    </div>
+  </div>
+);
+
+const FinalStep = ({ formData, onChange, onSubmit, onPrev, submitting, offerLetter }) => (
+  <div className="p-6">
+    <div className="flex items-center justify-between mb-6">
+      <h2 className="text-2xl font-bold text-white">Review & Submit</h2>
+      <div className="text-sm text-gray-400">Step 4 of 4</div>
+    </div>
+    
+    <div className="space-y-6">
+      {/* Summary */}
+      <div className="bg-gray-800/50 rounded-lg p-6">
+        <h3 className="text-lg font-medium text-white mb-4">Application Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-gray-400">Position:</span>
+            <span className="text-white ml-2">{offerLetter.position}</span>
+          </div>
+          <div>
+            <span className="text-gray-400">Start Date:</span>
+            <span className="text-white ml-2">{new Date(offerLetter.startDate).toLocaleDateString()}</span>
+          </div>
+          <div>
+            <span className="text-gray-400">Phone:</span>
+            <span className="text-white ml-2">{formData.phone}</span>
+          </div>
+          <div>
+            <span className="text-gray-400">Bank:</span>
+            <span className="text-white ml-2">{formData.bankingInfo.bankName}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Optional Comments */}
+      <div>
+        <label className="block text-gray-300 text-sm font-medium mb-2">
+          Additional Comments (Optional)
+        </label>
+        <textarea
+          value={formData.acceptanceComments}
+          onChange={(e) => onChange('acceptanceComments', e.target.value)}
+          rows="3"
+          className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+          placeholder="Any additional comments or questions..."
+        />
+      </div>
+
+      {/* Terms and Conditions */}
+      <div className="space-y-4">
+        <div className="flex items-start">
+          <input
+            type="checkbox"
+            id="terms"
+            checked={formData.agreementTerms.termsAccepted}
+            onChange={(e) => onChange('agreementTerms.termsAccepted', e.target.checked)}
+            className="mt-1 mr-3 text-lime-400 focus:ring-lime-400"
+            required
+          />
+          <label htmlFor="terms" className="text-gray-300 text-sm">
+            I agree to the <span className="text-lime-400 underline cursor-pointer">Terms and Conditions</span> of employment *
+          </label>
+        </div>
+        
+        <div className="flex items-start">
+          <input
+            type="checkbox"
+            id="privacy"
+            checked={formData.agreementTerms.privacyPolicyAccepted}
+            onChange={(e) => onChange('agreementTerms.privacyPolicyAccepted', e.target.checked)}
+            className="mt-1 mr-3 text-lime-400 focus:ring-lime-400"
+            required
+          />
+          <label htmlFor="privacy" className="text-gray-300 text-sm">
+            I agree to the <span className="text-lime-400 underline cursor-pointer">Privacy Policy</span> *
+          </label>
+        </div>
+      </div>
+
+      <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
+        <div className="flex items-start">
+          <svg className="w-5 h-5 text-yellow-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          <div>
+            <h3 className="text-yellow-300 font-medium">Important</h3>
+            <p className="text-yellow-200 text-sm mt-1">
+              By submitting this form, you are accepting the job offer. Your information will be reviewed by HR and you will receive updates via email.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Navigation */}
+    <div className="flex gap-4 mt-8">
+      <button
+        onClick={onPrev}
+        className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors"
+        disabled={submitting}
+      >
+        Previous
+      </button>
+      <button
+        onClick={onSubmit}
+        disabled={submitting || !formData.agreementTerms.termsAccepted || !formData.agreementTerms.privacyPolicyAccepted}
+        className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {submitting ? 'Submitting...' : 'Accept Offer & Submit'}
+      </button>
+    </div>
+  </div>
+);
+
+export default OfferAcceptance;

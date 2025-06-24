@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { jobService, reviewService } from '../services/api';
 import HeroSection from '../components/hero/HeroSection';
@@ -8,11 +8,30 @@ import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 
 const Home = () => {
+  const location = useLocation();
   const [featuredJobs, setFeaturedJobs] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Check for success message from navigation state
+  useEffect(() => {
+    if (location.state?.successMessage) {
+      setSuccessMessage(location.state.successMessage);
+      
+      // Clear success message after 8 seconds
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+      }, 8000);
+      
+      // Clear the state to prevent showing message on refresh
+      window.history.replaceState({}, document.title);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -93,6 +112,28 @@ const Home = () => {
 
   return (
     <div className="bg-black text-white overflow-hidden">
+      {/* Success Message */}
+      {successMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4"
+        >
+          <div className="bg-green-600 border border-green-500 rounded-lg p-4 shadow-lg">
+            <div className="flex items-start">
+              <svg className="w-6 h-6 text-green-200 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <h3 className="text-green-100 font-medium text-sm">Success!</h3>
+                <p className="text-green-200 text-sm mt-1">{successMessage}</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Hero Section */}
       <HeroSection />
 

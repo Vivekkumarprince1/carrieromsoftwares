@@ -80,13 +80,13 @@ exports.login = async (req, res) => {
             secure: isProduction(),
             sameSite: "strict",
             maxAge: getCookieMaxAge(),
-        });
-          res.status(200).json({
+        });        res.status(200).json({
             token, user: {
                 id: user._id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                specialAuthority: user.specialAuthority,
                 employeeStatus: user.employeeStatus,
                 employeeId: user.employeeId,
                 department: user.department,
