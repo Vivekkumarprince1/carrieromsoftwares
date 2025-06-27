@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 const resumeParserService = require("../services/resumeParserService");
 const { uploadFile, uploadQuestionFile, deleteImage } = require('../config/cloudinary');
 
@@ -689,7 +690,8 @@ exports.getApplicationDetail = async (req, res) => {
   console.log("Get: app", req.params.id);
   try {
     const application = await Application.findById(req.params.id)
-      .populate("jobId", "title company location salary type description requirements questions");
+      .populate("jobId", "title company location salary type description requirements questions")
+      .populate("offerLetterId");
     
     if (!application) {
       console.log(`Not found: ${req.params.id}`);
@@ -788,17 +790,60 @@ exports.generateOfferLetter = async (req, res) => {
   console.log("Gen: offer", req.params.applicationId);
   try {
     const { applicationId } = req.params;
-    const { offerDetails } = req.body;
+    const { 
+      offerDetails, 
+      position, 
+      department, 
+      salary, 
+      startDate, 
+      joiningLocation, 
+      workType, 
+      benefits, 
+      reportingManager, 
+      hrContactName, 
+      hrContactEmail, 
+      hrContactPhone, 
+      validUntil, 
+      additionalNotes 
+    } = req.body;
 
     const application = await Application.findById(applicationId)
       .populate("jobId")
       .populate('userId', 'name email employeeStatus');
     if (!application) return res.status(404).json({ message: "Application not found" });
 
-    // Generate PDF in memory instead of saving to file
-    const pdfBuffer = await createOfferPDFInMemory(application, offerDetails);
+    // Import OfferLetter model
+    const OfferLetter = require("../models/offerLetter");
 
+    // Create offer letter record with application data and provided details
+    const offerLetterData = {
+      userId: req.user.userId, // Admin who issued the offer
+      applicationId: applicationId, // Link to application
+      candidateName: application.fullName,
+      email: application.email,
+      position: position || application.jobId.title,
+      department: department || application.jobId.department || 'General',
+      salary: salary || 50000, // Default salary, should be provided
+      startDate: startDate ? new Date(startDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      joiningLocation: joiningLocation || 'To be determined',
+      workType: workType || 'On-site',
+      benefits: benefits || [],
+      reportingManager: reportingManager || '',
+      hrContactName: hrContactName || 'HR Team',
+      hrContactEmail: hrContactEmail || process.env.EMAIL_USER,
+      hrContactPhone: hrContactPhone || '',
+      validUntil: validUntil ? new Date(validUntil) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
+      additionalNotes: additionalNotes || offerDetails || '',
+      acceptanceToken: crypto.randomBytes(32).toString('hex') // Generate acceptance token
+    };
+
+    const offerLetter = new OfferLetter(offerLetterData);
+    const savedOfferLetter = await offerLetter.save();
+    console.log(`Created offer letter: ${savedOfferLetter._id}`);
+
+    // Link offer letter to application
     application.status = "offered";
+    application.offerLetterId = savedOfferLetter._id;
     await application.save();
 
     // Update user employeeStatus to offer_recipient if user exists
@@ -812,17 +857,60 @@ exports.generateOfferLetter = async (req, res) => {
       }
     }
 
-    // Send email with PDF from memory
-    await sendEmailWithPDFBuffer(application.email, "Job Offer", `
-      <h2>Congrats ${application.fullName}!</h2>
-      <p>We're excited to offer you ${application.jobId.title}.</p>
-      <p>See attached offer.</p>
-    `, pdfBuffer, `${application.fullName}_offer_letter.pdf`);
-
-    console.log(`Offer letter sent to ${application.email} without permanent storage`);
-    res.status(200).json({ message: "Offer letter sent successfully" });
+    console.log(`Offer letter created and linked to application ${applicationId}`);
+    res.status(200).json({ 
+      message: "Offer letter generated and stored successfully",
+      offerLetterId: savedOfferLetter._id
+    });
   } catch (error) {
     handleError(res, error, "genOffer");
+  }
+};
+
+// Get offer letter for application
+exports.getApplicationOfferLetter = async (req, res) => {
+  console.log("Get application offer letter:", req.params.applicationId);
+  try {
+    const { applicationId } = req.params;
+
+    const application = await Application.findById(applicationId)
+      .populate('offerLetterId');
+    if (!application) return res.status(404).json({ message: "Application not found" });
+
+    if (!application.offerLetterId) {
+      return res.status(404).json({ message: "No offer letter found for this application" });
+    }
+
+    res.status(200).json(application.offerLetterId);
+  } catch (error) {
+    handleError(res, error, "getApplicationOfferLetter");
+  }
+};
+
+// Get my application offer letter (for candidates)
+exports.getMyApplicationOfferLetter = async (req, res) => {
+  console.log("Get my application offer letter:", req.params.applicationId, "by user:", req.user.userId);
+  try {
+    const { applicationId } = req.params;
+    const userId = req.user.userId; // Fixed: use userId instead of id
+
+    // Find the application and verify it belongs to the current user
+    const application = await Application.findOne({ 
+      _id: applicationId, 
+      userId: userId 
+    }).populate('offerLetterId');
+    
+    if (!application) {
+      return res.status(404).json({ message: "Application not found or you don't have permission to access it" });
+    }
+
+    if (!application.offerLetterId) {
+      return res.status(404).json({ message: "No offer letter found for this application" });
+    }
+
+    res.status(200).json(application.offerLetterId);
+  } catch (error) {
+    handleError(res, error, "getMyApplicationOfferLetter");
   }
 };
 
@@ -913,7 +1001,7 @@ exports.rejectApplication = async (req, res) => {
 exports.getApplicationsForRecommendation = async (req, res) => {
   console.log("Get: apps for recommendation");
   try {
-    const currentUserId = req.user.id || req.user._id;
+    const currentUserId = req.user.userId || req.user._id; // Fixed: use userId instead of id
     
     // Find applications that don't have recommendations yet and are not submitted by the current user
     const applications = await Application.find({

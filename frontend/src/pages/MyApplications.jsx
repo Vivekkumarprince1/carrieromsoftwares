@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { applicationService, jobService } from '../services/api';
+import { applicationService, jobService, offerLetterService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 
 
@@ -13,6 +13,7 @@ const MyApplications = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [copiedId, setCopiedId] = useState(null);
+  const [offerLetters, setOfferLetters] = useState({});
   
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -130,6 +131,15 @@ const MyApplications = () => {
         setLoadingDetails(false);
       }
     }
+    
+    // Load offer letter if application has 'offered' or 'hired' status
+    if ((application.status === 'offered' || application.status === 'hired') && !offerLetters[application._id]) {
+      try {
+        await loadOfferLetter(application._id);
+      } catch (err) {
+        console.error('Error loading offer letter:', err);
+      }
+    }
   };
 
   const formatDate = (dateString) => {
@@ -162,6 +172,83 @@ const MyApplications = () => {
       .catch(err => {
         console.error('Failed to copy: ', err);
       });
+  };
+
+  // Load offer letter for an application
+  const loadOfferLetter = async (applicationId) => {
+    try {
+      const response = await applicationService.getApplicationOfferLetter(applicationId);
+      setOfferLetters(prev => ({ ...prev, [applicationId]: response.data }));
+      return response.data;
+    } catch (err) {
+      console.error('Error loading offer letter:', err);
+      return null;
+    }
+  };
+
+  // Download offer letter PDF
+  const handleDownloadOfferLetter = async (application, e) => {
+    e.stopPropagation();
+    
+    try {
+      // Load offer letter if not already loaded
+      let offerLetter = offerLetters[application._id];
+      if (!offerLetter && application.offerLetterId) {
+        offerLetter = await loadOfferLetter(application._id);
+      }
+      
+      if (offerLetter) {
+        const response = await offerLetterService.downloadOfferLetter(offerLetter._id);
+        
+        // Create blob and download
+        const blob = response.data;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `offer-letter-${application.fullName.replace(/\s+/g, '_')}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        setSuccessMessage('Offer letter downloaded successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      }
+    } catch (err) {
+      setError('Failed to download offer letter');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  // Handle accept offer button click
+  const handleAcceptOffer = async (application, e) => {
+    e.stopPropagation();
+    
+    try {
+      // Load offer letter if not already loaded to get the acceptance token
+      let offerLetter = offerLetters[application._id];
+      if (!offerLetter && application.offerLetterId) {
+        offerLetter = await loadOfferLetter(application._id);
+      }
+      
+      console.log('Offer letter data:', offerLetter);
+      console.log('Acceptance token:', offerLetter?.acceptanceToken);
+      
+      if (offerLetter && offerLetter.acceptanceToken) {
+        // Navigate to the offer acceptance page with the token
+        navigate(`/offer/accept/${offerLetter.acceptanceToken}`);
+      } else if (offerLetter && !offerLetter.acceptanceToken) {
+        setError('This offer letter does not have an acceptance link. Please contact HR to regenerate the offer letter.');
+        setTimeout(() => setError(''), 7000);
+      } else {
+        setError('Unable to find offer letter details. Please contact HR.');
+        setTimeout(() => setError(''), 5000);
+      }
+    } catch (err) {
+      console.error('Error handling offer acceptance:', err);
+      setError('Error accessing offer acceptance. Please try again.');
+      setTimeout(() => setError(''), 5000);
+    }
   };
 
   if (loading) {
@@ -297,6 +384,20 @@ const MyApplications = () => {
                                 </svg>
                                 Applied on {formatDate(application.createdAt)}
                               </span>
+                              
+                              {/* Offer Letter Button - Show only if application status is 'offered' or 'hired' */}
+                              {/* {(application.status === 'offered' || application.status === 'hired') && (
+                                <button 
+                                  onClick={(e) => handleDownloadOfferLetter(application, e)}
+                                  className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-lime-400 to-green-500 hover:from-lime-500 hover:to-green-600 text-black text-xs font-medium rounded-full transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
+                                  title="Download Offer Letter"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                  Offer Letter
+                                </button>
+                              )} */}
                             </div>
                           </div>
                           <button 
@@ -468,6 +569,86 @@ const MyApplications = () => {
                                           </div>
                                         </div>
                                       ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Offer Letter Section - Show only if application has offer letter */}
+                                {(selectedApplication.status === 'offered' || selectedApplication.status === 'hired') && (
+                                  <div className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50 md:col-span-2">
+                                    <h4 className="font-medium text-primary-yellow mb-3 flex items-center text-lg">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                      Offer Letter
+                                    </h4>
+                                    <div className="space-y-3">
+                                      <p className="text-gray-300">
+                                        Congratulations! You have received an offer letter for this position.
+                                      </p>
+                                      
+                                      {offerLetters[selectedApplication._id] && (
+                                        <div className="bg-gray-700/30 p-3 rounded-lg space-y-2">
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                              <span className="text-gray-400">Position:</span>
+                                              <span className="text-white ml-2">{offerLetters[selectedApplication._id].position}</span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-400">Department:</span>
+                                              <span className="text-white ml-2">{offerLetters[selectedApplication._id].department}</span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-400">Salary:</span>
+                                              <span className="text-white ml-2">${offerLetters[selectedApplication._id].salary?.toLocaleString()}</span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-400">Start Date:</span>
+                                              <span className="text-white ml-2">{new Date(offerLetters[selectedApplication._id].startDate).toLocaleDateString()}</span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-400">Status:</span>
+                                              <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                                                offerLetters[selectedApplication._id].status === 'Accepted' ? 'bg-green-900 text-green-200' :
+                                                offerLetters[selectedApplication._id].status === 'Rejected' ? 'bg-red-900 text-red-200' :
+                                                'bg-yellow-900 text-yellow-200'
+                                              }`}>
+                                                {offerLetters[selectedApplication._id].status}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-400">Valid Until:</span>
+                                              <span className="text-white ml-2">{new Date(offerLetters[selectedApplication._id].validUntil).toLocaleDateString()}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      <div className="flex flex-wrap gap-3">
+                                        <button 
+                                          onClick={(e) => handleDownloadOfferLetter(selectedApplication, e)}
+                                          className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-lime-400 to-green-500 hover:from-lime-500 hover:to-green-600 text-black rounded-md transition-all duration-300 text-sm shadow-md hover:shadow-lg transform hover:scale-105"
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                          </svg>
+                                          Download Offer Letter PDF
+                                        </button>
+                                        
+                                        {/* Show Accept Offer button only if offer hasn't been accepted yet */}
+                                        {selectedApplication.status === 'offered' && 
+                                         (!offerLetters[selectedApplication._id] || offerLetters[selectedApplication._id].status === 'Pending') && (
+                                          <button 
+                                            onClick={(e) => handleAcceptOffer(selectedApplication, e)}
+                                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-md transition-all duration-300 text-sm shadow-md hover:shadow-lg transform hover:scale-105"
+                                          >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Accept Offer
+                                          </button>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 )}

@@ -6,7 +6,7 @@ const Application = require('./models/application');
 const Certificate = require('./models/certificate');
 const OfferLetter = require('./models/offerLetter');
 const Review = require('./models/review');
-const Recommendation = require('./models/recommendation');
+// const Recommendation = require('./models/recommendation');
 const connectDB = require('./config/database');
 require('dotenv').config();
 
@@ -14,10 +14,11 @@ require('dotenv').config();
 const users = [
   {
     name: 'Admin User',
-    email: 'admin@example.com',
-    password: 'admin123',
+    email: 'vivekkumarprince1@gmail.com',
+    password: 'Prince1@',
     role: 'admin',
     employeeStatus: 'employee',
+    specialAuthority: true, 
     department: 'IT',
     position: 'IT Manager',
     employeeId: 'EMP001'
@@ -420,26 +421,6 @@ const reviews = [
   }
 ];
 
-const recommendations = [
-  {
-    recommenderId: 'EMP002',
-    recommendedUserEmail: 'mark.thompson@example.com',
-    recommendedUserName: 'Mark Thompson',
-    jobTitle: 'Senior Full Stack Developer', // This will be used to find the job
-    status: 'pending',
-    recommendationMessage: 'Mark is an excellent full-stack developer with strong problem-solving skills. He has worked with me on several projects and has consistently delivered high-quality code. He would be a great addition to our development team.'
-  },
-  {
-    recommenderId: 'EMP001',
-    recommendedUserEmail: 'lisa.wang@example.com',
-    recommendedUserName: 'Lisa Wang',
-    jobTitle: 'UI/UX Designer', // This will be used to find the job
-    status: 'reviewed',
-    recommendationMessage: 'Lisa is a talented UI/UX designer with a keen eye for user experience. She has excellent design skills and understands modern design principles. I highly recommend her for any design position.',
-    adminNotes: 'Excellent recommendation. Lisa\'s portfolio is impressive and aligns with our design needs.'
-  }
-];
-
 // Seed function
 const seedDatabase = async () => {
   try {
@@ -454,7 +435,6 @@ const seedDatabase = async () => {
     await Certificate.deleteMany({});
     await OfferLetter.deleteMany({});
     await Review.deleteMany({});
-    await Recommendation.deleteMany({});
     console.log('🧹 Cleared existing data');
 
     // Create users with hashed passwords
@@ -554,84 +534,19 @@ const seedDatabase = async () => {
     const createdReviews = await Review.insertMany(reviewsWithUserId);
     console.log(`⭐ Created ${createdReviews.length} reviews`);
 
-    // Create additional users for recommendations
-    const additionalUsers = [
-      {
-        name: 'Mark Thompson',
-        email: 'mark.thompson@example.com',
-        password: await bcrypt.hash('mark123', 10),
-        role: 'user',
-        employeeStatus: 'applicant'
-      },
-      {
-        name: 'Lisa Wang',
-        email: 'lisa.wang@example.com',
-        password: await bcrypt.hash('lisa123', 10),
-        role: 'user',
-        employeeStatus: 'applicant'
-      }
-    ];
-    const createdAdditionalUsers = await User.insertMany(additionalUsers);
-    console.log(`👥 Created ${createdAdditionalUsers.length} additional users for recommendations`);
-
-    // Create recommendations linked to users
-    const markUser = createdAdditionalUsers.find(user => user.email === 'mark.thompson@example.com');
-    const lisaUser = createdAdditionalUsers.find(user => user.email === 'lisa.wang@example.com');
     
-    const recommendationsWithUserId = recommendations.map(recommendation => {
-      let recommenderId = null;
-      let recommendedUserId = null;
-      let reviewedBy = null;
-      let reviewedAt = null;
-
-      if (recommendation.recommenderId === 'EMP002') {
-        recommenderId = johnUser._id;
-      } else if (recommendation.recommenderId === 'EMP001') {
-        recommenderId = adminUser._id;
-      }
-
-      if (recommendation.recommendedUserEmail === 'mark.thompson@example.com') {
-        recommendedUserId = markUser._id;
-      } else if (recommendation.recommendedUserEmail === 'lisa.wang@example.com') {
-        recommendedUserId = lisaUser._id;
-      }
-
-      // Set review details for reviewed recommendations
-      if (recommendation.status === 'reviewed') {
-        reviewedBy = adminUser._id;
-        reviewedAt = new Date();
-      }
-
-      // Find the job by title
-      let jobId = null;
-      if (recommendation.jobTitle) {
-        const job = createdJobs.find(j => j.title === recommendation.jobTitle);
-        if (job) {
-          jobId = job._id;
-        }
-      }
-
-      return {
-        ...recommendation,
-        recommender: recommenderId,
-        recommendedUser: recommendedUserId,
-        jobId: jobId,
-        reviewedBy,
-        reviewedAt
-      };
-    });
-    const createdRecommendations = await Recommendation.insertMany(recommendationsWithUserId);
-    console.log(`🤝 Created ${createdRecommendations.length} recommendations`);
+    // const createdRecommendations = await Recommendation.insertMany(recommendationsWithUserId);
+    // console.log(`🤝 Created ${createdRecommendations.length} recommendations`);
 
     console.log('✅ Database seeded successfully');
     console.log('\n📊 Summary:');
-    console.log(`   Users: ${createdUsers.length + createdAdditionalUsers.length}`);
+    // console.log(`   Users: ${createdUsers.length + createdAdditionalUsers.length}`);
     console.log(`   Jobs: ${createdJobs.length}`);
     console.log(`   Applications: ${createdApplications.length}`);
     console.log(`   Certificates: ${createdCertificates.length}`);
     console.log(`   Offer Letters: ${createdOfferLetters.length}`);
     console.log(`   Reviews: ${createdReviews.length}`);
-    console.log(`   Recommendations: ${createdRecommendations.length}`);
+    // console.log(`   Recommendations: ${createdRecommendations.length}`);
     
     process.exit(0);
   } catch (error) {

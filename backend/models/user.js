@@ -5,6 +5,10 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, default: "user", enum: ["user", "admin"] },
+  specialAuthority: { 
+    type: Boolean,
+    default: false // New field for special authority, default to false  
+  }, // New field for special authority
   employeeStatus: { 
     type: String, 
     enum: ["applicant", "offer_recipient", "employee", "former_employee"], 
@@ -15,6 +19,8 @@ const userSchema = new mongoose.Schema({
     enum: ["active", "inactive", "pending", "suspended"],
     default: "active"
   },
+  moreInfo: { type: mongoose.Schema.Types.ObjectId, ref: "UserMoreInfo" }, 
+  offerLetter: { type: mongoose.Schema.Types.ObjectId, ref: "OfferLetter" }, 
   department: { type: String },
   position: { type: String },  // Employee ID for current employees/interns
   employeeId: { 

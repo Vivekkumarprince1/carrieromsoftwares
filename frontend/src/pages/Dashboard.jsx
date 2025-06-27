@@ -150,6 +150,16 @@ const ApplicationsDashboard = () => {
     return job || { title: 'Unknown Job', company: 'Unknown Company' };
   };
 
+  const scrollToRecentApplications = () => {
+    const element = document.getElementById('recent-applications-section');
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black p-4 sm:p-6 lg:p-8">
@@ -221,6 +231,7 @@ const ApplicationsDashboard = () => {
             gradientFrom="blue-800"
             gradientTo="blue-900"
             borderColor="blue-700"
+            onScroll={scrollToRecentApplications}
           />
           
           <DashboardStat
@@ -231,6 +242,7 @@ const ApplicationsDashboard = () => {
             gradientFrom="purple-800"
             gradientTo="purple-900"
             borderColor="purple-700"
+            redirectTo="/certificates"
           />
           
           <DashboardStat
@@ -241,27 +253,8 @@ const ApplicationsDashboard = () => {
             gradientFrom="pink-800"
             gradientTo="pink-900"
             borderColor="pink-700"
+            redirectTo="/certificates?tab=alloffers"
           />
-          
-          {/* <DashboardStat
-            title="Conversion Rate"
-            value={`${stats.conversionRate}%`}
-            subtitle="Applications that received offers"
-            icon={icons.conversion}
-            gradientFrom="green-800"
-            gradientTo="green-900"
-            borderColor="green-700"
-          />
-          
-          <DashboardStat
-            title="Avg. Time to Hire"
-            value={`${Math.round(stats.timeToHire)} days`}
-            subtitle="From application to hiring"
-            icon={icons.timeToHire}
-            gradientFrom="cyan-800"
-            gradientTo="cyan-900"
-            borderColor="cyan-700"
-          /> */}
           
           <DashboardStat
             title="Active Jobs"
@@ -271,6 +264,7 @@ const ApplicationsDashboard = () => {
             gradientFrom="amber-700"
             gradientTo="amber-900"
             borderColor="amber-600"
+            redirectTo="/jobs"
           />
         </div>
         
@@ -286,11 +280,13 @@ const ApplicationsDashboard = () => {
           />
         </div>
         
-        <RecentApplicationsTable
-          applications={applications}
-          getJobById={getJobById}
-          getStatusLabel={getStatusLabel}
-        />
+        <div id="recent-applications-section">
+          <RecentApplicationsTable
+            applications={applications}
+            getJobById={getJobById}
+            getStatusLabel={getStatusLabel}
+          />
+        </div>
       </div>
     </div>
   );

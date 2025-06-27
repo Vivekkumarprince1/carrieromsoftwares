@@ -96,7 +96,8 @@ const Footer = () => {
                   href="mailto:omsoftwareandtechnologies@gmail.com" 
                   className="block text-xl font-light hover:text-lime-400 transition-colors duration-300 cursor-pointer"
                 >
-                  omsoftwareandtechnologies@gmail.com
+                  <span className="hidden sm:inline">omsoftwareandtechnologies@gmail.com</span>
+                  <span className="sm:hidden">Email Us</span>
                 </a>
               </div>
             </div>
@@ -140,14 +141,14 @@ const Footer = () => {
             <div className="relative">
                 <a href="https://omsoftwares.in/contact">
               <div 
-                className="h-[22rem] w-[22rem] bg-lime-400 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-lime-400/30 hover:-translate-y-2 transform-gpu"
+                className="h-[22rem] w-[22rem] sm:h-[18rem] sm:w-[18rem] md:h-[20rem] md:w-[20rem] lg:h-[22rem] lg:w-[22rem] bg-lime-400 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-lime-400/30 hover:-translate-y-2 transform-gpu"
                 onClick={scrollToTop}
               >
                 <div className="text-center">
-                  <div className="absolute top-20 right-12 transition-transform duration-300 hover:rotate-45">
-                    <ArrowUpRight className="w-8 h-8 text-gray-900" />
+                  <div className="absolute top-16 right-10 sm:top-14 sm:right-8 md:top-16 md:right-10 lg:top-20 lg:right-12 transition-transform duration-300 hover:rotate-45">
+                    <ArrowUpRight className="w-6 h-6 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-gray-900" />
                   </div>
-                  <h2 className="text-4xl font-bold text-gray-900 tracking-wide">
+                  <h2 className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-gray-900 tracking-wide">
                     PING US
                   </h2>
                 </div>

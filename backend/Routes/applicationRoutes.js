@@ -43,6 +43,7 @@ router.post("/submit", resumeUpload.single("resume"), applicationController.subm
 router.post("/", auth, resumeUpload.single("resume"), applicationController.createApplication);
 router.post("/parse-resume", auth, resumeUpload.single("resume"), applicationController.parseResume);
 router.get("/my", auth, applicationController.getMyApplications);
+router.get("/my/:applicationId/offer-letter", auth, applicationController.getMyApplicationOfferLetter);
 router.get("/for-recommendation", auth, applicationController.getApplicationsForRecommendation);
 
 // New routes for question handling
@@ -55,6 +56,7 @@ router.get("/job/:jobId", auth, verifyAdmin, applicationController.getJobApplica
 router.get("/:id/detail", auth, verifyAdmin, applicationController.getApplicationDetail);
 router.put("/:id/status", auth, verifyAdmin, applicationController.updateApplicationStatus);
 router.post("/:applicationId/offer", auth, verifyAdmin, applicationController.generateOfferLetter);
+router.get("/:applicationId/offer-letter", auth, verifyAdmin, applicationController.getApplicationOfferLetter);
 router.post("/:applicationId/reject", auth, verifyAdmin, applicationController.rejectApplication);
 router.post("/:applicationId/welcome", auth, verifyAdmin, applicationController.sendWelcomeEmail);
 

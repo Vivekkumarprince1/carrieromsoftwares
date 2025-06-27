@@ -284,6 +284,115 @@ const updateAccountStatus = async (req, res) => {
     }
 };
 
+// Update user role (special authority only)
+const updateUserRole = async (req, res) => {
+    console.log("updateUserRole: starting");
+    try {
+        const { userId } = req.params;
+        const { role } = req.body;
+
+        console.log("updateUserRole: params and body:", {
+            userId,
+            role,
+            requestingUser: {
+                id: req.user._id,
+                email: req.user.email,
+                specialAuthority: req.user.specialAuthority
+            }
+        });
+
+        // Validate role
+        const validRoles = ["user", "admin"];
+        if (!role || !validRoles.includes(role)) {
+            console.log("updateUserRole: invalid role");
+            return res.status(400).json({ 
+                message: "Valid role is required (user, admin)" 
+            });
+        }
+
+        // Prevent user from changing their own role
+        if (userId === req.user._id.toString()) {
+            console.log("updateUserRole: cannot change own role");
+            return res.status(400).json({ 
+                message: "You cannot change your own role" 
+            });
+        }
+
+        console.log("updateUserRole: updating user role");
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { role },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            console.log("updateUserRole: user not found");
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        console.log("updateUserRole: success", {
+            userId: user._id,
+            newRole: user.role
+        });
+
+        res.status(200).json({
+            message: "User role updated successfully",
+            user
+        });
+
+    } catch (error) {
+        console.error("updateUserRole: error:", error);
+        res.status(500).json({ 
+            message: "Failed to update user role", 
+            error: error.message 
+        });
+    }
+};
+
+// Update special authority (super admin only - requires existing special authority)
+const updateSpecialAuthority = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { specialAuthority } = req.body;
+
+        // Validate specialAuthority
+        if (typeof specialAuthority !== 'boolean') {
+            return res.status(400).json({ 
+                message: "Special authority must be a boolean value" 
+            });
+        }
+
+        // Prevent user from changing their own special authority
+        if (userId === req.user._id.toString()) {
+            return res.status(400).json({ 
+                message: "You cannot change your own special authority" 
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { specialAuthority },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({
+            message: `User special authority ${specialAuthority ? 'granted' : 'revoked'} successfully`,
+            user
+        });
+
+    } catch (error) {
+        console.error("Error updating special authority:", error);
+        res.status(500).json({ 
+            message: "Failed to update special authority", 
+            error: error.message 
+        });
+    }
+};
+
 // Bulk update all users' employee status based on their applications (admin only)
 const bulkUpdateUserStatusFromApplications = async (req, res) => {
     try {
@@ -350,30 +459,48 @@ const bulkUpdateUserStatusFromApplications = async (req, res) => {
     }
 };
 
-// Delete user (admin only)
+// Delete user (special authority only)
 const deleteUser = async (req, res) => {
+    console.log("deleteUser: starting");
     try {
         const { userId } = req.params;
 
+        console.log("deleteUser: params:", {
+            userId,
+            requestingUser: {
+                id: req.user._id,
+                email: req.user.email,
+                specialAuthority: req.user.specialAuthority
+            }
+        });
+
         // Prevent admin from deleting themselves
         if (userId === req.user._id.toString()) {
+            console.log("deleteUser: cannot delete own account");
             return res.status(400).json({ 
                 message: "You cannot delete your own account" 
             });
         }
 
+        console.log("deleteUser: deleting user");
         const user = await User.findByIdAndDelete(userId);
 
         if (!user) {
+            console.log("deleteUser: user not found");
             return res.status(404).json({ message: "User not found" });
         }
+
+        console.log("deleteUser: success", {
+            deletedUserId: userId,
+            deletedUserEmail: user.email
+        });
 
         res.status(200).json({
             message: "User deleted successfully"
         });
 
     } catch (error) {
-        console.error("Error deleting user:", error);
+        console.error("deleteUser: error:", error);
         res.status(500).json({ 
             message: "Failed to delete user", 
             error: error.message 
@@ -386,6 +513,8 @@ module.exports = {
     getUserById,
     updateUserStatus,
     updateAccountStatus,
+    updateUserRole,
+    updateSpecialAuthority,
     bulkUpdateUserStatusFromApplications,
     deleteUser
 };

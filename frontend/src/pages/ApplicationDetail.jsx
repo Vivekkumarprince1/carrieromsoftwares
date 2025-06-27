@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { applicationService, jobService } from '../services/api';
+import { applicationService, jobService, offerLetterService, contractService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import ApplicationOfferForm from '../components/ApplicationOfferForm';
 
 const ApplicationDetail = () => {
   const { id } = useParams();
@@ -19,6 +20,10 @@ const ApplicationDetail = () => {
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [jobDetailsExpanded, setJobDetailsExpanded] = useState(true);
+  const [offerLetter, setOfferLetter] = useState(null);
+  const [offerLetterLoading, setOfferLetterLoading] = useState(false);
+  const [contract, setContract] = useState(null);
+  const [contractLoading, setContractLoading] = useState(false);
 
   // Helper function to check if a property exists and has content
   const hasContent = (prop) => {
@@ -48,14 +53,118 @@ const ApplicationDetail = () => {
       console.log(appResponse.data);
       setApplication(appResponse.data);
       
+      // Load offer letter details if application has an offer letter
+      if (appResponse.data.offerLetterId) {
+        try {
+          const offerLetterResponse = await applicationService.getApplicationOfferLetter(id);
+          setOfferLetter(offerLetterResponse.data);
+          console.log('Offer letter loaded:', offerLetterResponse.data);
+        } catch (offerErr) {
+          console.error('Error loading offer letter:', offerErr);
+          // Fallback to the populated offerLetterId from application data
+          setOfferLetter(appResponse.data.offerLetterId);
+        }
+      }
+      
       // Set job details from the jobId object in application data
       if (appResponse.data.jobId) {
         setJob(appResponse.data.jobId);
+      }
+      
+      // Load contract details if application has been offered or hired
+      if (appResponse.data.status === 'offered' || appResponse.data.status === 'hired') {
+        loadContractDetails(id);
       }
     } catch (err) {
       setError(err.response?.data?.message || `Error loading application details for ID: ${id}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadContractDetails = async (applicationId) => {
+    try {
+      setContractLoading(true);
+      console.log('Loading contract details for application:', applicationId);
+      const response = await contractService.getContractByApplicationId(applicationId);
+      console.log('Contract response:', response);
+      
+      if (response.data && response.data.contract) {
+        setContract(response.data.contract);
+        console.log('Contract loaded:', response.data.contract);
+      } else {
+        console.log('No contract found, offer status:', response.data?.offerLetter?.status);
+      }
+      
+      // Always update offer letter details if available (this ensures latest status is shown)
+      if (response.data && response.data.offerLetter) {
+        console.log('Updating offer letter from contract response:', response.data.offerLetter);
+        setOfferLetter(response.data.offerLetter);
+      } else {
+        // If no offer letter in contract response, try to reload it directly
+        console.log('No offer letter in contract response, trying direct load...');
+        try {
+          const offerLetterResponse = await applicationService.getApplicationOfferLetter(applicationId);
+          setOfferLetter(offerLetterResponse.data);
+          console.log('Offer letter reloaded directly:', offerLetterResponse.data);
+        } catch (offerErr) {
+          console.log('Could not reload offer letter:', offerErr.message);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading contract details:', err.response?.data || err.message);
+      // If contract loading fails, still try to load offer letter directly
+      console.log('Contract loading failed, trying to load offer letter directly...');
+      try {
+        const offerLetterResponse = await applicationService.getApplicationOfferLetter(applicationId);
+        setOfferLetter(offerLetterResponse.data);
+        console.log('Offer letter loaded after contract error:', offerLetterResponse.data);
+      } catch (offerErr) {
+        console.log('Could not load offer letter after contract error:', offerErr.message);
+      }
+    } finally {
+      setContractLoading(false);
+    }
+  };
+
+  const loadOfferLetter = async (applicationId) => {
+    try {
+      setOfferLetterLoading(true);
+      console.log('Loading offer letter for application:', applicationId);
+      const response = await applicationService.getApplicationOfferLetter(applicationId);
+      console.log('Offer letter response:', response.data);
+      setOfferLetter(response.data);
+    } catch (err) {
+      console.error('Error loading offer letter:', err);
+      // Don't set error state for missing offer letters
+    } finally {
+      setOfferLetterLoading(false);
+    }
+  };
+
+  // New function to manually refresh offer letter data
+  const refreshOfferLetter = async () => {
+    if (!application?._id) return;
+    
+    console.log('Manually refreshing offer letter data...');
+    try {
+      setOfferLetterLoading(true);
+      
+      // Try multiple approaches to get the latest offer letter data
+      if (application.status === 'offered' || application.status === 'hired') {
+        // First try to get it from contract details
+        await loadContractDetails(application._id);
+      }
+      
+      // Also try direct offer letter loading
+      await loadOfferLetter(application._id);
+      
+      setSuccessMessage('Offer letter data refreshed successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error refreshing offer letter:', err);
+      setError('Failed to refresh offer letter data');
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -74,7 +183,7 @@ const ApplicationDetail = () => {
       setStatusUpdateLoading(true);
       await applicationService.updateApplicationStatus(id, { status: newStatus });
       // Reload application details to reflect the status change
-      loadApplicationDetail();
+      await loadApplicationDetail();
       setSuccessMessage(`Application status updated to ${newStatus}`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
@@ -84,29 +193,79 @@ const ApplicationDetail = () => {
     }
   };
 
-  const handleGenerateOffer = async () => {
-    if (!offerDetails.trim()) {
-      setError('Please provide offer details');
-      return;
+  // Helper function to check if a status change is allowed (no going backward after offered)
+  const isStatusChangeAllowed = (targetStatus) => {
+    const statusOrder = ['pending', 'reviewing', 'shortlisted', 'offered', 'hired'];
+    const currentIndex = statusOrder.indexOf(application.status);
+    const targetIndex = statusOrder.indexOf(targetStatus);
+    
+    // If current status is 'offered' or 'hired', only allow progression to higher statuses
+    if (currentIndex >= 3) { // 'offered' or 'hired'
+      return targetIndex > currentIndex || targetStatus === 'rejected';
     }
     
+    // For other statuses, allow all changes except going back from offered/hired
+    return true;
+  };
+
+  const handleGenerateOffer = async (offerData) => {
     setIsProcessing(true);
     try {
-      await applicationService.generateOfferLetter(id, { offerDetails });
+      const response = await applicationService.generateOfferLetter(id, offerData);
       
       // Update application status locally
-      setApplication({...application, status: 'offered'});
+      setApplication({...application, status: 'offered', offerLetterId: response.data.offerLetterId});
+      
+      // Reload application details to get the latest offer letter data
+      await loadApplicationDetail();
       
       // Reset form and hide it
-      setOfferDetails('');
       setShowOfferForm(false);
       
-      setSuccessMessage('Offer letter generated and sent to applicant');
+      setSuccessMessage('Offer letter generated and stored successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'Error generating offer letter');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleDownloadOfferLetter = async () => {
+    if (!offerLetter) return;
+    
+    try {
+      const response = await offerLetterService.downloadOfferLetter(offerLetter._id);
+      
+      // Create blob and download
+      const blob = response.data;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `offer-letter-${offerLetter.candidateName.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      setSuccessMessage('Offer letter downloaded successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to download offer letter');
+    }
+  };
+
+  const handleSendOfferLetterEmail = async () => {
+    if (!offerLetter) return;
+    
+    try {
+      await offerLetterService.sendOfferLetterEmail(offerLetter._id, {
+        recipientEmail: offerLetter.email
+      });
+      setSuccessMessage('Offer letter emailed successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to email offer letter');
     }
   };
 
@@ -567,44 +726,74 @@ const ApplicationDetail = () => {
                 <h3 className="font-medium text-white mb-4">Update Application Status</h3>
                 <div className="space-y-3">
                   <button 
-                    className={`w-full py-2.5 px-4 text-left rounded-md transition flex items-center ${application.status === 'reviewing' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-                    onClick={() => handleStatusChange('reviewing')}
-                    disabled={statusUpdateLoading || application.status === 'reviewing'}
+                    className={`w-full py-2.5 px-4 text-left rounded-md transition flex items-center ${
+                      application.status === 'reviewing' 
+                        ? 'bg-blue-500 text-white' 
+                        : !isStatusChangeAllowed('reviewing')
+                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    }`}
+                    onClick={() => isStatusChangeAllowed('reviewing') && handleStatusChange('reviewing')}
+                    disabled={statusUpdateLoading || application.status === 'reviewing' || !isStatusChangeAllowed('reviewing')}
+                    title={!isStatusChangeAllowed('reviewing') ? 'Cannot go back to previous status' : ''}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                       <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                     </svg>
                     Mark as Reviewing
+                    {!isStatusChangeAllowed('reviewing') && (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-auto" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
                   </button>
                   
                   <button 
-                    className={`w-full py-2.5 px-4 text-left rounded-md transition flex items-center ${application.status === 'shortlisted' 
-                      ? 'bg-indigo-600 text-white' 
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-                    onClick={() => handleStatusChange('shortlisted')}
-                    disabled={statusUpdateLoading || application.status === 'shortlisted'}
+                    className={`w-full py-2.5 px-4 text-left rounded-md transition flex items-center ${
+                      application.status === 'shortlisted' 
+                        ? 'bg-indigo-600 text-white' 
+                        : !isStatusChangeAllowed('shortlisted')
+                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    }`}
+                    onClick={() => isStatusChangeAllowed('shortlisted') && handleStatusChange('shortlisted')}
+                    disabled={statusUpdateLoading || application.status === 'shortlisted' || !isStatusChangeAllowed('shortlisted')}
+                    title={!isStatusChangeAllowed('shortlisted') ? 'Cannot go back to previous status' : ''}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
                     </svg>
                     Mark as Shortlisted
+                    {!isStatusChangeAllowed('shortlisted') && (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-auto" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
                   </button>
                   
                   <button 
-                    className={`w-full py-2.5 px-4 text-left rounded-md transition flex items-center ${application.status === 'offered' 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-                    onClick={() => handleStatusChange('offered')}
-                    disabled={statusUpdateLoading || application.status === 'offered'}
+                    className={`w-full py-2.5 px-4 text-left rounded-md transition flex items-center ${
+                      application.status === 'offered' 
+                        ? 'bg-green-500 text-white' 
+                        : !isStatusChangeAllowed('offered')
+                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    }`}
+                    onClick={() => isStatusChangeAllowed('offered') && handleStatusChange('offered')}
+                    disabled={statusUpdateLoading || application.status === 'offered' || !isStatusChangeAllowed('offered')}
+                    title={!isStatusChangeAllowed('offered') ? 'Cannot go back to previous status' : ''}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
                       <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
                     </svg>
                     Mark as Offered
+                    {!isStatusChangeAllowed('offered') && (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-auto" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
                   </button>
                   
                   <button 
@@ -641,41 +830,112 @@ const ApplicationDetail = () => {
                   </div>
                 )}
 
+                {/* Offer Letter Management Section - Show if offer letter exists or if admin can generate one */}
                 <div className="mt-6">
-                  <h3 className="font-medium text-white mb-4">Generate Offer Letter</h3>
-                  <button 
-                    className="w-full py-2.5 px-4 text-left rounded-md transition flex items-center bg-gray-800 text-gray-300 hover:bg-gray-700"
-                    onClick={() => setShowOfferForm(!showOfferForm)}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3H6a1 1 0 100 2h3v3a1 1 0 102 0v-3h3a1 1 0 100-2h-3V7z" clipRule="evenodd" />
-                    </svg>
-                    {showOfferForm ? 'Cancel' : 'Generate Offer'}
-                  </button>
-                  {showOfferForm && (
-                    <div className="mt-4">
-                      <textarea 
-                        className="w-full p-2.5 bg-gray-800 text-white rounded-md mb-3"
-                        rows="4"
-                        placeholder="Enter offer details..."
-                        value={offerDetails}
-                        onChange={(e) => setOfferDetails(e.target.value)}
-                      />
-                      <button 
-                        className="w-full py-2.5 px-4 text-left rounded-md transition flex items-center bg-green-600 text-white hover:bg-green-500"
-                        onClick={handleGenerateOffer}
-                        disabled={isProcessing}
-                      >
-                        {isProcessing ? (
-                          <div className="w-5 h-5 border-t-2 border-white border-solid rounded-full animate-spin mr-2"></div>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3H6a1 1 0 100 2h3v3a1 1 0 102 0v-3h3a1 1 0 100-2h-3V7z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                        Generate Offer
-                      </button>
+                  <h3 className="font-medium text-white mb-4">Offer Letter Management</h3>
+                  
+                  {/* Show existing offer letter if it exists - regardless of application status */}
+                  {offerLetter ? (
+                    <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 mb-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-white font-medium">Offer Letter Details</h4>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            offerLetter.status === 'Accepted' ? 'bg-green-900 text-green-200' :
+                            offerLetter.status === 'Rejected' ? 'bg-red-900 text-red-200' :
+                            'bg-yellow-900 text-yellow-200'
+                          }`}>
+                            {offerLetter.status}
+                          </span>
+                          {offerLetter.acceptedAt && (
+                            <span className="text-xs text-gray-400">
+                              Accepted: {new Date(offerLetter.acceptedAt).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                  
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-4">
+                        <div>
+                          <span className="text-gray-400">Position:</span>
+                          <span className="text-white ml-2">{offerLetter.position}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Department:</span>
+                          <span className="text-white ml-2">{offerLetter.department}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Salary:</span>
+                          <span className="text-white ml-2">${offerLetter.salary?.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Start Date:</span>
+                          <span className="text-white ml-2">{new Date(offerLetter.startDate).toLocaleDateString()}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Valid Until:</span>
+                          <span className="text-white ml-2">{new Date(offerLetter.validUntil).toLocaleDateString()}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Work Type:</span>
+                          <span className="text-white ml-2">{offerLetter.workType}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-3">
+                        <button 
+                          className="px-4 py-2 bg-lime-400 hover:bg-lime-500 text-black text-sm font-medium rounded transition-colors"
+                          onClick={handleDownloadOfferLetter}
+                        >
+                          Download PDF
+                        </button>
+                        <button 
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors"
+                          onClick={handleSendOfferLetterEmail}
+                        >
+                          Send Email
+                        </button>
+                        <button 
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded transition-colors"
+                          onClick={() => window.open(`/certificates?tab=alloffers`, '_blank')}
+                        >
+                          View in Certificates
+                        </button>
+                        <button 
+                          className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded transition-colors disabled:opacity-50"
+                          onClick={refreshOfferLetter}
+                          disabled={offerLetterLoading}
+                          title="Refresh offer letter data"
+                        >
+                          {offerLetterLoading ? 'Refreshing...' : 'Refresh'}
+                        </button>
+                      </div>
                     </div>
+                  ) : (
+                    // Show generate offer button if no offer letter exists and user is admin
+                    currentUser?.role === 'admin' && !showOfferForm && (
+                      <button 
+                        className="w-full py-2.5 px-4 text-left rounded-md transition flex items-center bg-gray-800 text-gray-300 hover:bg-gray-700"
+                        onClick={() => setShowOfferForm(true)}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3H6a1 1 0 100 2h3v3a1 1 0 102 0v-3h3a1 1 0 100-2h-3V7z" clipRule="evenodd" />
+                        </svg>
+                        Generate Offer Letter
+                      </button>
+                    )
+                  )}
+                  
+                  {/* Show offer form - only for admins */}
+                  {currentUser?.role === 'admin' && showOfferForm && !offerLetter && (
+                    <ApplicationOfferForm
+                      application={application}
+                      job={job}
+                      onSubmit={handleGenerateOffer}
+                      loading={isProcessing}
+                      onCancel={() => setShowOfferForm(false)}
+                    />
                   )}
                 </div>
 
@@ -716,6 +976,174 @@ const ApplicationDetail = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Contract Details Section */}
+                {(application.status === 'offered' || application.status === 'hired' || contract) && (
+                  <div className="mt-6">
+                    <h3 className="font-medium text-white mb-4">
+                      Offer Acceptance & Contract Details
+                      {contractLoading && (
+                        <span className="ml-2 text-sm text-gray-400">(Loading...)</span>
+                      )}
+                    </h3>
+                    
+                    {contract ? (
+                      <div className="bg-gray-800/50 rounded-lg p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-green-400 font-medium">✓ Offer Accepted</span>
+                          <span className="text-xs text-gray-400">
+                            {contract.workflowStatus?.submittedAt && 
+                              `Submitted: ${formatDate(contract.workflowStatus.submittedAt)}`}
+                          </span>
+                        </div>
+                        
+                        {/* Privacy Notice */}
+                        <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-3 text-xs">
+                          <div className="flex items-center text-blue-300">
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            </svg>
+                            <span className="font-medium">Sensitive Information Protected</span>
+                          </div>
+                          <p className="text-blue-200 mt-1">
+                            Account numbers and ID details are masked for security. Hover over masked fields to view complete information.
+                          </p>
+                        </div>
+                        
+                        {/* Personal Information */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-300 mb-2">Contact Information</h4>
+                            <div className="text-sm text-gray-400 space-y-1">
+                              <p>Phone: {contract.phone}</p>
+                              <p>Date of Birth: {contract.personalInfo?.dateOfBirth && 
+                                new Date(contract.personalInfo.dateOfBirth).toLocaleDateString()}</p>
+                              <p>Nationality: {contract.personalInfo?.nationality}</p>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-300 mb-2">Address</h4>
+                            <div className="text-sm text-gray-400">
+                              {contract.personalInfo?.address && (
+                                <p>
+                                  {contract.personalInfo.address.street}, {contract.personalInfo.address.city}, 
+                                  {contract.personalInfo.address.state} {contract.personalInfo.address.zipCode}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Emergency Contact */}
+                        {contract.personalInfo?.emergencyContact && (
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-300 mb-2">Emergency Contact</h4>
+                            <div className="text-sm text-gray-400">
+                              <p>{contract.personalInfo.emergencyContact.name} ({contract.personalInfo.emergencyContact.relationship})</p>
+                              <p>Phone: {contract.personalInfo.emergencyContact.phone}</p>
+                              {contract.personalInfo.emergencyContact.email && (
+                                <p>Email: {contract.personalInfo.emergencyContact.email}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Banking Information */}
+                        {contract.bankingInfo && (
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-300 mb-2">Banking Information</h4>
+                            <div className="text-sm text-gray-400 grid grid-cols-1 md:grid-cols-2 gap-2">
+                              <p>Account Holder: {contract.bankingInfo.accountHolderName}</p>
+                              <p>Bank: {contract.bankingInfo.bankName}</p>
+                              <div className="relative group flex items-center">
+                                <p className="cursor-help">
+                                  Account Number: ****{contract.bankingInfo.accountNumber?.slice(-4)}
+                                </p>
+                                <svg className="w-3 h-3 ml-1 text-gray-500 group-hover:text-blue-400 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                </svg>
+                                <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded-md px-3 py-2 whitespace-nowrap z-20 border border-gray-600 shadow-lg">
+                                  <div className="font-medium text-blue-300 mb-1">Full Account Number:</div>
+                                  <div className="font-mono tracking-wider">{contract.bankingInfo.accountNumber}</div>
+                                  <div className="absolute top-full left-4 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                                </div>
+                              </div>
+                              <p>IFSC: {contract.bankingInfo.ifscCode}</p>
+                              {contract.bankingInfo.accountType && (
+                                <p>Account Type: {contract.bankingInfo.accountType}</p>
+                              )}
+                              {contract.bankingInfo.branch && (
+                                <p>Branch: {contract.bankingInfo.branch}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Identification */}
+                        {contract.personalInfo?.identificationDocuments && (
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-300 mb-2">Identification</h4>
+                            <div className="text-sm text-gray-400">
+                              <div className="relative group flex items-center">
+                                <p className="cursor-help">
+                                  {contract.personalInfo.identificationDocuments.idType}: 
+                                  ****{contract.personalInfo.identificationDocuments.idNumber?.slice(-4)}
+                                </p>
+                                <svg className="w-3 h-3 ml-1 text-gray-500 group-hover:text-blue-400 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                </svg>
+                                <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded-md px-3 py-2 whitespace-nowrap z-20 border border-gray-600 shadow-lg">
+                                  <div className="font-medium text-blue-300 mb-1">Full {contract.personalInfo.identificationDocuments.idType}:</div>
+                                  <div className="font-mono tracking-wider">{contract.personalInfo.identificationDocuments.idNumber}</div>
+                                  <div className="absolute top-full left-4 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Comments */}
+                        {contract.acceptanceComments && (
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-300 mb-2">Candidate Comments</h4>
+                            <p className="text-sm text-gray-400 bg-gray-900/50 p-3 rounded">
+                              {contract.acceptanceComments}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* Contract Status Actions */}
+                        <div className="flex gap-2 pt-2 border-t border-gray-700">
+                          {application.status !== 'hired' && (
+                            <button 
+                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition"
+                              onClick={() => handleStatusChange('hired')}
+                              disabled={statusUpdateLoading}
+                            >
+                              {statusUpdateLoading ? 'Processing...' : 'Hire Candidate'}
+                            </button>
+                          )}
+                          
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          <div>
+                            <h3 className="text-yellow-300 font-medium">Waiting for Offer Acceptance</h3>
+                            <p className="text-yellow-200 text-sm mt-1">
+                              The candidate has been sent an offer letter but hasn't accepted it yet.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="mt-6">
                   <h3 className="font-medium text-white mb-4">Export Application Data</h3>

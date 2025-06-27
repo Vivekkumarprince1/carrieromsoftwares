@@ -109,8 +109,7 @@ const Navbar = () => {
 
     if (!currentUser) {
       additionalItems = [
-        { to: '/login', label: 'Sign In', icon: 'M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1' },
-        { to: '/register', label: 'Sign Up', icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z' }
+        { to: '/login', label: 'Login', icon: 'M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1' }
       ];
     } else if (currentUser.role === 'user') {
       additionalItems = [
@@ -170,19 +169,34 @@ const Navbar = () => {
           </div>
           
           {/* Desktop menu */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-center space-x-6">
-              {visibleItems.map((item) => (
-                <Link 
-                  key={item.to}
-                  to={item.to} 
-                  className={`${
-                    location.pathname === item.to ? 'text-lime-400' : 'text-white hover:text-lime-400'
-                  } font-medium transition-colors duration-300`}
-                >
-                  {item.label}
-                </Link>
-              ))}
+          <div className={`hidden md:block ${!currentUser ? 'flex-1' : ''}`}>
+            <div className={`ml-10 flex items-center space-x-6 ${!currentUser ? 'justify-end' : ''}`}>
+              {visibleItems.map((item) => {
+                // Special styling for Login button
+                if (item.label === 'Login') {
+                  return (
+                    <Link 
+                      key={item.to}
+                      to={item.to} 
+                      className="bg-lime-400 text-black font-semibold px-6 py-2 rounded-full hover:bg-lime-300 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                }
+                // Regular styling for other nav items
+                return (
+                  <Link 
+                    key={item.to}
+                    to={item.to} 
+                    className={`${
+                      location.pathname === item.to ? 'text-lime-400' : 'text-white hover:text-lime-400'
+                    } font-medium transition-colors duration-300`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
               
               {/* Show More dropdown only if needed */}
               {shouldShowMore && (
@@ -287,18 +301,36 @@ const Navbar = () => {
     <nav className="md:hidden fixed bottom-0 w-full bg-black/80 shadow-lg backdrop-blur-md z-50 border-t border-gray-800">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-around h-16">
-          {visibleItems.map((item) => (
-            <Link 
-              key={item.to}
-              to={item.to} 
-              className={`flex flex-col items-center justify-center px-3 py-2 ${location.pathname === item.to ? 'text-lime-400' : 'text-white'}`}
-            >
-              <svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-              </svg>
-              <span className="text-xs mt-1">{item.label}</span>
-            </Link>
-          ))}          {/* Show More dropdown only if needed */}
+          {visibleItems.map((item) => {
+            // Special styling for Login button in mobile view
+            if (item.label === 'Login') {
+              return (
+                <Link 
+                  key={item.to}
+                  to={item.to} 
+                  className="flex flex-col items-center justify-center px-3 py-2 bg-lime-400 rounded-lg text-black font-semibold transform hover:scale-105 transition-all duration-300"
+                >
+                  <svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                  </svg>
+                  <span className="text-xs mt-1">{item.label}</span>
+                </Link>
+              );
+            }
+            // Regular styling for other nav items
+            return (
+              <Link 
+                key={item.to}
+                to={item.to} 
+                className={`flex flex-col items-center justify-center px-3 py-2 ${location.pathname === item.to ? 'text-lime-400' : 'text-white'}`}
+              >
+                <svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                </svg>
+                <span className="text-xs mt-1">{item.label}</span>
+              </Link>
+            );
+          })}          {/* Show More dropdown only if needed */}
           {shouldShowMore && (
             <div className="relative">
               <button

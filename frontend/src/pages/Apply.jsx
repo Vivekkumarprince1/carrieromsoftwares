@@ -33,6 +33,7 @@ const Apply = () => {
   const [parseError, setParseError] = useState('');
   const [parseSuccess, setParseSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [showErrorOverlay, setShowErrorOverlay] = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -324,7 +325,18 @@ const Apply = () => {
         setError(err.response?.data?.message || 'Error submitting application. Please try again.');
       }
       
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Show blur overlay and scroll to error message
+      setShowErrorOverlay(true);
+      const errorElement = document.querySelector('.bg-red-100');
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      // Auto-hide error message and blur overlay after 1 second
+      setTimeout(() => {
+        setError('');
+        setShowErrorOverlay(false);
+      }, 1000);
     } finally {
       setSubmitting(false);
       setIsUploading(false);
@@ -342,8 +354,9 @@ const Apply = () => {
 
   return (
     <>
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded container mx-auto mt-3">{error}</div>}
-
+      {showErrorOverlay && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 pointer-events-none"></div>
+      )}
       <section className="pt-20 pb-24">
         <div className="container mx-auto px-4 relative">
           {/* <div className="border-b border-gray-700 mb-10 pb-4 relative">
@@ -423,6 +436,7 @@ const Apply = () => {
             <div className="flex flex-col md:flex-row justify-between">
               <h3 className="text-xl font-medium text-white w-full md:w-1/3 mb-4 md:mb-0">Your Application</h3>
               <div className="w-full md:w-2/3 mt-4">
+                {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 relative z-50">{error}</div>}
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
                     <label htmlFor="resume" className="block font-bold text-white mb-2">
@@ -625,7 +639,8 @@ const Apply = () => {
             </div>
             <div>
               <Link to="/jobs" className="inline-flex items-center px-6 py-3 bg-gray-800 text-white font-medium rounded hover:bg-gray-700 transition-colors">
-                Browse More Jobs <span className="ml-2 inline-block w-6 h-6 bg-gray-600 rounded-full"></span>
+                Browse More Jobs <span className="ml-2 text-xl">→</span>
+
               </Link>
             </div>
           </div>

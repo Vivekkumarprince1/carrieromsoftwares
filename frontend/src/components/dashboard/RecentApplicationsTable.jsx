@@ -17,7 +17,7 @@ const RecentApplicationsTable = ({ applications, getJobById, getStatusLabel }) =
   };
 
   return (
-    <div className="bg-gray-900 rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-700">
+    <div className="bg-gray-900 rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-700 scroll-mt-6">
       <div className="bg-gray-800 px-6 py-4 border-b border-gray-700 flex justify-between items-center">
         <h5 className="font-semibold text-gray-100 text-lg">Recent Applications</h5>
         <button 

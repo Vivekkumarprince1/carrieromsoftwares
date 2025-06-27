@@ -427,204 +427,204 @@ async function sendCertificateByEmail(to, subject, message, recipientName, certi
 }
 
 // Offer letter
-exports.issueOfferLetter = async (req, res) => {
-    console.log("New offer");
-    try {
-        const { name, position, email, startDate, additionalDetails, issuedBy } = req.body;
-        console.log(`For: ${name}, ${position}`);
+// exports.issueOfferLetter = async (req, res) => {
+//     console.log("New offer");
+//     try {
+//         const { name, position, email, startDate, additionalDetails, issuedBy } = req.body;
+//         console.log(`For: ${name}, ${position}`);
 
-        if (!name || !position || !email) {
-            console.log("Missing fields");
-            return res.status(400).json({ message: "Name, position, and email are required" });
-        }
+//         if (!name || !position || !email) {
+//             console.log("Missing fields");
+//             return res.status(400).json({ message: "Name, position, and email are required" });
+//         }
 
-        // Generate PDF in memory
-        console.log(`Generate PDF in memory`);
-        const pdfBuffer = await generateOfferLetterPDFInMemory({
-            name,
-            position,
-            startDate: startDate ? new Date(startDate) : new Date(),
-            additionalDetails,
-            issuedBy: issuedBy || "OM Softwares",
-            issuedOn: new Date()
-        });
+//         // Generate PDF in memory
+//         console.log(`Generate PDF in memory`);
+//         const pdfBuffer = await generateOfferLetterPDFInMemory({
+//             name,
+//             position,
+//             startDate: startDate ? new Date(startDate) : new Date(),
+//             additionalDetails,
+//             issuedBy: issuedBy || "OM Softwares",
+//             issuedOn: new Date()
+//         });
 
-        // Send email with PDF attachment from memory
-        console.log(`Send to: ${email}`);
-        await sendOfferLetterByEmailFromMemory(
-            email,
-            `Offer: ${position}`,
-            `We're pleased to offer you the ${position} position at OM Softwares.`,
-            name,
-            pdfBuffer
-        );
+//         // Send email with PDF attachment from memory
+//         console.log(`Send to: ${email}`);
+//         await sendOfferLetterByEmailFromMemory(
+//             email,
+//             `Offer: ${position}`,
+//             `We're pleased to offer you the ${position} position at OM Softwares.`,
+//             name,
+//             pdfBuffer
+//         );
 
-        console.log(`Offer letter sent successfully without storing permanently`);
+//         console.log(`Offer letter sent successfully without storing permanently`);
 
-        res.status(201).json({
-            message: "Offer letter sent",
-            recipientEmail: email
-        });
+//         res.status(201).json({
+//             message: "Offer letter sent",
+//             recipientEmail: email
+//         });
 
-    } catch (error) {
-        console.error("Error:", error.message);
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
+//     } catch (error) {
+//         console.error("Error:", error.message);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// };
 
-// Offer PDF helper - Generate in memory
-async function generateOfferLetterPDFInMemory(offerData) {
-    console.log(`Generate offer PDF in memory`);    try {
-        const doc = new PDFDocument({ margin: 50 });
-        const buffers = [];
+// // Offer PDF helper - Generate in memory
+// async function generateOfferLetterPDFInMemory(offerData) {
+//     console.log(`Generate offer PDF in memory`);    try {
+//         const doc = new PDFDocument({ margin: 50 });
+//         const buffers = [];
 
-        // Collect PDF data in memory
-        doc.on('data', buffers.push.bind(buffers));
-          // Header
-        doc.fontSize(20).font('Helvetica-Bold').text('OM SOFTWARES', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(16).font('Helvetica-Bold').text('JOB OFFER LETTER', { align: 'center' });
-        doc.moveDown(2);
+//         // Collect PDF data in memory
+//         doc.on('data', buffers.push.bind(buffers));
+//           // Header
+//         doc.fontSize(20).font('Helvetica-Bold').text('OM SOFTWARES', { align: 'center' });
+//         doc.moveDown();
+//         doc.fontSize(16).font('Helvetica-Bold').text('JOB OFFER LETTER', { align: 'center' });
+//         doc.moveDown(2);
         
-        // Date
-        doc.fontSize(12).font('Helvetica').text(`Date: ${new Date().toLocaleDateString()}`, { align: 'right' });
-        doc.moveDown(2);
+//         // Date
+//         doc.fontSize(12).font('Helvetica').text(`Date: ${new Date().toLocaleDateString()}`, { align: 'right' });
+//         doc.moveDown(2);
         
-        // Name
-        doc.fontSize(12).font('Helvetica').text(`Dear ${offerData.name},`, { align: 'left' });
-        doc.moveDown();
+//         // Name
+//         doc.fontSize(12).font('Helvetica').text(`Dear ${offerData.name},`, { align: 'left' });
+//         doc.moveDown();
         
-        // Content
-        doc.fontSize(12).font('Helvetica').text(
-            `We're pleased to offer you the ${offerData.position} position at OM Softwares. ` +
-            `Start date: ${offerData.startDate.toLocaleDateString()}.`, 
-            { align: 'left' }
-        );
-        doc.moveDown();
+//         // Content
+//         doc.fontSize(12).font('Helvetica').text(
+//             `We're pleased to offer you the ${offerData.position} position at OM Softwares. ` +
+//             `Start date: ${offerData.startDate.toLocaleDateString()}.`, 
+//             { align: 'left' }
+//         );
+//         doc.moveDown();
         
-        // Details
-        if (offerData.additionalDetails) {
-            doc.fontSize(12).font('Helvetica').text(offerData.additionalDetails, { align: 'left' });
-            doc.moveDown();
-        }
+//         // Details
+//         if (offerData.additionalDetails) {
+//             doc.fontSize(12).font('Helvetica').text(offerData.additionalDetails, { align: 'left' });
+//             doc.moveDown();
+//         }
         
-        // Terms
-        doc.fontSize(12).font('Helvetica').text(
-            'This offer depends on your acceptance of our policies. ' +
-            'Please sign and return to HR.', 
-            { align: 'left' }
-        );
-        doc.moveDown(2);
+//         // Terms
+//         doc.fontSize(12).font('Helvetica').text(
+//             'This offer depends on your acceptance of our policies. ' +
+//             'Please sign and return to HR.', 
+//             { align: 'left' }
+//         );
+//         doc.moveDown(2);
         
-        // Signature
-        doc.fontSize(12).font('Helvetica').text('Sincerely,', { align: 'left' });
-        doc.moveDown(2);
-        doc.fontSize(12).font('Helvetica-Bold').text(offerData.issuedBy, { align: 'left' });
-        doc.fontSize(12).font('Helvetica').text('Director', { align: 'left' });
+//         // Signature
+//         doc.fontSize(12).font('Helvetica').text('Sincerely,', { align: 'left' });
+//         doc.moveDown(2);
+//         doc.fontSize(12).font('Helvetica-Bold').text(offerData.issuedBy, { align: 'left' });
+//         doc.fontSize(12).font('Helvetica').text('Director', { align: 'left' });
         
-        // Acceptance
-        doc.moveDown(4);
-        doc.fontSize(12).font('Helvetica-Bold').text('Acceptance:', { align: 'left' });
-        doc.moveDown();
-        doc.fontSize(12).font('Helvetica').text(
-            'I accept this offer.', 
-            { align: 'left' }
-        );
-        doc.moveDown(2);
+//         // Acceptance
+//         doc.moveDown(4);
+//         doc.fontSize(12).font('Helvetica-Bold').text('Acceptance:', { align: 'left' });
+//         doc.moveDown();
+//         doc.fontSize(12).font('Helvetica').text(
+//             'I accept this offer.', 
+//             { align: 'left' }
+//         );
+//         doc.moveDown(2);
         
-        // Signature lines
-        doc.fontSize(12).font('Helvetica').text('Signature: _______________________', { align: 'left' });
-        doc.moveDown();
-        doc.fontSize(12).font('Helvetica').text(`Name: ${offerData.name}`, { align: 'left' });
-        doc.moveDown();
-        doc.fontSize(12).font('Helvetica').text('Date: _______________________', { align: 'left' });
-          // Finalize
-        doc.end();
+//         // Signature lines
+//         doc.fontSize(12).font('Helvetica').text('Signature: _______________________', { align: 'left' });
+//         doc.moveDown();
+//         doc.fontSize(12).font('Helvetica').text(`Name: ${offerData.name}`, { align: 'left' });
+//         doc.moveDown();
+//         doc.fontSize(12).font('Helvetica').text('Date: _______________________', { align: 'left' });
+//           // Finalize
+//         doc.end();
         
-        return new Promise((resolve, reject) => {
-            doc.on('end', () => {
-                const pdfBuffer = Buffer.concat(buffers);
-                console.log(`PDF generated in memory for: ${offerData.name}`);
-                resolve(pdfBuffer);
-            });
-            doc.on('error', reject);
-        });
-    } catch (error) {
-        console.error("Error:", error);
-        throw error;
-    }
-}
+//         return new Promise((resolve, reject) => {
+//             doc.on('end', () => {
+//                 const pdfBuffer = Buffer.concat(buffers);
+//                 console.log(`PDF generated in memory for: ${offerData.name}`);
+//                 resolve(pdfBuffer);
+//             });
+//             doc.on('error', reject);
+//         });
+//     } catch (error) {
+//         console.error("Error:", error);
+//         throw error;
+//     }
+// }
 
-// Offer email helper - Send from memory
-async function sendOfferLetterByEmailFromMemory(to, subject, message, recipientName, pdfBuffer) {
-    console.log(`Email to: ${to}`);
-    try {
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to,
-            subject,
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2>Offer Letter</h2>
-                    <p>Dear ${recipientName},</p>
-                    <p>${message}</p>
-                    <p>Please find your offer letter attached.</p>
-                    <p>Sign and return to HR to accept.</p>
-                    <p>Regards,<br>OM Softwares</p>
-                </div>
-            `,
-            attachments: [
-                {
-                    filename: `${recipientName.replace(/\s+/g, '_')}_offer.pdf`,
-                    content: pdfBuffer,
-                    contentType: 'application/pdf'
-                }
-            ]
-        };
+// // Offer email helper - Send from memory
+// async function sendOfferLetterByEmailFromMemory(to, subject, message, recipientName, pdfBuffer) {
+//     console.log(`Email to: ${to}`);
+//     try {
+//         const mailOptions = {
+//             from: process.env.EMAIL_USER,
+//             to,
+//             subject,
+//             html: `
+//                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//                     <h2>Offer Letter</h2>
+//                     <p>Dear ${recipientName},</p>
+//                     <p>${message}</p>
+//                     <p>Please find your offer letter attached.</p>
+//                     <p>Sign and return to HR to accept.</p>
+//                     <p>Regards,<br>OM Softwares</p>
+//                 </div>
+//             `,
+//             attachments: [
+//                 {
+//                     filename: `${recipientName.replace(/\s+/g, '_')}_offer.pdf`,
+//                     content: pdfBuffer,
+//                     contentType: 'application/pdf'
+//                 }
+//             ]
+//         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`Sent: ${info.messageId}`);
-        return info;
-    } catch (error) {
-        console.error(`Error:`, error);
-        throw error;
-    }
-}
+//         const info = await transporter.sendMail(mailOptions);
+//         console.log(`Sent: ${info.messageId}`);
+//         return info;
+//     } catch (error) {
+//         console.error(`Error:`, error);
+//         throw error;
+//     }
+// }
 
-// Original file-based offer email helper (kept for backwards compatibility if needed)
-async function sendOfferLetterByEmail(to, subject, message, recipientName, offerLetterPath) {
-    console.log(`Email to: ${to}`);
-    try {
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to,
-            subject,
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2>Offer Letter</h2>
-                    <p>Dear ${recipientName},</p>
-                    <p>${message}</p>
-                    <p>Please find your offer letter attached.</p>
-                    <p>Sign and return to HR to accept.</p>
-                    <p>Regards,<br>OM Softwares</p>
-                </div>
-            `,
-            attachments: [
-                {
-                    filename: `${recipientName.replace(/\s+/g, '_')}_offer.pdf`,
-                    path: offerLetterPath
-                }
-            ]
-        };
+// // Original file-based offer email helper (kept for backwards compatibility if needed)
+// async function sendOfferLetterByEmail(to, subject, message, recipientName, offerLetterPath) {
+//     console.log(`Email to: ${to}`);
+//     try {
+//         const mailOptions = {
+//             from: process.env.EMAIL_USER,
+//             to,
+//             subject,
+//             html: `
+//                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//                     <h2>Offer Letter</h2>
+//                     <p>Dear ${recipientName},</p>
+//                     <p>${message}</p>
+//                     <p>Please find your offer letter attached.</p>
+//                     <p>Sign and return to HR to accept.</p>
+//                     <p>Regards,<br>OM Softwares</p>
+//                 </div>
+//             `,
+//             attachments: [
+//                 {
+//                     filename: `${recipientName.replace(/\s+/g, '_')}_offer.pdf`,
+//                     path: offerLetterPath
+//                 }
+//             ]
+//         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`Sent: ${info.messageId}`);
-        return info;
-    } catch (error) {
-        console.error(`Error:`, error);
-        throw error;
-    }
-}
+//         const info = await transporter.sendMail(mailOptions);
+//         console.log(`Sent: ${info.messageId}`);
+//         return info;
+//     } catch (error) {
+//         console.error(`Error:`, error);
+//         throw error;
+//     }
+// }
 
 // Utility function to clean up old PDFs (can be called manually if needed)
 exports.cleanupOldPDFs = async () => {

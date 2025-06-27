@@ -212,6 +212,56 @@ const isEmployeeOnly = (req, res, next) => {
     next();
 };
 
+// Middleware to verify user has special authority (for critical operations like changing roles and deleting users)
+const verifySpecialAuthority = async (req, res, next) => {
+    console.log("SpecialAuthority: processing");
+    try {
+        const token = req.header("Authorization")?.split(" ")[1];
+        if (!token) {
+            console.log("SpecialAuthority: no token");
+            return res.status(401).json({ message: "Unauthorized: No token provided." });
+        }
+
+        const decoded = jwt.verify(token, authConfig.jwtSecret);
+        console.log("SpecialAuthority: decoded user ID:", decoded.userId);
+        
+        const user = await User.findById(decoded.userId);
+        
+        if (!user) {
+            console.log("SpecialAuthority: user not found");
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        console.log("SpecialAuthority: user found:", {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+            specialAuthority: user.specialAuthority
+        });
+
+        // Check if user has special authority
+        if (!user.specialAuthority) {
+            console.log("SpecialAuthority: access denied - no special authority");
+            return res.status(403).json({ 
+                message: "Access denied. Special authority required for this operation." 
+            });
+        }
+
+        console.log("SpecialAuthority: granted");
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error("SpecialAuthority: error:", error.message);
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: "Token has expired. Please login again." });
+        } else if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ message: "Invalid token." });
+        } else {
+            return res.status(500).json({ message: "Server error", error: error.message });
+        }
+    }
+};
+
 module.exports = { 
     auth, 
     verifyAdmin, 
@@ -219,5 +269,6 @@ module.exports = {
     authenticateToken, 
     isAdmin, 
     isEmployee,
-    isEmployeeOnly
+    isEmployeeOnly,
+    verifySpecialAuthority
 }

@@ -6,6 +6,7 @@ const { createCanvas, loadImage } = require("canvas");
 const QRCode = require("qrcode");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 
 // Email setup
 const transporter = nodemailer.createTransport({
@@ -262,38 +263,77 @@ exports.sendOfferLetterEmail = async (req, res) => {
 
         console.log(`Generating PDF in memory for email to: ${recipientEmail || offerLetter.email}`);
 
+        // Generate acceptance token if not already exists
+        if (!offerLetter.acceptanceToken) {
+            offerLetter.acceptanceToken = crypto.randomBytes(32).toString('hex');
+            await offerLetter.save();
+        }
+
         const filename = `offer-letter-${offerLetterId}.pdf`;
 
         // Generate PDF in memory
         const pdfBuffer = await generateOfferLetterPDFInMemory(offerLetter);
 
         const emailRecipient = recipientEmail || offerLetter.email;
+        const acceptanceUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/offer-acceptance/${offerLetter.acceptanceToken}`;
 
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: emailRecipient,
             subject: `Job Offer - ${offerLetter.position} at ${offerLetter.companyName || 'OM Softwares'}`,
             html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #333;">Congratulations ${offerLetter.candidateName}!</h2>
-                    <p>We are pleased to offer you the position of <strong>${offerLetter.position}</strong> at ${offerLetter.companyName || 'OM Softwares'}.</p>
-                    <p>Please find your official offer letter attached to this email.</p>
-                    
-                    <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                        <h3 style="margin-top: 0;">Offer Details:</h3>
-                        <p><strong>Position:</strong> ${offerLetter.position}</p>
-                        <p><strong>Department:</strong> ${offerLetter.department}</p>
-                        <p><strong>Start Date:</strong> ${new Date(offerLetter.startDate).toLocaleDateString()}</p>
-                        <p><strong>Location:</strong> ${offerLetter.joiningLocation}</p>
-                        <p><strong>Work Type:</strong> ${offerLetter.workType}</p>
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #2c3e50; margin-bottom: 10px;">🎉 Congratulations ${offerLetter.candidateName}!</h1>
+                        <p style="color: #7f8c8d; font-size: 16px;">We are excited to extend this offer to you</p>
                     </div>
                     
-                    <p>This offer is valid until <strong>${new Date(offerLetter.validUntil).toLocaleDateString()}</strong>.</p>
-                    <p>Please review the attached offer letter and let us know your decision.</p>
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                        <h2 style="margin: 0 0 15px 0; font-size: 24px;">Job Offer Details</h2>
+                        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                            <p style="margin: 5px 0;"><strong>Position:</strong> ${offerLetter.position}</p>
+                            <p style="margin: 5px 0;"><strong>Department:</strong> ${offerLetter.department}</p>
+                            <p style="margin: 5px 0;"><strong>Annual Salary:</strong> $${offerLetter.salary.toLocaleString()}</p>
+                            <p style="margin: 5px 0;"><strong>Start Date:</strong> ${new Date(offerLetter.startDate).toLocaleDateString()}</p>
+                            <p style="margin: 5px 0;"><strong>Location:</strong> ${offerLetter.joiningLocation}</p>
+                            <p style="margin: 5px 0;"><strong>Work Type:</strong> ${offerLetter.workType}</p>
+                        </div>
+                    </div>
                     
-                    <p>Best regards,<br>
-                    ${offerLetter.hrContactName || 'HR Team'}<br>
-                    ${offerLetter.companyName || 'OM Softwares'}</p>
+                    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                        <p style="margin: 0; color: #856404;"><strong>⏰ Important:</strong> This offer is valid until <strong>${new Date(offerLetter.validUntil).toLocaleDateString()}</strong></p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <h3 style="color: #2c3e50; margin-bottom: 20px;">📋 Next Steps</h3>
+                        <p style="color: #5d6d7e; margin-bottom: 25px;">Please review the attached offer letter and respond using the link below:</p>
+                        
+                        <a href="${acceptanceUrl}" 
+                           style="display: inline-block; background: linear-gradient(45deg, #56ab2f, #a8e6cf); color: white; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(86, 171, 47, 0.3); transition: transform 0.3s ease;">
+                            🚀 Review & Respond to Offer
+                        </a>
+                        
+                        <p style="color: #7f8c8d; font-size: 12px; margin-top: 15px;">
+                            Can't click the button? Copy and paste this link:<br>
+                            <span style="word-break: break-all;">${acceptanceUrl}</span>
+                        </p>
+                    </div>
+                    
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 25px;">
+                        <h4 style="color: #2c3e50; margin-top: 0;">📞 Have Questions?</h4>
+                        <p style="color: #5d6d7e; margin-bottom: 10px;">Feel free to reach out to our HR team:</p>
+                        <p style="margin: 5px 0; color: #2c3e50;"><strong>Contact:</strong> ${offerLetter.hrContactName || 'HR Team'}</p>
+                        ${offerLetter.hrContactEmail ? `<p style="margin: 5px 0; color: #2c3e50;"><strong>Email:</strong> ${offerLetter.hrContactEmail}</p>` : ''}
+                        ${offerLetter.hrContactPhone ? `<p style="margin: 5px 0; color: #2c3e50;"><strong>Phone:</strong> ${offerLetter.hrContactPhone}</p>` : ''}
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1;">
+                        <p style="color: #7f8c8d; margin: 0;">We look forward to welcoming you to our team!</p>
+                        <p style="color: #2c3e50; font-weight: bold; margin: 10px 0 0 0;">
+                            Best regards,<br>
+                            ${offerLetter.companyName || 'OM Softwares'} Team
+                        </p>
+                    </div>
                 </div>
             `,
             attachments: [
@@ -306,16 +346,85 @@ exports.sendOfferLetterEmail = async (req, res) => {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`Offer letter emailed directly from memory to: ${emailRecipient}`);
+        console.log(`Offer letter emailed with acceptance link to: ${emailRecipient}`);
         
         res.status(200).json({ 
-            message: "Offer letter sent successfully",
-            sentTo: emailRecipient 
+            message: "Offer letter sent successfully with acceptance link",
+            sentTo: emailRecipient,
+            acceptanceUrl: acceptanceUrl
         });
 
     } catch (error) {
         console.error("Error sending email:", error.message);
         res.status(500).json({ message: "Error sending email", error: error.message });
+    }
+};
+
+// Regenerate acceptance token for offer letter
+exports.regenerateAcceptanceToken = async (req, res) => {
+    console.log("Regenerate acceptance token for offer letter:", req.params.id);
+    try {
+        const { id } = req.params;
+        
+        const offerLetter = await OfferLetter.findById(id);
+        if (!offerLetter) {
+            return res.status(404).json({ message: "Offer letter not found" });
+        }
+        
+        // Generate new acceptance token
+        offerLetter.acceptanceToken = crypto.randomBytes(32).toString('hex');
+        await offerLetter.save();
+        
+        console.log(`Generated new acceptance token for offer letter ${id}`);
+        
+        res.status(200).json({
+            message: "Acceptance token regenerated successfully",
+            acceptanceToken: offerLetter.acceptanceToken
+        });
+        
+    } catch (error) {
+        console.error("Error regenerating acceptance token:", error);
+        res.status(500).json({ 
+            message: "Server error", 
+            error: error.message 
+        });
+    }
+};
+
+// Utility function to add acceptance tokens to all offer letters that don't have them
+exports.addAcceptanceTokensToExisting = async (req, res) => {
+    console.log("Adding acceptance tokens to existing offer letters");
+    try {
+        // Find all offer letters without acceptance tokens
+        const offerLettersWithoutTokens = await OfferLetter.find({
+            $or: [
+                { acceptanceToken: { $exists: false } },
+                { acceptanceToken: null },
+                { acceptanceToken: "" }
+            ]
+        });
+        
+        console.log(`Found ${offerLettersWithoutTokens.length} offer letters without acceptance tokens`);
+        
+        let updatedCount = 0;
+        for (const offerLetter of offerLettersWithoutTokens) {
+            offerLetter.acceptanceToken = crypto.randomBytes(32).toString('hex');
+            await offerLetter.save();
+            updatedCount++;
+        }
+        
+        res.status(200).json({
+            message: `Added acceptance tokens to ${updatedCount} offer letters`,
+            updatedCount: updatedCount,
+            totalFound: offerLettersWithoutTokens.length
+        });
+        
+    } catch (error) {
+        console.error("Error adding acceptance tokens:", error);
+        res.status(500).json({ 
+            message: "Server error", 
+            error: error.message 
+        });
     }
 };
 

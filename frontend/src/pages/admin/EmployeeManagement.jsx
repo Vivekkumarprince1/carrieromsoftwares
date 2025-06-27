@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { userService } from '../../services/api';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
-import { FaUser, FaUserTie, FaUserShield, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaCheck, FaTimes, FaDownload, FaCog, FaUsers, FaClock, FaBan } from 'react-icons/fa';
+import { FaUser, FaUserTie, FaUserShield, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaCheck, FaTimes, FaDownload, FaCog, FaUsers, FaClock, FaBan, FaCrown } from 'react-icons/fa';
 import { CSVLink } from 'react-csv';
+import { useAuth } from '../../hooks/useAuth';
 
 const EmployeeManagement = () => {
+  const { currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +27,7 @@ const EmployeeManagement = () => {
     accountStatus: true,
     department: true,
     position: true,
+    specialAuthority: true,
     createdAt: true
   });
   const [csvData, setCsvData] = useState([]);
@@ -46,7 +49,8 @@ const EmployeeManagement = () => {
     employeeStatus: '',
     accountStatus: '',
     department: '',
-    position: ''
+    position: '',
+    specialAuthority: false
   });
 
   useEffect(() => {
@@ -199,6 +203,7 @@ const EmployeeManagement = () => {
       accountStatus: 'Account Status',
       department: 'Department',
       position: 'Position',
+      specialAuthority: 'Special Authority',
       createdAt: 'Joined Date'
     };
 
@@ -213,6 +218,8 @@ const EmployeeManagement = () => {
           row[headerMap[key] || key] = user[key] || 'applicant';
         } else if (key === 'accountStatus') {
           row[headerMap[key] || key] = user[key] || 'active';
+        } else if (key === 'specialAuthority') {
+          row[headerMap[key] || key] = user[key] ? 'Yes' : 'No';
         } else {
           row[headerMap[key] || key] = user[key] || '-';
         }
@@ -253,14 +260,34 @@ const EmployeeManagement = () => {
       employeeStatus: user.employeeStatus || 'applicant',
       accountStatus: user.accountStatus || 'active',
       department: user.department || '',
-      position: user.position || ''
+      position: user.position || '',
+      specialAuthority: user.specialAuthority || false
     });
     setShowUserModal(true);
   };
 
   const handleUpdateUser = async () => {
     try {
-      await userService.updateUserStatus(selectedUser._id, editForm);
+      // Update basic user info (excluding role and special authority)
+      const basicUpdateData = {
+        employeeStatus: editForm.employeeStatus,
+        accountStatus: editForm.accountStatus,
+        department: editForm.department,
+        position: editForm.position
+      };
+      
+      await userService.updateUserStatus(selectedUser._id, basicUpdateData);
+
+      // Handle role update if user has special authority and role changed
+      if (currentUser?.specialAuthority && editForm.role !== selectedUser.role) {
+        await userService.updateUserRole(selectedUser._id, { role: editForm.role });
+      }
+
+      // Handle special authority update if user has special authority and it changed
+      if (currentUser?.specialAuthority && editForm.specialAuthority !== selectedUser.specialAuthority) {
+        await userService.updateSpecialAuthority(selectedUser._id, { specialAuthority: editForm.specialAuthority });
+      }
+
       toast.success('User updated successfully');
       setShowUserModal(false);
       fetchUsers();
@@ -290,6 +317,43 @@ const EmployeeManagement = () => {
       } catch (error) {
         console.error('Error deleting user:', error);
         toast.error('Failed to delete user');
+      }
+    }
+  };
+
+  const handleUpdateUserRole = async (userId, newRole) => {
+    if (!currentUser?.specialAuthority) {
+      toast.error('Special authority required to change user roles');
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+      try {
+        await userService.updateUserRole(userId, { role: newRole });
+        toast.success(`User role updated to ${newRole}`);
+        fetchUsers();
+      } catch (error) {
+        console.error('Error updating user role:', error);
+        toast.error('Failed to update user role');
+      }
+    }
+  };
+
+  const handleUpdateSpecialAuthority = async (userId, specialAuthority) => {
+    if (!currentUser?.specialAuthority) {
+      toast.error('Special authority required to modify special authority');
+      return;
+    }
+
+    const action = specialAuthority ? 'grant' : 'revoke';
+    if (window.confirm(`Are you sure you want to ${action} special authority for this user?`)) {
+      try {
+        await userService.updateSpecialAuthority(userId, { specialAuthority });
+        toast.success(`Special authority ${specialAuthority ? 'granted' : 'revoked'} successfully`);
+        fetchUsers();
+      } catch (error) {
+        console.error('Error updating special authority:', error);
+        toast.error('Failed to update special authority');
       }
     }
   };
@@ -564,6 +628,9 @@ const EmployeeManagement = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Department
                       </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Special Authority
+                      </th>
                       {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Joined
                       </th> */}
@@ -602,11 +669,24 @@ const EmployeeManagement = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="space-y-1">
-                            <div className="flex items-center">
-                              {getRoleIcon(user.role)}
-                              <span className="ml-2 text-sm text-white capitalize">
-                                {user.role}
-                              </span>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                {getRoleIcon(user.role)}
+                                <span className="ml-2 text-sm text-white capitalize">
+                                  {user.role}
+                                </span>
+                              </div>
+                              {currentUser?.specialAuthority && (
+                                <select
+                                  value={user.role}
+                                  onChange={(e) => handleUpdateUserRole(user._id, e.target.value)}
+                                  className="ml-2 text-xs bg-gray-700 border border-gray-600 text-white rounded px-2 py-1 focus:ring-2 focus:ring-blue-500"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <option value="user">User</option>
+                                  <option value="admin">Admin</option>
+                                </select>
+                              )}
                             </div>
                             {user.position && (
                               <div className="text-xs text-gray-400">
@@ -637,6 +717,33 @@ const EmployeeManagement = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                           {user.department || '-'}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            {user.specialAuthority ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-900 text-yellow-300 border border-yellow-700">
+                                <FaCrown className="mr-1" />
+                                Special Authority
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-900 text-gray-300 border border-gray-700">
+                                Standard Access
+                              </span>
+                            )}
+                            {currentUser?.specialAuthority && (
+                              <button
+                                onClick={() => handleUpdateSpecialAuthority(user._id, !user.specialAuthority)}
+                                className={`text-xs px-2 py-1 rounded ${
+                                  user.specialAuthority 
+                                    ? 'bg-red-600 hover:bg-red-700 text-white' 
+                                    : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                                }`}
+                                title={user.specialAuthority ? 'Revoke Special Authority' : 'Grant Special Authority'}
+                              >
+                                {user.specialAuthority ? 'Revoke' : 'Grant'}
+                              </button>
+                            )}
+                          </div>
+                        </td>
                         {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                           {formatDate(user.createdAt)}
                         </td> */}
@@ -648,13 +755,15 @@ const EmployeeManagement = () => {
                           >
                             <FaEye />
                           </button>
-                          <button
-                            onClick={() => handleDeleteUser(user._id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete User"
-                          >
-                            <FaTrash />
-                          </button>
+                          {currentUser?.specialAuthority && (
+                            <button
+                              onClick={() => handleDeleteUser(user._id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Delete User (Special Authority Required)"
+                            >
+                              <FaTrash />
+                            </button>
+                          )}
                         </td>
                       </motion.tr>
                     ))}
@@ -805,6 +914,41 @@ const EmployeeManagement = () => {
                         placeholder="e.g., Software Engineer, Manager"
                       />
                     </div>
+
+                    {/* Special Authority - Only visible to users with special authority */}
+                    {currentUser?.specialAuthority && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                          <FaCrown className="inline mr-1 text-yellow-500" />
+                          Special Authority
+                        </label>
+                        <div className="flex items-center space-x-3">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="radio"
+                              name="specialAuthority"
+                              checked={!editForm.specialAuthority}
+                              onChange={() => setEditForm({...editForm, specialAuthority: false})}
+                              className="mr-2 text-blue-600"
+                            />
+                            <span className="text-sm text-gray-300">Standard Access</span>
+                          </label>
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="radio"
+                              name="specialAuthority"
+                              checked={editForm.specialAuthority}
+                              onChange={() => setEditForm({...editForm, specialAuthority: true})}
+                              className="mr-2 text-yellow-600"
+                            />
+                            <span className="text-sm text-yellow-300">Special Authority</span>
+                          </label>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Special authority allows changing user roles and deleting users
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1187,8 +1331,8 @@ const EmployeeManagement = () => {
                     </CSVLink>
                   )}
                   {allUsers.length === 0 && (
-                    <div className="px-4 py-2 bg-gray-600 text-gray-300 rounded-md text-sm">
-                      Select an export option above
+                    <div className="px-4 py-2 bg-gray-600 text-gray-300 rounded-md">
+                      No data to export
                     </div>
                   )}
                 </div>

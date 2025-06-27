@@ -11,6 +11,7 @@ const applicationRoutes = require("./Routes/applicationRoutes");
 const reviewRoutes = require("./Routes/reviewRoutes");
 const userRoutes = require("./Routes/userRoutes");
 const recommendationRoutes = require("./Routes/recommendationRoutes");
+const contractRoutes = require("./Routes/contractRoutes");
 
 console.log("Starting API server...");
 
@@ -64,6 +65,15 @@ app.get("/", (req, res) => {
 app.get("/api", (req, res) => {
   res.status(200).json({ message: "Welcome to the OM Software API!" });
 });
+
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ 
+    status: "OK", 
+    timestamp: new Date().toISOString(),
+    message: "Server is running" 
+  });
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/certification", certificationRoutes);
 app.use("/api/jobs", jobRoutes);
@@ -71,6 +81,7 @@ app.use("/api/applications", applicationRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/contracts", contractRoutes);
 
 
 const PORT = authConfig.port;
