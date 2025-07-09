@@ -111,11 +111,23 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await authService.login(credentials);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      setCurrentUser(response.data.user);
-      return response.data;
+      const { token, user } = response.data;
+      
+      console.log('AuthContext: Login response received:', { token: !!token, user: user });
+      
+      // Store token and user data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Update current user state and wait for it to be set
+      setCurrentUser(user);
+      
+      console.log('AuthContext: User state updated to:', user);
+      
+      // Return the response data for navigation logic
+      return { ...response.data, user };
     } catch (error) {
+      console.error('AuthContext: Login error:', error);
       throw error;
     }
   };
@@ -125,7 +137,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await authService.register(userData);
-      return response.data;
+      return response; // Return the full response to check for requiresVerification
     } catch (error) {
       throw error;
     }

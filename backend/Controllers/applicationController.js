@@ -7,6 +7,7 @@ const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const resumeParserService = require("../services/resumeParserService");
+const recaptchaService = require("../services/recaptchaService");
 const { uploadFile, uploadQuestionFile, deleteImage } = require('../config/cloudinary');
 
 // Email setup
@@ -32,12 +33,37 @@ exports.createApplication = async (req, res) => {
       skills, 
       coverLetter,
       isReferred,
-       referrerEmployeeId,
-        referrerName,
-        referrerEmail,
-        referralMessage
+      referrerEmployeeId,
+      referrerName,
+      referrerEmail,
+      referralMessage,
+      recaptchaToken
     } = req.body;
     let questionAnswers = req.body.questionAnswers;
+    
+    // Verify reCAPTCHA
+    const remoteIP = req.ip || req.connection.remoteAddress;
+    const recaptchaVerification = await recaptchaService.verifyToken(recaptchaToken, remoteIP);
+    
+    if (!recaptchaVerification.success) {
+      console.log("reCAPTCHA verification failed:", recaptchaVerification.error);
+      return res.status(400).json({ 
+        message: "reCAPTCHA verification failed. Please try again.",
+        error: recaptchaVerification.error
+      });
+    }
+    
+    console.log("reCAPTCHA verified successfully");
+    
+    // Validate phone number
+    if (!phone || phone.trim() === '') {
+      return res.status(400).json({ message: "Phone number is required" });
+    }
+    
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
+      return res.status(400).json({ message: "Phone number must be exactly 10 digits" });
+    }
     
     // Parse JSON answers
     if (questionAnswers && typeof questionAnswers === 'string') {

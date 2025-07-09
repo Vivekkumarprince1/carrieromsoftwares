@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { jobService, applicationService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import JobQuestionAnswer from '../components/JobQuestionAnswer';
@@ -34,6 +35,8 @@ const Apply = () => {
   const [parseSuccess, setParseSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
+  const [recaptchaValue, setRecaptchaValue] = useState(null);
+  const recaptchaRef = useRef(null);
 
   useEffect(() => {
     if (!currentUser) {
@@ -88,10 +91,18 @@ const Apply = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
-    }));
+    
+    // Special handling for phone number
+    if (name === 'phone') {
+      // Allow only digits and limit to 10 characters
+      const phoneValue = value.replace(/\D/g, '').slice(0, 10);
+      setFormData(prev => ({ ...prev, [name]: phoneValue }));
+    } else {
+      setFormData(prev => ({ 
+        ...prev, 
+        [name]: type === 'checkbox' ? checked : value 
+      }));
+    }
     
     if (formErrors[name]) {
       setFormErrors(prev => ({ ...prev, [name]: null }));
@@ -207,6 +218,45 @@ const Apply = () => {
     }
   };
 
+  const handleAnswerChange = (questionId, answer, file = null) => {
+    setQuestionAnswers(prevAnswers => {
+      const newAnswers = [...prevAnswers];
+      const answerIndex = newAnswers.findIndex(a => a.questionId === questionId);
+      
+      if (answerIndex >= 0) {
+        newAnswers[answerIndex] = { ...newAnswers[answerIndex], answer, fileUrl: file };
+      } else {
+        const question = jobQuestions.find(q => q._id === questionId);
+        newAnswers.push({
+          questionId,
+          questionText: question?.questionText || '',
+          questionType: question?.questionType || 'text',
+          answer,
+          fileUrl: file
+        });
+      }
+      
+      return newAnswers;
+    });
+
+    // Clear form error for this question if it exists
+    const errorKey = `question_${questionId}`;
+    if (formErrors[errorKey]) {
+      setFormErrors(prev => ({ ...prev, [errorKey]: null }));
+    }
+  };
+
+  const handleRecaptchaChange = (value) => {
+    setRecaptchaValue(value);
+    if (formErrors.recaptcha) {
+      setFormErrors(prev => ({ ...prev, recaptcha: null }));
+    }
+  };
+
+  const handleRecaptchaExpired = () => {
+    setRecaptchaValue(null);
+  };
+
   const validateForm = () => {
     const errors = {};
     let isValid = true;
@@ -224,6 +274,9 @@ const Apply = () => {
     if (!formData.phone.trim()) {
       errors.phone = 'Phone number is required';
       isValid = false;
+    } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+      errors.phone = 'Phone number must be exactly 10 digits';
+      isValid = false;
     }
     
     if (!formData.resume) {
@@ -233,6 +286,11 @@ const Apply = () => {
     
     if (!formData.coverLetter.trim()) {
       errors.coverLetter = 'Cover letter is required';
+      isValid = false;
+    }
+
+    if (!recaptchaValue) {
+      errors.recaptcha = 'Please complete the reCAPTCHA';
       isValid = false;
     }
 
@@ -283,6 +341,7 @@ const Apply = () => {
       applicationFormData.append('education', formData.education);
       applicationFormData.append('skills', formData.skills);
       applicationFormData.append('coverLetter', formData.coverLetter);
+      applicationFormData.append('recaptchaToken', recaptchaValue);
       
       // Add referral data if provided
       if (formData.isReferred) {
@@ -511,8 +570,11 @@ const Apply = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
+                      placeholder="1234567890"
+                      maxLength={10}
                       required
                     />
+                    <div className="text-xs text-gray-400 mt-1">Enter 10 digit mobile number</div>
                     {formErrors.phone && <div className="text-red-500 text-sm mt-1">{formErrors.phone}</div>}
                   </div>
                   
@@ -585,13 +647,25 @@ const Apply = () => {
                         <JobQuestionAnswer
                           key={question._id}
                           question={question}
-                          onChange={handleQuestionAnswerChange}
+                          onChange={handleAnswerChange}
                           value={questionAnswers.find(a => a.questionId === question._id)}
                           error={formErrors[`question_${question._id}`]}
                         />
                       ))}
                     </div>
                   ) : null}
+                  
+                  {/* reCAPTCHA */}
+                  <div className="mt-6">
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"} // Test key, replace with your actual key
+                      onChange={handleRecaptchaChange}
+                      onExpired={handleRecaptchaExpired}
+                      theme="dark"
+                    />
+                    {formErrors.recaptcha && <div className="text-red-500 text-sm mt-1">{formErrors.recaptcha}</div>}
+                  </div>
                   
                   <div className="flex flex-col md:flex-row gap-4 mt-10">
                     <button 

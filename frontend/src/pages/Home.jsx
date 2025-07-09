@@ -57,6 +57,11 @@ const Home = () => {
     fetchData();
   }, []);
 
+  const handleapplynow = () => {
+    navigate('/jobs');
+  };
+
+
   // Auto-slide reviews every 6 seconds (slightly longer for better UX)
   useEffect(() => {
     if (reviews.length > 3) {

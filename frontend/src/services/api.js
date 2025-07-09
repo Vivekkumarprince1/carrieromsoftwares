@@ -111,6 +111,10 @@ export const contactService = {
 export const authService = {
   login: (credentials) => api.post('/api/auth/login', credentials),
   register: (userData) => api.post('/api/auth/register', userData),
+  verifyEmail: (data) => api.post('/api/auth/verify-email', data),
+  resendVerificationOTP: (data) => api.post('/api/auth/resend-verification', data),
+  forgotPassword: (data) => api.post('/api/auth/forgot-password', data),
+  resetPassword: (data) => api.post('/api/auth/reset-password', data),
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
