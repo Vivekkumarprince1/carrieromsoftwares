@@ -45,6 +45,7 @@ router.post("/parse-resume", auth, resumeUpload.single("resume"), applicationCon
 router.get("/my", auth, applicationController.getMyApplications);
 router.get("/my/:applicationId/offer-letter", auth, applicationController.getMyApplicationOfferLetter);
 router.get("/for-recommendation", auth, applicationController.getApplicationsForRecommendation);
+router.get("/check-status/:jobId", auth, applicationController.checkApplicationStatus);
 
 // New routes for question handling
 router.post("/upload-question-file", auth, questionFileUpload.single("file"), applicationController.uploadQuestionFile);

@@ -222,6 +222,7 @@ export const applicationService = {
   getMyApplications: () => api.get('/api/applications/my'),
   getApplicationsForRecommendation: () => api.get('/api/applications/for-recommendation'),
   getApplicationById: (id) => api.get(`/api/applications/${id}/detail`),
+  checkApplicationStatus: (jobId) => api.get(`/api/applications/check-status/${jobId}`),
   createApplication: (formData, onUploadProgress = null) => {
     const config = {
       headers: {

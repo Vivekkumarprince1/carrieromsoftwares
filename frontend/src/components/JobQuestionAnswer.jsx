@@ -7,22 +7,12 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
   const [focused, setFocused] = useState(false);
 
   const handleTextChange = (e) => {
-    onChange({
-      questionId: question._id,
-      questionText: question.questionText,
-      questionType: question.questionType,
-      answer: e.target.value
-    });
+    onChange(question._id, e.target.value);
   };
 
   const handleCheckboxChange = (e) => {
     if (e.target.name === 'singleCheckbox') {
-      onChange({
-        questionId: question._id,
-        questionText: question.questionText,
-        questionType: question.questionType,
-        answer: e.target.checked
-      });
+      onChange(question._id, e.target.checked);
       return;
     }
 
@@ -37,21 +27,11 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
       selectedOptions = selectedOptions.filter(item => item !== option);
     }
 
-    onChange({
-      questionId: question._id,
-      questionText: question.questionText,
-      questionType: question.questionType,
-      answer: selectedOptions
-    });
+    onChange(question._id, selectedOptions);
   };
 
   const handleRadioChange = (e) => {
-    onChange({
-      questionId: question._id,
-      questionText: question.questionText,
-      questionType: question.questionType,
-      answer: e.target.value
-    });
+    onChange(question._id, e.target.value);
   };
 
   const handleFileChange = async (e) => {
@@ -73,13 +53,7 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
       clearInterval(interval);
       setUploadProgress(100);
 
-      onChange({
-        questionId: question._id,
-        questionText: question.questionText,
-        questionType: question.questionType,
-        answer: file.name,
-        fileUrl: response.data.fileUrl
-      });
+      onChange(question._id, file.name, response.data.fileUrl);
 
       setTimeout(() => {
         setFileUploading(false);
@@ -88,22 +62,13 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
       console.error("File upload error:", err);
       setFileUploading(false);
       
-      onChange({
-        questionId: question._id,
-        questionText: question.questionText,
-        questionType: question.questionType,
-        error: err.response?.data?.message || 'Error uploading file'
-      });
+      // Handle error case - you might want to show this error to the user
+      // For now, we'll just log it and not call onChange with error
     }
   };
 
   const handleRatingChange = (rating) => {
-    onChange({
-      questionId: question._id,
-      questionText: question.questionText,
-      questionType: question.questionType,
-      answer: rating
-    });
+    onChange(question._id, rating);
   };
 
   const renderQuestionInput = () => {
@@ -142,14 +107,14 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
                   />
                   <div className={`w-5 h-5 border-2 rounded-full transition-all duration-300 
                                 ${value?.answer === option 
-                                  ? 'border-lime-brand bg-white dark:bg-gray-800' 
+                                  ? 'border-lime-brand bg-white dark:bg-gray-400' 
                                   : 'border-gray-400 dark:border-gray-600 group-hover:border-lime-brand-light'}`}>
                     {value?.answer === option && (
                       <div className="w-3 h-3 bg-lime-brand rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
                     )}
                   </div>
                 </div>
-                <label className={`text-gray-800 dark:text-gray-200 cursor-pointer hover:text-lime-brand dark:hover:text-lime-brand transition-colors ${value?.answer === option ? 'font-medium text-lime-brand-dark dark:text-lime-brand-light' : ''}`} 
+                <label className={`text-gray-400 dark:text-gray-200 cursor-pointer hover:text-lime-brand dark:hover:text-lime-brand transition-colors ${value?.answer === option ? 'font-medium text-lime-brand-dark dark:text-lime-brand-light' : ''}`} 
                        htmlFor={`option_${question._id}_${index}`}>
                   {option}
                 </label>
@@ -184,7 +149,7 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
                     )}
                   </div>
                 </div>
-                <label className={`text-gray-800 dark:text-gray-200 cursor-pointer hover:text-lime-brand dark:hover:text-lime-brand transition-colors ${Array.isArray(value?.answer) && value.answer.includes(option) ? 'font-medium text-lime-brand-dark dark:text-lime-brand-light' : ''}`} 
+                <label className={`text-gray-400 dark:text-gray-200 cursor-pointer hover:text-lime-brand dark:hover:text-lime-brand transition-colors ${Array.isArray(value?.answer) && value.answer.includes(option) ? 'font-medium text-lime-brand-dark dark:text-lime-brand-light' : ''}`} 
                        htmlFor={`option_${question._id}_${index}`}>
                   {option}
                 </label>
@@ -202,7 +167,7 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
             <div className="relative">
               <input
                 type="file"
-                className={`block w-full text-sm text-gray-700 dark:text-gray-300
+                className={`block w-full text-sm text-gray-400 dark:text-gray-300
                             file:mr-4 file:py-2 file:px-4
                             file:rounded-lg file:border-0
                             file:text-sm file:font-medium
@@ -217,7 +182,7 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
             
             {fileUploading && (
               <div className="mt-3">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                <div className="w-full bg-gray-200 dark:bg-gray-400 rounded-full h-2.5">
                   <div 
                     className="bg-lime-brand h-2.5 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
@@ -227,7 +192,7 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
                     aria-valuemax="100"
                   ></div>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{uploadProgress}% uploaded</p>
+                <p className="text-xs text-gray-400 dark:text-gray-400 mt-1">{uploadProgress}% uploaded</p>
               </div>
             )}
             
@@ -254,7 +219,7 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
                   className={`w-10 h-10 flex items-center justify-center rounded-full transition duration-300 ease-in-out
                             ${value?.answer >= index + 1 
                               ? 'bg-lime-brand-light text-white shadow-md transform scale-110' 
-                              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-lime-brand-light/70 hover:text-white'}`}
+                              : 'bg-gray-200 dark:bg-gray-400 text-gray-400 dark:text-gray-300 hover:bg-lime-brand-light/70 hover:text-white'}`}
                   onClick={() => handleRatingChange(index + 1)}
                   aria-label={`Rate ${index + 1} out of ${maxRating}`}
                 >
@@ -262,7 +227,7 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <p className="mt-2 text-sm text-gray-400 dark:text-gray-300">
               {value?.answer ? `Your rating: ${value.answer}/${maxRating}` : 'Click to rate'}
             </p>
             {question.required && !value?.answer && (
@@ -272,13 +237,13 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
         );
         
       default:
-        return <div className="text-gray-500 dark:text-gray-400 italic">Unsupported question type</div>;
+        return <div className="text-gray-400 dark:text-gray-400 italic">Unsupported question type</div>;
     }
   };
 
   return (
     <div className="mb-6">
-      <label className="block text-gray-800 dark:text-gray-200 font-medium mb-2">
+      <label className="block text-gray-400 dark:text-gray-200 font-medium mb-2">
         {question.questionText}
         {question.required && <span className="text-red-500 ml-1">*</span>}
       </label>

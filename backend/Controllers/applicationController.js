@@ -83,6 +83,22 @@ exports.createApplication = async (req, res) => {
       return res.status(404).json({ message: "Job not found or no longer active" });
     }
 
+    // Check if user has already applied for this job with non-rejected status
+    const existingApplication = await Application.findOne({
+      userId: req.user.userId,
+      jobId: jobId,
+      status: { $ne: 'rejected' }
+    });
+
+    if (existingApplication) {
+      console.log(`User ${req.user.userId} has already applied for job ${jobId} with status: ${existingApplication.status}`);
+      return res.status(400).json({ 
+        message: "You have already applied for this job. You can only apply again if your previous application was rejected.",
+        existingApplicationId: existingApplication._id,
+        existingApplicationStatus: existingApplication.status
+      });
+    }
+
     // Validate referrer if referral is provided
     // if (isReferred && referrerEmployeeId) {
     //   console.log(`Application: checking referrer ${referrerEmployeeId}`);
@@ -1186,6 +1202,36 @@ async function sendEmailWithPDFBuffer(to, subject, htmlContent, pdfBuffer, filen
   };
   await transporter.sendMail(mailOptions);
 }
+
+// Check if user has already applied for a specific job
+exports.checkApplicationStatus = async (req, res) => {
+  console.log("Check: app status for job", req.params.jobId);
+  try {
+    const { jobId } = req.params;
+    const userId = req.user.userId;
+    
+    const existingApplication = await Application.findOne({
+      userId: userId,
+      jobId: jobId,
+      status: { $ne: 'rejected' }
+    });
+    
+    if (existingApplication) {
+      return res.status(200).json({
+        hasApplied: true,
+        applicationId: existingApplication._id,
+        status: existingApplication.status,
+        appliedDate: existingApplication.createdAt
+      });
+    } else {
+      return res.status(200).json({
+        hasApplied: false
+      });
+    }
+  } catch (error) {
+    handleError(res, error, "checkAppStatus");
+  }
+};
 
 function handleError(res, error, funcName) {
   console.error(`Error in ${funcName}:`, error.message);
