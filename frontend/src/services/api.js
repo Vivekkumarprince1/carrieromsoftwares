@@ -111,6 +111,10 @@ export const contactService = {
 export const authService = {
   login: (credentials) => api.post('/api/auth/login', credentials),
   register: (userData) => api.post('/api/auth/register', userData),
+  verifyEmail: (data) => api.post('/api/auth/verify-email', data),
+  resendVerificationOTP: (data) => api.post('/api/auth/resend-verification', data),
+  forgotPassword: (data) => api.post('/api/auth/forgot-password', data),
+  resetPassword: (data) => api.post('/api/auth/reset-password', data),
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -218,6 +222,7 @@ export const applicationService = {
   getMyApplications: () => api.get('/api/applications/my'),
   getApplicationsForRecommendation: () => api.get('/api/applications/for-recommendation'),
   getApplicationById: (id) => api.get(`/api/applications/${id}/detail`),
+  checkApplicationStatus: (jobId) => api.get(`/api/applications/check-status/${jobId}`),
   createApplication: (formData, onUploadProgress = null) => {
     const config = {
       headers: {

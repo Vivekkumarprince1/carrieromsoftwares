@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { jobService, applicationService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import JobQuestionAnswer from '../components/JobQuestionAnswer';
@@ -34,6 +35,9 @@ const Apply = () => {
   const [parseSuccess, setParseSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
+  const [recaptchaValue, setRecaptchaValue] = useState(null);
+  const [existingApplication, setExistingApplication] = useState(null);
+  const recaptchaRef = useRef(null);
 
   useEffect(() => {
     if (!currentUser) {
@@ -76,6 +80,16 @@ const Apply = () => {
         } finally {
           setLoadingQuestions(false);
         }
+        
+        // Check if user has already applied for this job
+        try {
+          const statusResponse = await applicationService.checkApplicationStatus(actualJobId);
+          if (statusResponse.data.hasApplied) {
+            setExistingApplication(statusResponse.data);
+          }
+        } catch (err) {
+          console.error("Error checking application status:", err);
+        }
       } catch (err) {
         setError(err.response?.data?.message || 'Error loading job details');
       } finally {
@@ -88,10 +102,18 @@ const Apply = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
-    }));
+    
+    // Special handling for phone number
+    if (name === 'phone') {
+      // Allow only digits and limit to 10 characters
+      const phoneValue = value.replace(/\D/g, '').slice(0, 10);
+      setFormData(prev => ({ ...prev, [name]: phoneValue }));
+    } else {
+      setFormData(prev => ({ 
+        ...prev, 
+        [name]: type === 'checkbox' ? checked : value 
+      }));
+    }
     
     if (formErrors[name]) {
       setFormErrors(prev => ({ ...prev, [name]: null }));
@@ -207,6 +229,45 @@ const Apply = () => {
     }
   };
 
+  const handleAnswerChange = (questionId, answer, file = null) => {
+    setQuestionAnswers(prevAnswers => {
+      const newAnswers = [...prevAnswers];
+      const answerIndex = newAnswers.findIndex(a => a.questionId === questionId);
+      
+      if (answerIndex >= 0) {
+        newAnswers[answerIndex] = { ...newAnswers[answerIndex], answer, fileUrl: file };
+      } else {
+        const question = jobQuestions.find(q => q._id === questionId);
+        newAnswers.push({
+          questionId,
+          questionText: question?.questionText || '',
+          questionType: question?.questionType || 'text',
+          answer,
+          fileUrl: file
+        });
+      }
+      
+      return newAnswers;
+    });
+
+    // Clear form error for this question if it exists
+    const errorKey = `question_${questionId}`;
+    if (formErrors[errorKey]) {
+      setFormErrors(prev => ({ ...prev, [errorKey]: null }));
+    }
+  };
+
+  const handleRecaptchaChange = (value) => {
+    setRecaptchaValue(value);
+    if (formErrors.recaptcha) {
+      setFormErrors(prev => ({ ...prev, recaptcha: null }));
+    }
+  };
+
+  const handleRecaptchaExpired = () => {
+    setRecaptchaValue(null);
+  };
+
   const validateForm = () => {
     const errors = {};
     let isValid = true;
@@ -224,6 +285,9 @@ const Apply = () => {
     if (!formData.phone.trim()) {
       errors.phone = 'Phone number is required';
       isValid = false;
+    } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+      errors.phone = 'Phone number must be exactly 10 digits';
+      isValid = false;
     }
     
     if (!formData.resume) {
@@ -233,6 +297,11 @@ const Apply = () => {
     
     if (!formData.coverLetter.trim()) {
       errors.coverLetter = 'Cover letter is required';
+      isValid = false;
+    }
+
+    if (!recaptchaValue) {
+      errors.recaptcha = 'Please complete the reCAPTCHA';
       isValid = false;
     }
 
@@ -261,6 +330,12 @@ const Apply = () => {
     e.preventDefault();
     setError('');
     
+    // Check if user has already applied and cannot reapply
+    if (existingApplication && existingApplication.status !== 'rejected') {
+      setError(`You have already applied for this position. Current status: ${existingApplication.status}. You can only apply again if your application is rejected.`);
+      return;
+    }
+    
     if (!validateForm()) {
       const firstErrorField = document.querySelector('.border-red-500');
       if (firstErrorField) {
@@ -283,6 +358,7 @@ const Apply = () => {
       applicationFormData.append('education', formData.education);
       applicationFormData.append('skills', formData.skills);
       applicationFormData.append('coverLetter', formData.coverLetter);
+      applicationFormData.append('recaptchaToken', recaptchaValue);
       
       // Add referral data if provided
       if (formData.isReferred) {
@@ -437,6 +513,32 @@ const Apply = () => {
               <h3 className="text-xl font-medium text-white w-full md:w-1/3 mb-4 md:mb-0">Your Application</h3>
               <div className="w-full md:w-2/3 mt-4">
                 {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 relative z-50">{error}</div>}
+                
+                {existingApplication && (
+                  <div className={`border px-4 py-3 rounded mb-6 relative z-50 ${
+                    existingApplication.status === 'rejected' 
+                      ? 'bg-yellow-100 border-yellow-400 text-yellow-700' 
+                      : 'bg-red-100 border-red-400 text-red-700'
+                  }`}>
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <div>
+                        <strong>Application Status:</strong> You have already applied for this position on {new Date(existingApplication.appliedDate).toLocaleDateString()}.
+                        <br />
+                        <strong>Current Status:</strong> {existingApplication.status}
+                        {existingApplication.status === 'rejected' && (
+                          <span className="block mt-1 text-sm">Since your previous application was rejected, you can submit a new application.</span>
+                        )}
+                        {existingApplication.status !== 'rejected' && (
+                          <span className="block mt-1 text-sm">You cannot apply again until your current application is rejected.</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
                     <label htmlFor="resume" className="block font-bold text-white mb-2">
@@ -511,8 +613,11 @@ const Apply = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
+                      placeholder="1234567890"
+                      maxLength={10}
                       required
                     />
+                    <div className="text-xs text-gray-400 mt-1">Enter 10 digit mobile number</div>
                     {formErrors.phone && <div className="text-red-500 text-sm mt-1">{formErrors.phone}</div>}
                   </div>
                   
@@ -585,7 +690,7 @@ const Apply = () => {
                         <JobQuestionAnswer
                           key={question._id}
                           question={question}
-                          onChange={handleQuestionAnswerChange}
+                          onChange={handleAnswerChange}
                           value={questionAnswers.find(a => a.questionId === question._id)}
                           error={formErrors[`question_${question._id}`]}
                         />
@@ -593,11 +698,27 @@ const Apply = () => {
                     </div>
                   ) : null}
                   
+                  {/* reCAPTCHA */}
+                  <div className="mt-6">
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"} // Test key, replace with your actual key
+                      onChange={handleRecaptchaChange}
+                      onExpired={handleRecaptchaExpired}
+                      theme="dark"
+                    />
+                    {formErrors.recaptcha && <div className="text-red-500 text-sm mt-1">{formErrors.recaptcha}</div>}
+                  </div>
+                  
                   <div className="flex flex-col md:flex-row gap-4 mt-10">
                     <button 
                       type="submit" 
-                      className="flex-1 inline-flex items-center bg-gray-700 justify-center px-8 py-4 font-semibold rounded-lg shadow-lg hover:bg-primary-dark hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50"
-                      disabled={submitting}
+                      className={`flex-1 inline-flex items-center justify-center px-8 py-4 font-semibold rounded-lg shadow-lg transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 ${
+                        submitting || (existingApplication && existingApplication.status !== 'rejected')
+                          ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                          : 'bg-gray-700 hover:bg-primary-dark hover:shadow-xl hover:-translate-y-1'
+                      }`}
+                      disabled={submitting || (existingApplication && existingApplication.status !== 'rejected')}
                     >
                       {submitting ? (
                         <>
@@ -606,6 +727,17 @@ const Apply = () => {
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                           Submitting Application...
+                        </>
+                      ) : existingApplication && existingApplication.status !== 'rejected' ? (
+                        <>
+                          Already Applied ({existingApplication.status})
+                        </>
+                      ) : existingApplication && existingApplication.status === 'rejected' ? (
+                        <>
+                          Reapply for Position
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
                         </>
                       ) : (
                         <>

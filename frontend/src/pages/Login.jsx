@@ -45,14 +45,37 @@ const Login = () => {
     
     try {
       const response = await login(formData);
+      
+      console.log('Login response:', response);
+      console.log('User role:', response.user?.role);
+      console.log('From path:', from);
+      
       // Check if user is admin and redirect accordingly
       if (response.user && response.user.role === 'admin') {
-        navigate('/dashboard');
+        console.log('Navigating to dashboard for admin');
+        navigate('/dashboard', { replace: true });
       } else {
-        navigate(from);
+        // For regular users, navigate to home page or the intended page
+        // But avoid redirecting to admin-only routes
+        let targetPath = from;
+        
+        // Check if the target path is admin-only
+        if (from === '/dashboard' || from.startsWith('/admin/') || from.startsWith('/certificates') || from.startsWith('/offer-letters')) {
+          targetPath = '/';
+        }
+        
+        console.log('Navigating to:', targetPath);
+        navigate(targetPath, { replace: true });
       }
+      
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid login credentials');
+      const errorData = err.response?.data;
+      if (errorData?.requiresVerification) {
+        // Redirect to email verification if email is not verified
+        navigate('/verify-email', { state: { email: formData.email, password: formData.password } });
+      } else {
+        setError(errorData?.message || 'Invalid login credentials');
+      }
     } finally {
       setLoading(false);
     }
@@ -65,7 +88,7 @@ const Login = () => {
           <h2 className="text-3xl font-extrabold text-white">Sign in to your account</h2>
           <p className="mt-2 text-sm text-gray-400">
             Or{' '}
-            <Link to="/register" className="font-medium text-primary-yellow hover:text-yellow-400">
+            <Link to="/register" className="font-medium text-lime-400 hover:text-lime-300">
               create a new account
             </Link>
           </p>
@@ -89,7 +112,7 @@ const Login = () => {
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
               <input
                 type="email"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-yellow focus:border-transparent text-white"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent text-white"
                 id="email"
                 name="email"
                 value={formData.email}
@@ -102,13 +125,13 @@ const Login = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-300">Password</label>
-                <Link to="/forgot-password" className="text-xs text-primary-yellow hover:text-yellow-400">
+                <Link to="/forgot-password" className="text-xs text-lime-400 hover:text-lime-300">
                   Forgot your password?
                 </Link>
               </div>
               <input
                 type="password"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-yellow focus:border-transparent text-white"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent text-white"
                 id="password"
                 name="password"
                 value={formData.password}
@@ -121,7 +144,7 @@ const Login = () => {
             <div>
               <button 
                 type="submit" 
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-primary-yellow hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-yellow transition-colors duration-300 disabled:opacity-70"
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-lime-400 hover:bg-lime-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-400 transition-colors duration-300 disabled:opacity-70"
                 disabled={loading}
               >
                 {loading ? (

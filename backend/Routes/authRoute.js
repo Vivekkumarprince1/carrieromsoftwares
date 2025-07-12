@@ -5,6 +5,10 @@ const { verifyAdmin, auth } = require("../middleware/authMiddleware");
 
 router.post("/register", authController.register);
 router.post("/login", authController.login);
+router.post("/verify-email", authController.verifyEmail);
+router.post("/resend-verification", authController.resendVerificationOTP);
+router.post("/forgot-password", authController.forgotPassword);
+router.post("/reset-password", authController.resetPassword);
 router.get("/users", auth, verifyAdmin, authController.getAllUsers);
 router.get("/logout", auth,(req, res) => {
     res.clearCookie("token");

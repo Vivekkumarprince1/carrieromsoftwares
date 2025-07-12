@@ -1,7 +1,14 @@
 import React from 'react';
 import { ArrowRight, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const CareerBanner = () => {
+  const navigate = useNavigate();
+
+  const handleViewOpenings = () => {
+    navigate('/jobs');
+  };
+
   return (
     <div className="relative min-h-screen bg-cover bg-center bg-no-repeat overflow-hidden" 
          style={{ backgroundImage: 'url(/images/output.jpg)' }}>
@@ -27,12 +34,11 @@ const CareerBanner = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 items-center lg:items-start justify-center lg:justify-start">
-              <button className="group bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-xl flex items-center gap-2 w-full sm:w-auto justify-center shadow-lg">
-                APPLY NOW 
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
               
-              <button className="group bg-transparent border-2 border-white hover:bg-white hover:text-gray-800 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 flex items-center gap-2 w-full sm:w-auto justify-center">
+              <button 
+                onClick={handleViewOpenings}
+                className="group bg-transparent border-2 border-white hover:bg-white hover:text-gray-800 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 flex items-center gap-2 w-full sm:w-auto justify-center"
+              >
                 <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                 VIEW OPENINGS
               </button>
@@ -57,12 +63,12 @@ const CareerBanner = () => {
       </div>
       
       {/* Bottom section with chairs - responsive */}
-      <div className="absolute bottom-0 right-0 z-10 hidden sm:block">
-        <div className="pb-4 sm:pb-8">
+      <div className="absolute bottom-0 right-0 z-10">
+        <div className="pb-2 sm:pb-4 md:pb-8">
           <img 
             src="/images/chairs.png" 
             alt="Chair" 
-            className="h-32 sm:h-40 lg:h-52 object-contain transform hover:scale-105 transition-transform duration-300" 
+            className="h-20 sm:h-32 md:h-40 lg:h-52 object-contain transform hover:scale-105 transition-transform duration-300" 
           />
         </div>
       </div>

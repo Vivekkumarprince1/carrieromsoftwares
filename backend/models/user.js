@@ -17,7 +17,27 @@ const userSchema = new mongoose.Schema({
   accountStatus: {
     type: String,
     enum: ["active", "inactive", "pending", "suspended"],
-    default: "active"
+    default: "pending"
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationOTP: {
+    type: String,
+    default: null
+  },
+  emailVerificationOTPExpiry: {
+    type: Date,
+    default: null
+  },
+  passwordResetOTP: {
+    type: String,
+    default: null
+  },
+  passwordResetOTPExpiry: {
+    type: Date,
+    default: null
   },
   moreInfo: { type: mongoose.Schema.Types.ObjectId, ref: "UserMoreInfo" }, 
   offerLetter: { type: mongoose.Schema.Types.ObjectId, ref: "OfferLetter" }, 

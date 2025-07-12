@@ -234,3 +234,122 @@ exports.sendContractSubmissionConfirmation = async (contractDetails) => {
     throw error;
   }
 };
+
+// OTP Email Functions
+exports.sendEmailVerificationOTP = async (email, otp, name) => {
+  console.log(`Sending verification OTP to: ${email}`);
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Email Verification - OM Softwares',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+          <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #2563eb; margin: 0; font-size: 28px;">OM Softwares</h1>
+              <p style="color: #6b7280; margin: 5px 0 0 0;">Email Verification</p>
+            </div>
+            
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Verify Your Email Address</h2>
+            
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">Dear ${name || 'User'},</p>
+            
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">
+              To complete your registration, please use the following verification code:
+            </p>
+            
+            <div style="background-color: #f3f4f6; padding: 30px; border-radius: 8px; margin: 30px 0; text-align: center;">
+              <h1 style="color: #1f2937; font-size: 36px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace;">
+                ${otp}
+              </h1>
+            </div>
+            
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">
+              This code will expire in 10 minutes for security reasons.
+            </p>
+            
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0;">
+              <p style="color: #92400e; margin: 0; line-height: 1.6;">
+                <strong>Security Note:</strong> Never share this code with anyone. OM Softwares will never ask for your verification code.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                Best regards,<br>
+                <strong>OM Softwares Team</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+    
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Verification OTP sent to: ${email}`);
+    return result;
+  } catch (error) {
+    console.error('Failed to send verification OTP:', error);
+    throw error;
+  }
+};
+
+exports.sendPasswordResetOTP = async (email, otp, name) => {
+  console.log(`Sending password reset OTP to: ${email}`);
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Password Reset - OM Softwares',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+          <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #2563eb; margin: 0; font-size: 28px;">OM Softwares</h1>
+              <p style="color: #6b7280; margin: 5px 0 0 0;">Password Reset</p>
+            </div>
+            
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Reset Your Password</h2>
+            
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">Dear ${name || 'User'},</p>
+            
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">
+              You have requested to reset your password. Please use the following verification code:
+            </p>
+            
+            <div style="background-color: #f3f4f6; padding: 30px; border-radius: 8px; margin: 30px 0; text-align: center;">
+              <h1 style="color: #1f2937; font-size: 36px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace;">
+                ${otp}
+              </h1>
+            </div>
+            
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">
+              This code will expire in 10 minutes for security reasons.
+            </p>
+            
+            <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 20px; margin: 20px 0;">
+              <p style="color: #dc2626; margin: 0; line-height: 1.6;">
+                <strong>Important:</strong> If you didn't request this password reset, please ignore this email and contact our support team immediately.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                Best regards,<br>
+                <strong>OM Softwares Team</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+    
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Password reset OTP sent to: ${email}`);
+    return result;
+  } catch (error) {
+    console.error('Failed to send password reset OTP:', error);
+    throw error;
+  }
+};

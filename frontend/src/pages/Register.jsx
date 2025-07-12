@@ -35,8 +35,14 @@ const Register = () => {
     try {
       const { name, email, password } = formData;
       const registrationData = { name, email, password };
-      await register(registrationData);
-      navigate('/login');
+      const response = await register(registrationData);
+      
+      // Check if email verification is required
+      if (response?.data?.requiresVerification) {
+        navigate('/verify-email', { state: { email, password } });
+      } else {
+        navigate('/login');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred during registration');
     } finally {
@@ -51,7 +57,7 @@ const Register = () => {
           <h2 className="text-3xl font-extrabold text-white">Create an account</h2>
           <p className="mt-2 text-sm text-gray-400">
             Or{' '}
-            <Link to="/login" className="font-medium text-primary-yellow hover:text-yellow-400">
+            <Link to="/login" className="font-medium text-lime-400 hover:text-lime-300">
               sign in to your existing account
             </Link>
           </p>
@@ -69,7 +75,7 @@ const Register = () => {
               <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">Full Name</label>
               <input
                 type="text"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-yellow focus:border-transparent text-white"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent text-white"
                 id="name"
                 name="name"
                 value={formData.name}
@@ -83,7 +89,7 @@ const Register = () => {
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
               <input
                 type="email"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-yellow focus:border-transparent text-white"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent text-white"
                 id="email"
                 name="email"
                 value={formData.email}
@@ -97,7 +103,7 @@ const Register = () => {
               <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">Password</label>
               <input
                 type="password"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-yellow focus:border-transparent text-white"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent text-white"
                 id="password"
                 name="password"
                 value={formData.password}
@@ -111,7 +117,7 @@ const Register = () => {
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">Confirm Password</label>
               <input
                 type="password"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-yellow focus:border-transparent text-white"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent text-white"
                 id="confirmPassword"
                 name="confirmPassword"
                 value={formData.confirmPassword}
@@ -124,7 +130,7 @@ const Register = () => {
             <div>
               <button 
                 type="submit" 
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-primary-yellow hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-yellow transition-colors duration-300 disabled:opacity-70"
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-lime-400 hover:bg-lime-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-400 transition-colors duration-300 disabled:opacity-70"
                 disabled={loading}
               >
                 {loading ? (
@@ -141,11 +147,11 @@ const Register = () => {
             
             <p className="text-center text-xs text-gray-500 mt-4">
               By registering, you agree to our{' '}
-              <a href="/terms" className="text-primary-yellow hover:text-yellow-400">
+              <a href="/terms" className="text-lime-400 hover:text-lime-300">
                 Terms of Service
               </a>{' '}
               and{' '}
-              <a href="/privacy" className="text-primary-yellow hover:text-yellow-400">
+              <a href="/privacy" className="text-lime-400 hover:text-lime-300">
                 Privacy Policy
               </a>
             </p>
