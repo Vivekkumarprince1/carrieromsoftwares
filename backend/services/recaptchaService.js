@@ -16,6 +16,12 @@ class RecaptchaService {
       return { success: false, error: 'reCAPTCHA token is required' };
     }
 
+    // Allow bypass for test keys in development
+    if (this.secretKey === '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe') {
+      console.warn('Using test reCAPTCHA key - bypassing verification for development');
+      return { success: true, score: 0.9 };
+    }
+
     try {
       const params = new URLSearchParams();
       params.append('secret', this.secretKey);
