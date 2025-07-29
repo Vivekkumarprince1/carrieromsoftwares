@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const RecentApplicationsTable = ({ applications, getJobById, getStatusLabel }) => {
-  const [showAll, setShowAll] = useState(false);
+const RecentApplicationsTable = ({ applications, getJobById, getStatusLabel, initialShowAll = false }) => {
+  const [showAll, setShowAll] = useState(initialShowAll);
   
   const getStatusColor = (status) => {
     const colors = {

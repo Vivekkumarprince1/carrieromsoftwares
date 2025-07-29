@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { recommendationService, applicationService } from '../services/api';
 import { notificationService } from '../services/notificationService';
@@ -39,7 +39,7 @@ const EmployeeProfile = () => {
     fetchData();
   }, [currentUser]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [recommendationsRes, applicationsRes] = await Promise.all([
         recommendationService.getMyRecommendations(),
@@ -77,9 +77,9 @@ const EmployeeProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setRecommendationForm(prev => ({ ...prev, [name]: value }));
     
@@ -89,9 +89,9 @@ const EmployeeProfile = () => {
     } else if (name === 'applicationId' && !value.trim()) {
       setSelectedApplication(null);
     }
-  };
+  }, []);
 
-  const fetchApplicationDetails = async (applicationId) => {
+  const fetchApplicationDetails = useCallback(async (applicationId) => {
     if (!applicationId.trim()) {
       setSelectedApplication(null);
       return;
@@ -129,9 +129,9 @@ const EmployeeProfile = () => {
     } finally {
       setLoadingApplication(false);
     }
-  };
+  }, [availableApplications]);
 
-  const handleSubmitRecommendation = async (e) => {
+  const handleSubmitRecommendation = useCallback(async (e) => {
     e.preventDefault();
     
     // Validate form data
@@ -178,9 +178,9 @@ const EmployeeProfile = () => {
     } finally {
       setFormLoading(false);
     }
-  };
+  }, [recommendationForm, selectedApplication, stats.pendingCount, fetchData]);
 
-  const handleDeleteRecommendation = async (id) => {
+  const handleDeleteRecommendation = useCallback(async (id) => {
     if (!window.confirm('Are you sure you want to delete this recommendation?')) {
       return;
     }
@@ -194,9 +194,9 @@ const EmployeeProfile = () => {
       console.error('Error deleting recommendation:', error);
       notificationService.error('Failed to delete recommendation');
     }
-  };
+  }, [fetchData]);
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = useCallback((status) => {
     const statusConfig = {
       pending: {
         bg: 'bg-yellow-900/30',
@@ -233,7 +233,16 @@ const EmployeeProfile = () => {
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
-  };
+  }, []);
+
+  // Memoized computed values to avoid recalculation
+  const canMakeRecommendation = useMemo(() => {
+    return stats.pendingCount < 5;
+  }, [stats.pendingCount]);
+
+  const sortedRecommendations = useMemo(() => {
+    return [...recommendations].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [recommendations]);
 
   if (loading || !currentUser) {
     return (

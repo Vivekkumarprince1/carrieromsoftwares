@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { jobService, reviewService } from '../services/api';
 import HeroSection from '../components/hero/HeroSection';
 
@@ -75,13 +75,14 @@ const Home = () => {
     }
   }, [reviews.length]);
 
-  const nextReviews = () => {
+  // Memoized handlers to prevent unnecessary re-renders
+  const nextReviews = useCallback(() => {
     setCurrentReviewIndex((prevIndex) => 
       prevIndex + 3 >= reviews.length ? 0 : prevIndex + 3
     );
-  };
+  }, [reviews.length]);
 
-  const prevReviews = () => {
+  const prevReviews = useCallback(() => {
     setCurrentReviewIndex((prevIndex) => {
       if (prevIndex === 0) {
         // Go to the last complete set of 3 reviews
@@ -90,30 +91,31 @@ const Home = () => {
       }
       return prevIndex - 3;
     });
-  };
+  }, [reviews.length]);
 
-  const getDisplayedReviews = () => {
+  // Memoized computed values to avoid recalculation on every render
+  const displayedReviews = useMemo(() => {
     // Always ensure we show exactly 3 reviews if available
     const endIndex = Math.min(currentReviewIndex + 3, reviews.length);
-    const displayedReviews = reviews.slice(currentReviewIndex, endIndex);
+    const displayedReviewsArray = reviews.slice(currentReviewIndex, endIndex);
     
     // If we have less than 3 reviews on the current page and there are more reviews available
-    if (displayedReviews.length < 3 && reviews.length >= 3) {
-      const remaining = 3 - displayedReviews.length;
+    if (displayedReviewsArray.length < 3 && reviews.length >= 3) {
+      const remaining = 3 - displayedReviewsArray.length;
       const additionalReviews = reviews.slice(0, remaining);
-      return [...displayedReviews, ...additionalReviews];
+      return [...displayedReviewsArray, ...additionalReviews];
     }
     
-    return displayedReviews;
-  };
+    return displayedReviewsArray;
+  }, [reviews, currentReviewIndex]);
 
-  const getTotalPages = () => {
+  const totalPages = useMemo(() => {
     return Math.ceil(reviews.length / 3);
-  };
+  }, [reviews.length]);
 
-  const getCurrentPage = () => {
+  const currentPage = useMemo(() => {
     return Math.floor(currentReviewIndex / 3);
-  };
+  }, [currentReviewIndex]);
 
   return (
     <div className="bg-black text-white overflow-hidden">
@@ -751,7 +753,7 @@ const Home = () => {
 
               {/* Reviews Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                {getDisplayedReviews().map((review, index) => (
+                {displayedReviews.map((review, index) => (
                   <motion.div
                     key={`${review._id}-${currentReviewIndex}`}
                     className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-6 md:p-8 shadow-lg border border-gray-800 h-full flex flex-col hover:border-lime-500/30 transition-all duration-300 hover:scale-105"
@@ -843,13 +845,13 @@ const Home = () => {
               {/* Pagination Dots */}
               {reviews.length > 3 && (
                 <div className="flex justify-center mt-8 space-x-2">
-                  {Array.from({ length: getTotalPages() }).map((_, index) => (
+                  {Array.from({ length: totalPages }).map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentReviewIndex(index * 3)}
                       aria-label={`Go to page ${index + 1}`}
                       className={`w-3 h-3 rounded-full transition-all duration-300 hover:scale-125 focus:outline-none focus:ring-2 focus:ring-lime-400 ${
-                        getCurrentPage() === index
+                        currentPage === index
                           ? 'bg-lime-500 scale-125'
                           : 'bg-gray-600 hover:bg-gray-500'
                       }`}

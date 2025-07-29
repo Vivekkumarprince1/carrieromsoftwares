@@ -1,6 +1,55 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { reviewService } from '../../services/api';
 import { Star, ChevronLeft, ChevronRight, Filter, User, Calendar, Briefcase } from 'lucide-react';
+
+// Memoized review card component to prevent unnecessary re-renders
+const ReviewCard = memo(({ review, renderStars, formatDate }) => (
+  <div key={review._id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+    {/* Header */}
+    <div className="flex items-start justify-between mb-4">
+      <div className="flex items-center space-x-3">
+        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+          <User className="w-5 h-5 text-blue-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-gray-900">{review.userName}</p>
+          <div className="flex items-center space-x-1">
+            {renderStars(review.rating)}
+          </div>
+        </div>
+      </div>
+      <div className="text-right text-sm text-gray-500">
+        <div className="flex items-center">
+          <Calendar className="w-4 h-4 mr-1" />
+          {formatDate(review.createdAt)}
+        </div>
+      </div>
+    </div>
+
+    {/* Title */}
+    {review.title && (
+      <h3 className="font-semibold text-lg text-gray-900 mb-3">{review.title}</h3>
+    )}
+
+    {/* Content */}
+    <p className="text-gray-700 mb-4 leading-relaxed">{review.content}</p>
+
+    {/* Department and Position */}
+    {(review.department || review.position) && (
+      <div className="flex items-center text-sm text-gray-600 border-t pt-3">
+        <Briefcase className="w-4 h-4 mr-2" />
+        <span>
+          {review.position && review.department 
+            ? `${review.position} - ${review.department}`
+            : review.position || review.department
+          }
+        </span>
+      </div>
+    )}
+  </div>
+));
+
+ReviewCard.displayName = 'ReviewCard';
 
 const ReviewList = () => {
   const [reviews, setReviews] = useState([]);
@@ -16,11 +65,7 @@ const ReviewList = () => {
     sortOrder: 'desc'
   });
 
-  useEffect(() => {
-    fetchReviews();
-  }, [filters]);
-
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     try {
       setLoading(true);
       const response = await reviewService.getApprovedReviews(filters);
@@ -33,17 +78,21 @@ const ReviewList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
-  const handleFilterChange = (key, value) => {
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
+
+  const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({
       ...prev,
       [key]: value,
       page: key !== 'page' ? 1 : value // Reset to page 1 when changing filters
     }));
-  };
+  }, []);
 
-  const renderStars = (rating) => {
+  const renderStars = useCallback((rating) => {
     return Array.from({ length: 5 }, (_, index) => (
       <Star
         key={index}
@@ -52,15 +101,15 @@ const ReviewList = () => {
         }`}
       />
     ));
-  };
+  }, []);
 
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -184,82 +233,12 @@ const ReviewList = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {reviews.map((review) => (
-              <div key={review._id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{review.userName}</p>
-                      <div className="flex items-center space-x-1">
-                        {renderStars(review.rating)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {formatDate(review.createdAt)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Title */}
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{review.title}</h3>
-
-                {/* Position & Department */}
-                {(review.position || review.department) && (
-                  <div className="flex items-center text-sm text-gray-600 mb-3">
-                    <Briefcase className="w-4 h-4 mr-1" />
-                    {review.position && <span>{review.position}</span>}
-                    {review.position && review.department && <span className="mx-1">•</span>}
-                    {review.department && <span>{review.department}</span>}
-                  </div>
-                )}
-
-                {/* Content */}
-                <p className="text-gray-700 mb-4 line-clamp-4">{review.content}</p>
-
-                {/* Pros and Cons */}
-                {(review.pros || review.cons) && (
-                  <div className="space-y-2 mb-4">
-                    {review.pros && (
-                      <div>
-                        <p className="text-sm font-semibold text-green-700">Pros:</p>
-                        <p className="text-sm text-gray-600 line-clamp-2">{review.pros}</p>
-                      </div>
-                    )}
-                    {review.cons && (
-                      <div>
-                        <p className="text-sm font-semibold text-red-700">Cons:</p>
-                        <p className="text-sm text-gray-600 line-clamp-2">{review.cons}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Advice */}
-                {review.advice && (
-                  <div className="border-t pt-3">
-                    <p className="text-sm font-semibold text-blue-700 mb-1">Advice to Management:</p>
-                    <p className="text-sm text-gray-600 line-clamp-2">{review.advice}</p>
-                  </div>
-                )}
-
-                {/* Footer */}
-                <div className="flex items-center justify-between mt-4 pt-3 border-t">
-                  <span className="text-xs text-gray-500 capitalize">
-                    {review.reviewerType.replace('_', ' ')}
-                  </span>
-                  {review.workType && (
-                    <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">
-                      {review.workType}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <ReviewCard 
+                key={review._id} 
+                review={review} 
+                renderStars={renderStars}
+                formatDate={formatDate}
+              />
             ))}
           </div>
         )}

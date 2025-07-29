@@ -4,7 +4,6 @@ import ReCAPTCHA from 'react-google-recaptcha';
 import { jobService, applicationService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import JobQuestionAnswer from '../components/JobQuestionAnswer';
-import { getImageUrl, getFirstLetterFallback } from '../utils/imageUtils';
 
 const Apply = () => {
   const { jobId } = useParams();

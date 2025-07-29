@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 
-const DashboardStat = ({ title, value, subtitle, icon, gradientFrom, gradientTo, borderColor, redirectTo, onScroll }) => {
-  const handleClick = () => {
+const DashboardStat = memo(({ title, value, subtitle, icon, gradientFrom, gradientTo, borderColor, redirectTo, onScroll }) => {
+  const handleClick = useCallback(() => {
     if (onScroll) {
       onScroll();
     }
-  };
+  }, [onScroll]);
 
   return (
     <div className={`bg-gradient-to-br from-${gradientFrom} to-${gradientTo} text-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-200 hover:scale-105 hover:shadow-xl border border-${borderColor} relative group`}>
@@ -67,6 +67,6 @@ const DashboardStat = ({ title, value, subtitle, icon, gradientFrom, gradientTo,
       )}
     </div>
   );
-};
+});
 
 export default DashboardStat;

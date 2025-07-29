@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { applicationService } from '../services/api';
 
-const JobQuestionAnswer = ({ question, onChange, value, error }) => {
+const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
   const [fileUploading, setFileUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [focused, setFocused] = useState(false);
 
-  const handleTextChange = (e) => {
+  const handleTextChange = useCallback((e) => {
     onChange(question._id, e.target.value);
-  };
+  }, [onChange, question._id]);
 
-  const handleCheckboxChange = (e) => {
+  const handleCheckboxChange = useCallback((e) => {
     if (e.target.name === 'singleCheckbox') {
       onChange(question._id, e.target.checked);
       return;
@@ -28,11 +28,11 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
     }
 
     onChange(question._id, selectedOptions);
-  };
+  }, [onChange, question._id, value?.answer]);
 
-  const handleRadioChange = (e) => {
+  const handleRadioChange = useCallback((e) => {
     onChange(question._id, e.target.value);
-  };
+  }, [onChange, question._id]);
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
@@ -251,6 +251,6 @@ const JobQuestionAnswer = ({ question, onChange, value, error }) => {
       {error && <div className="text-red-500 text-sm mt-1 animate-fade-in">{error}</div>}
     </div>
   );
-};
+});
 
 export default JobQuestionAnswer;

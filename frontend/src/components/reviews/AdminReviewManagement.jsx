@@ -184,9 +184,9 @@ const AdminReviewManagement = () => {
 
   return (
     <div className="min-h-screen bg-black py-8">
-      <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+      <div className="max-w-7xl pt-12 mx-auto sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mt-12 mb-6">
+        {/* <div className="mt-12 mb-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center">
@@ -196,7 +196,7 @@ const AdminReviewManagement = () => {
               <p className="mt-2 text-gray-300">Manage employee and candidate reviews</p>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">

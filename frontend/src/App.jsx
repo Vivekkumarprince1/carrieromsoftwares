@@ -27,6 +27,7 @@ import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 import ApplicationDetail from './pages/ApplicationDetail';
 import OfferAcceptance from './pages/OfferAcceptance';
+import NotificationsPage from './pages/NotificationsPage';
 
 import './index.css';
 // import './App.css';
@@ -76,6 +77,14 @@ function App() {
                 element={
                   <PrivateRoute>
                     <MyApplications />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/notifications" 
+                element={
+                  <PrivateRoute>
+                    <NotificationsPage />
                   </PrivateRoute>
                 } 
               />
