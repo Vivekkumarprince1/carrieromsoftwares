@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { applicationService, jobService, certificateService } from '../services/api';
 import DashboardStat from '../components/dashboard/DashboardStat';
 import StatusDistribution from '../components/dashboard/StatusDistribution';
@@ -6,6 +7,7 @@ import TopJobs from '../components/dashboard/TopJobs';
 import RecentApplicationsTable from '../components/dashboard/RecentApplicationsTable';
 
 const ApplicationsDashboard = () => {
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [applications, setApplications] = useState([]);
@@ -285,6 +287,7 @@ const ApplicationsDashboard = () => {
             applications={applications}
             getJobById={getJobById}
             getStatusLabel={getStatusLabel}
+            initialShowAll={true}
           />
         </div>
       </div>

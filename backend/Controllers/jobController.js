@@ -2,6 +2,7 @@ const Job = require("../models/job");
 const fs = require('fs');
 const path = require('path');
 const { uploadImage, deleteImage, extractPublicId } = require('../config/cloudinary');
+const { createJobUpdateNotifications } = require('./notificationController');
 
 // Create job
 exports.createJob = async (req, res) => {
@@ -154,12 +155,22 @@ exports.getJobById = async (req, res) => {
 exports.updateJob = async (req, res) => {
   console.log(`Update: ${req.params.id}`);
   try {
-    // Get existing
+    // Get existing job data to compare for changes
     const existingJob = await Job.findById(req.params.id);
     if (!existingJob) {
       console.log(`Not found: ${req.params.id}`);
       return res.status(404).json({ message: "Job not found" });
     }
+    
+    // Store original job data for notification comparison
+    const oldJobData = {
+      title: existingJob.title,
+      requirements: existingJob.requirements,
+      responsibilities: existingJob.responsibilities,
+      description: existingJob.description,
+      department: existingJob.department,
+      position: existingJob.position
+    };
     
     const updates = req.body;
     updates.updatedAt = Date.now();
@@ -238,6 +249,17 @@ exports.updateJob = async (req, res) => {
     console.log("Images:", { 
       image: job.image || 'none', 
       imageUrl: job.imageUrl || 'none' 
+    });
+
+    // Create notifications for job requirement updates asynchronously
+    // Don't block the response for notification creation
+    setImmediate(async () => {
+      try {
+        await createJobUpdateNotifications(req.params.id, oldJobData, job.toObject());
+      } catch (notificationError) {
+        console.error("Error creating job update notifications:", notificationError);
+        // Don't fail the job update if notification creation fails
+      }
     });
     
     res.status(200).json({

@@ -47,8 +47,17 @@ exports.createApplication = async (req, res) => {
     
     if (!recaptchaVerification.success) {
       console.log("reCAPTCHA verification failed:", recaptchaVerification.error);
+      
+      // Provide more specific error messages
+      let errorMessage = "reCAPTCHA verification failed. Please try again.";
+      if (recaptchaVerification.error === 'reCAPTCHA not configured') {
+        errorMessage = "reCAPTCHA is not properly configured. Please contact support.";
+      } else if (recaptchaVerification.error === 'reCAPTCHA token is required') {
+        errorMessage = "Please complete the reCAPTCHA challenge before submitting.";
+      }
+      
       return res.status(400).json({ 
-        message: "reCAPTCHA verification failed. Please try again.",
+        message: errorMessage,
         error: recaptchaVerification.error
       });
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import NotificationBadge from '../notifications/NotificationBadge';
 
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
@@ -238,26 +239,31 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {/* User menu or login button */}
             {currentUser && (
-              <div className="relative ml-3">
-                <div>
-                  <button
-                    ref={userBtnRef}
-                    onClick={toggleUserMenu}
-                    className="flex items-center max-w-xs text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-lime-400 focus:ring-offset-2 focus:ring-offset-gray-800 rounded-full"
-                    id="user-menu-button"
-                    aria-expanded="false"
-                    aria-haspopup="true"
-                  >
-                    <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-lime-400 to-amber-700 flex items-center justify-center text-white font-semibold">
-                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : currentUser.email.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="hidden md:block ml-2">{currentUser.name || currentUser.email}</span>
-                    <svg className="ml-1 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
+              <div className="flex items-center space-x-4">
+                {/* Notification Badge */}
+                <NotificationBadge size="md" />
+                
+                {/* User Profile Menu */}
+                <div className="relative">
+                  <div>
+                    <button
+                      ref={userBtnRef}
+                      onClick={toggleUserMenu}
+                      className="flex items-center max-w-xs text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-lime-400 focus:ring-offset-2 focus:ring-offset-gray-800 rounded-full"
+                      id="user-menu-button"
+                      aria-expanded="false"
+                      aria-haspopup="true"
+                    >
+                      <span className="sr-only">Open user menu</span>
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-lime-400 to-amber-700 flex items-center justify-center text-white font-semibold">
+                        {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : currentUser.email.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="hidden md:block ml-2">{currentUser.name || currentUser.email}</span>
+                      <svg className="ml-1 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
                 
                 {/* Desktop user dropdown */}
                 {userMenuOpen && (
@@ -279,6 +285,27 @@ const Navbar = () => {
                         <p className="text-xs text-blue-400">ID: {currentUser.employeeId || 'none'}</p>
                       </div>
                     </div>
+                    
+                    <div className="py-1" role="none">
+                      <Link 
+                        to="/dashboard" 
+                        className="block px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-lime-400 transition-colors duration-150"
+                        role="menuitem"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Dashboard
+                      </Link>
+                      <Link 
+                        to="/profile" 
+                        className="block px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-lime-400 transition-colors duration-150"
+                        role="menuitem"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Profile
+                      </Link>
+                      
+                    </div>
+                    
                     <div className="py-1" role="none">
                       <button
                         onClick={handleLogout}
@@ -290,6 +317,7 @@ const Navbar = () => {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             )}
           </div>

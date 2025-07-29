@@ -605,4 +605,31 @@ export const resumeParserService = {
   }
 };
 
+// Notification service
+export const notificationService = {
+  // Get user notifications with pagination
+  getUserNotifications: (params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/api/notifications${queryParams ? '?' + queryParams : ''}`);
+  },
+  
+  // Get unread notification count
+  getUnreadCount: () => api.get('/api/notifications/count'),
+  
+  // Mark notification as read
+  markAsRead: (notificationId) => api.patch(`/api/notifications/${notificationId}/read`),
+  
+  // Mark all notifications as read
+  markAllAsRead: () => api.patch('/api/notifications/mark-all-read'),
+  
+  // Delete notification
+  deleteNotification: (notificationId) => api.delete(`/api/notifications/${notificationId}`),
+  
+  // Admin: Get all notifications
+  getAllNotifications: (params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/api/notifications/admin/all${queryParams ? '?' + queryParams : ''}`);
+  }
+};
+
 export default api;

@@ -12,6 +12,7 @@ const reviewRoutes = require("./Routes/reviewRoutes");
 const userRoutes = require("./Routes/userRoutes");
 const recommendationRoutes = require("./Routes/recommendationRoutes");
 const contractRoutes = require("./Routes/contractRoutes");
+const notificationRoutes = require("./Routes/notificationRoutes");
 
 console.log("Starting API server...");
 
@@ -82,6 +83,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/contracts", contractRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 
 const PORT = authConfig.port;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { reviewService } from '../../services/api';
 import { FaStar, FaPaperPlane, FaUser, FaCheckCircle, FaTimesCircle, FaExclamationCircle, FaClipboardList, FaEye, FaBriefcase, FaUserTie } from 'react-icons/fa';
 import { motion } from 'framer-motion';
@@ -30,7 +30,7 @@ const ReviewForm = () => {
     checkEligibility();
   }, []);
 
-  const checkEligibility = async () => {
+  const checkEligibility = useCallback(async () => {
     try {
       setLoading(true);
       const response = await reviewService.checkEligibility();
@@ -49,21 +49,21 @@ const ReviewForm = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-  };
+  }, []);
 
-  const handleRatingClick = (rating) => {
+  const handleRatingClick = useCallback((rating) => {
     setFormData(prev => ({ ...prev, rating }));
-  };
+  }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
     if (formData.rating === 0) {
@@ -105,9 +105,9 @@ const ReviewForm = () => {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [formData, checkEligibility]);
 
-  const renderStars = (rating, interactive = false) => {
+  const renderStars = useCallback((rating, interactive = false) => {
     return Array.from({ length: 5 }, (_, index) => {
       const starRating = index + 1;
       const isActive = interactive ? (hoverRating || formData.rating) >= starRating : rating >= starRating;
@@ -124,9 +124,9 @@ const ReviewForm = () => {
         />
       );
     });
-  };
+  }, [hoverRating, formData.rating, handleRatingClick]);
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = useCallback((status) => {
     switch (status) {
       case 'approved':
         return <FaCheckCircle className="w-5 h-5 text-green-500" />;
@@ -137,7 +137,7 @@ const ReviewForm = () => {
       default:
         return null;
     }
-  };
+  }, []);
 
   if (loading) {
     return (

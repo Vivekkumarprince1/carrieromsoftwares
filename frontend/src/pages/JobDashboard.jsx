@@ -653,17 +653,17 @@ const JobForm = () => {
             </div>
           )}
 
-          <div className="mt-8 flex justify-end">
+          {/* <div className="mt-8 flex justify-end">
             <button
               className="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition flex items-center"
-              onClick={() => navigate('/applications')}
+              onClick={() => navigate('/dashboard')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm5 0h5a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h5z" clipRule="evenodd" />
               </svg>
               View All Applications
             </button>
-          </div>
+          </div> */}
         </div>
       )}
     </div>

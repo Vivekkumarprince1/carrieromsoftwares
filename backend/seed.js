@@ -6,6 +6,7 @@ const Application = require('./models/application');
 const Certificate = require('./models/certificate');
 const OfferLetter = require('./models/offerLetter');
 const Review = require('./models/review');
+const Notification = require('./models/notification');
 // const Recommendation = require('./models/recommendation');
 const connectDB = require('./config/database');
 require('dotenv').config();
@@ -435,6 +436,7 @@ const seedDatabase = async () => {
     await Certificate.deleteMany({});
     await OfferLetter.deleteMany({});
     await Review.deleteMany({});
+    await Notification.deleteMany({});
     console.log('🧹 Cleared existing data');
 
     // Create users with hashed passwords

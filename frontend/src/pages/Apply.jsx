@@ -4,7 +4,6 @@ import ReCAPTCHA from 'react-google-recaptcha';
 import { jobService, applicationService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import JobQuestionAnswer from '../components/JobQuestionAnswer';
-import { getImageUrl, getFirstLetterFallback } from '../utils/imageUtils';
 
 const Apply = () => {
   const { jobId } = useParams();
@@ -15,6 +14,7 @@ const Apply = () => {
   const [loading, setLoading] = useState(true);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -386,7 +386,31 @@ const Apply = () => {
       };
       
       await applicationService.createApplication(applicationFormData, onUploadProgress);
-      navigate('/jobs', { state: { success: true, message: 'Your application has been submitted successfully!' } });
+      
+      // Show success message
+      setSuccess('Application submitted successfully! You will receive updates via email.');
+      
+      // Clear form and reset state
+      setFormData({
+        fullName: '',
+        email: '',
+        phone: '',
+        experience: '',
+        education: '',
+        skills: '',
+        coverLetter: '',
+        resume: null
+      });
+      setQuestionAnswers([]);
+      setRecaptchaValue(null);
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
+      
+      // Navigate to jobs page after showing success message
+      setTimeout(() => {
+        navigate('/jobs', { state: { success: true, message: 'Your application has been submitted successfully!' } });
+      }, 3000);
     } catch (err) {
       console.error('Application submission error:', err);
       
@@ -513,6 +537,14 @@ const Apply = () => {
               <h3 className="text-xl font-medium text-white w-full md:w-1/3 mb-4 md:mb-0">Your Application</h3>
               <div className="w-full md:w-2/3 mt-4">
                 {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 relative z-50">{error}</div>}
+                {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 relative z-50">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    {success}
+                  </div>
+                </div>}
                 
                 {existingApplication && (
                   <div className={`border px-4 py-3 rounded mb-6 relative z-50 ${
