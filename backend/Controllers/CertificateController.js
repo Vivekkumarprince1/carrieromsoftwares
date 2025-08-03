@@ -260,7 +260,7 @@ async function generateCertificatePDF(certificate) {
         
         ctx.fillStyle = "#ffffff";
         ctx.font = "25px Arial";
-        ctx.fillText(`for completing ${certificate.jobrole} internship at om softwares`, canvas.width / 2, 380);
+        ctx.fillText(`for completing ${certificate.jobrole} internship at Om Softwares`, canvas.width / 2, 380);
         
        
         ctx.font = "25px Arial";
