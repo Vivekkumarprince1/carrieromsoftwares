@@ -415,12 +415,12 @@ const Jobs = () => {
       
       {/* Filter and Sort Controls */}
       <div className="bg-gradient-to-r from-gray-900/95 to-gray-800/95 rounded-xl overflow-hidden shadow-xl border border-gray-700/50 backdrop-blur-md mb-6 transform hover:scale-[1.01] transition-all duration-300">
-        <div className="flex flex-col md:flex-row items-center justify-between p-4 gap-4">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between p-4 gap-4">
           {/* Left side - Filter controls */}
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="relative group">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full lg:w-auto">
+            <div className="relative group flex-1 sm:flex-none">
               <select 
-                className="appearance-none bg-gray-800/80 border border-gray-700/80 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/70 focus:border-transparent transition-all duration-300 pr-10 hover:bg-gray-700/80 cursor-pointer"
+                className="appearance-none bg-gray-800/80 border border-gray-700/80 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/70 focus:border-transparent transition-all duration-300 pr-10 hover:bg-gray-700/80 cursor-pointer w-full sm:w-auto min-w-0 sm:min-w-[180px]"
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
                 aria-label="Filter by job type"
@@ -437,9 +437,9 @@ const Jobs = () => {
               </div>
             </div>
             
-            <div className="relative group">
+            <div className="relative group flex-1 sm:flex-none">
               <select
-                className="appearance-none bg-gray-800/80 border border-gray-700/80 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/70 focus:border-transparent transition-all duration-300 pr-10 hover:bg-gray-700/80 cursor-pointer"
+                className="appearance-none bg-gray-800/80 border border-gray-700/80 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/70 focus:border-transparent transition-all duration-300 pr-10 hover:bg-gray-700/80 cursor-pointer w-full sm:w-auto min-w-0 sm:min-w-[160px]"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 aria-label="Sort jobs"
@@ -458,17 +458,17 @@ const Jobs = () => {
           </div>
           
           {/* Right side - Admin controls */}
-          <div className="flex items-center">
+          <div className="flex items-center justify-center lg:justify-end w-full lg:w-auto">
             {currentUser && currentUser.role === 'admin' && (
               <button 
                 onClick={handleAdd}
-                className="bg-green-600 text-white px-5 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 relative overflow-hidden group"
+                className="bg-green-600 text-white px-4 sm:px-5 py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 relative overflow-hidden group w-full sm:w-auto"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                <svg className="w-5 h-5 relative z-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 relative z-10 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                <span className="relative z-10">Post New Job</span>
+                <span className="relative z-10 text-sm sm:text-base">Post New Job</span>
               </button>
             )}
           </div>
