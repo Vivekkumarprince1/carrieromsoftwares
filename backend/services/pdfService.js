@@ -279,7 +279,7 @@ exports.generateCertificate = async (certificateData) => {
     
 
     console.log(`Generating QR code`);
-    const verifyUrl = `careers.omsoftwares.in/verify/#${certificateData.certificateId}`;
+    const verifyUrl = `${process.env.FRONTEND_URL || 'https://careers.omsoftwares.in'}/verify/${certificateData.certificateId}`;
     const qrCodeDataUrl = await QRCode.toDataURL(verifyUrl);
     console.log("QR code ready");
     
