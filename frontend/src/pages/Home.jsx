@@ -546,79 +546,79 @@ const Home = () => {
             
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {[
               {
                 icon: (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 ),
-                title: "Casual and Virtual office space",
-                description: "throughout the globe"
+                title: "Casual and Virtual Office Space",
+                description: "Work from our flexible office spaces throughout the globe"
               },
               {
                 icon: (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 ),
-                title: "Family-oriented",
-                description: "and nurturing creativity and versatility"
+                title: "Family-Oriented Culture",
+                description: "Nurturing creativity and versatility in a supportive environment"
               },
               {
                 icon: (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.5a1.5 1.5 0 011.5 1.5M9 10a.75.75 0 000 1.5H10M9 10v6a2 2 0 002 2h2a2 2 0 002-2v-6" />
                   </svg>
                 ),
-                title: "Happy hours",
-                description: "team volunteering and local events"
+                title: "Happy Hours & Team Events",
+                description: "Team volunteering opportunities and local community events"
               },
               {
                 icon: (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 ),
-                title: "Comprehensive growth benefits",
-                description: "Plus, get hardware, software, and guidance you need to do your job"
+                title: "Comprehensive Growth Benefits",
+                description: "Get hardware, software, and guidance you need to excel in your role"
               },
               {
                 icon: (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 ),
-                title: "Collaborative environment",
-                description: "We are profitable and growing. Grow with us in a flat structure"
+                title: "Collaborative Environment",
+                description: "Join our profitable and growing company with a flat organizational structure"
               },
               {
                 icon: (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 ),
-                title: "Learn, grow and excel",
-                description: "A company that works with you to learn, grow, and excel in your career"
+                title: "Learn, Grow and Excel",
+                description: "Partner with us to learn, grow, and excel in your career journey"
               }
             ].map((benefit, index) => (
               <motion.div
                 key={index}
-                className="group relative overflow-hidden p-8 bg-gray-900/60 rounded-xl backdrop-blur-sm border border-gray-800/50 hover:shadow-xl transition-all duration-300 hover:translate-y-[-5px] hover:border-lime-500/30"
+                className="group relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gray-900/60 rounded-xl backdrop-blur-sm border border-gray-800/50 hover:shadow-xl transition-all duration-300 hover:translate-y-[-2px] hover:border-lime-500/30"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <div className="relative text-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-lime-400 to-green-600 rounded-2xl flex items-center justify-center text-black mb-6 mx-auto shadow-lg group-hover:shadow-lime-500/20 transition-all duration-300 transform group-hover:scale-110">
+                  <div className="w-16 h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 bg-gradient-to-br from-lime-400 to-green-600 rounded-xl lg:rounded-2xl flex items-center justify-center text-black mb-4 md:mb-6 mx-auto shadow-lg group-hover:shadow-lime-500/20 transition-all duration-300 transform group-hover:scale-105 lg:group-hover:scale-110">
                     <div className="text-black">
                       {benefit.icon}
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3 group-hover:text-lime-400 transition-colors">{benefit.title}</h3>
-                  <p className="text-gray-300 leading-relaxed">{benefit.description}</p>
+                  <h3 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3 group-hover:text-lime-400 transition-colors leading-tight">{benefit.title}</h3>
+                  <p className="text-sm md:text-base text-gray-300 leading-relaxed">{benefit.description}</p>
                 </div>
               </motion.div>
             ))}

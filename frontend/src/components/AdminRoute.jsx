@@ -20,11 +20,17 @@ const AdminRoute = ({ children }) => {
     }} />;
   }
 
-  if (!currentUser || currentUser.role !== 'admin') {
+  // If user is not logged in, redirect to login with admin message
+  if (!currentUser) {
     return <Navigate to="/login" state={{ 
-      message: "You must be an admin to access this page",
+      // message: "You must be an admin to access this page",
       from: location.pathname 
     }} />;
+  }
+
+  // If user is logged in but not admin, redirect to home page without message
+  if (currentUser.role !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return children;

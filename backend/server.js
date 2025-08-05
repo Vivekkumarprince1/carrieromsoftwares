@@ -25,7 +25,7 @@ const uploadDirs = [
   "./uploads/resumes",
   "./uploads/certificates",
   "./uploads/offers",
-  "./temp" // Temporary directory for Cloudinary uploads
+  "./temp",
 ];
 
 console.log("Creating upload dirs...");

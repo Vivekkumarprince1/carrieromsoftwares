@@ -287,14 +287,16 @@ const Navbar = () => {
                     </div>
                     
                     <div className="py-1" role="none">
-                      <Link 
-                        to="/dashboard" 
-                        className="block px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-lime-400 transition-colors duration-150"
-                        role="menuitem"
-                        onClick={() => setUserMenuOpen(false)}
-                      >
-                        Dashboard
-                      </Link>
+                      {currentUser.role === 'admin' && (
+                        <Link 
+                          to="/dashboard" 
+                          className="block px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-lime-400 transition-colors duration-150"
+                          role="menuitem"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Dashboard
+                        </Link>
+                      )}
                       <Link 
                         to="/profile" 
                         className="block px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-lime-400 transition-colors duration-150"

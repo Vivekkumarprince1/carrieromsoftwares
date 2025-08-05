@@ -455,12 +455,25 @@ const JobForm = () => {
 
             <div className="flex justify-between mt-8">
               <button
+                type="button"
+                onClick={handleCancel}
+                disabled={isUploading}
+                className={`px-6 py-3 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                  isUploading 
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                    : 'bg-gray-700 text-white hover:bg-gray-600'
+                }`}
+              >
+                Cancel
+              </button>
+
+              <button
                 type="submit"
                 disabled={isUploading}
-                className={`px-6 py-3 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-900 flex items-center gap-2 ${
+                className={`px-6 py-3 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 flex items-center gap-2 ${
                   isUploading 
                     ? 'bg-gray-600 text-gray-300 cursor-not-allowed' 
-                    : 'bg-primary bg-slate-700 text-white hover:bg-primary/90'
+                    : 'bg-green-600 text-white hover:bg-green-700'
                 }`}
               >
                 {isUploading ? (
@@ -474,19 +487,6 @@ const JobForm = () => {
                 ) : (
                   id ? 'Update Job' : 'Create Job'
                 )}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={isUploading}
-                className={`px-6 py-3 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
-                  isUploading 
-                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                    : 'bg-gray-700 text-white hover:bg-gray-600'
-                }`}
-              >
-                Cancel
               </button>
             </div>
 

@@ -1,12 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { certificateService } from '../../services/api';
 import { format } from 'date-fns';
 
-const VerifyForm = () => {
-  const [certificateId, setCertificateId] = useState('');
+const VerifyForm = ({ certificateId: propCertificateId }) => {
+  const [certificateId, setCertificateId] = useState(propCertificateId || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [certificate, setCertificate] = useState(null);
+
+  // Auto-verify when certificateId is provided via props
+  useEffect(() => {
+    if (propCertificateId && propCertificateId.trim()) {
+      setCertificateId(propCertificateId);
+      // Auto-verify the certificate
+      verifyAutomatically(propCertificateId);
+    }
+  }, [propCertificateId]);
+
+  const verifyAutomatically = async (id) => {
+    setLoading(true);
+    setError('');
+    setCertificate(null);
+    
+    try {
+      const response = await certificateService.verifyCertificate(id);
+      setCertificate(response.data.certificate);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Certificate verification failed');
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setCertificateId(e.target.value);
@@ -19,19 +44,7 @@ const VerifyForm = () => {
     e.preventDefault();
     if (!certificateId.trim()) return;
     
-    setLoading(true);
-    setError('');
-    setCertificate(null);
-    
-    try {
-      const response = await certificateService.verifyCertificate(certificateId);
-      setCertificate(response.data.certificate);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Certificate verification failed');
-      console.error('Error:', err);
-    } finally {
-      setLoading(false);
-    }
+    await verifyAutomatically(certificateId);
   };
 
   const handleDownload = async () => {
@@ -60,6 +73,18 @@ const VerifyForm = () => {
     <div className="bg-secondary-black rounded-lg shadow-md border border-dark-gray">
       <div className="p-6">
         <h3 className="text-xl font-semibold text-white mb-4">Verify Certificate</h3>
+        
+        {propCertificateId && (
+          <div className="mb-4 p-3 bg-blue-900/30 border border-blue-500/30 rounded-md text-blue-400">
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              Certificate ID detected from QR code. Verifying automatically...
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="certificateId" className="block text-sm font-medium text-gray-300 mb-2">

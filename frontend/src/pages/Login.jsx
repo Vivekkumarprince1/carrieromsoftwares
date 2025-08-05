@@ -59,8 +59,21 @@ const Login = () => {
         // But avoid redirecting to admin-only routes
         let targetPath = from;
         
+        // List of admin-only routes
+        const adminOnlyRoutes = [
+          '/dashboard',
+          '/certificates', 
+          '/offer-letters',
+          '/jobs/create',
+          '/admin/'
+        ];
+        
         // Check if the target path is admin-only
-        if (from === '/dashboard' || from.startsWith('/admin/') || from.startsWith('/certificates') || from.startsWith('/offer-letters')) {
+        const isAdminRoute = adminOnlyRoutes.some(route => 
+          from === route || from.startsWith(route) || from.startsWith('/jobs/edit/')
+        );
+        
+        if (isAdminRoute) {
           targetPath = '/';
         }
         
