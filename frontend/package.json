@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build ",
-    "install": "npm install --legacy-peer-deps",
+    "install": "npm install --legacy-peer-deps",   
     "lint": "eslint .",
     "preview": "vite preview",
     "env:dev": "cp .env.development .env && echo '✅ Switched to development environment'",
