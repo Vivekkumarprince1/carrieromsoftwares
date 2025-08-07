@@ -1,10 +1,10 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node api/index.js",
+    "dev": "nodemon api/index.js",
     "seed": "node seed.js",
     "env:dev": "cp .env.development .env && echo '✅ Switched to development environment'",
     "env:prod": "cp .env.production .env && echo '✅ Switched to production environment'",

@@ -17,7 +17,7 @@ export const authConfig = {
   autoRefreshToken: import.meta.env.VITE_AUTO_REFRESH_TOKEN === 'true',
   
   // API base URL
-  apiBaseUrl: import.meta.env.VITE_BASE_URL || 'http://localhost:4000',
+  apiBaseUrl: import.meta.env.VITE_BASE_URL || 'http://localhost:3000',
 };
 
 export const getTokenCheckInterval = () => authConfig.tokenCheckInterval;

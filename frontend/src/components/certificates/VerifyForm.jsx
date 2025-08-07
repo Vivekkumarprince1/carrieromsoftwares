@@ -64,7 +64,7 @@ const VerifyForm = ({ certificateId: propCertificateId }) => {
     } catch (error) {
       console.error('Download failed:', error);
       // Fallback to window.open with full URL
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       window.open(`${API_URL}/api/certification/download/${certificate._id}`, '_blank');
     }
   };

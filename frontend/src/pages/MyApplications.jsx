@@ -517,7 +517,7 @@ const MyApplications = () => {
                                       </h4>
                                       {selectedApplication.resumeUrl ? (
                                         <a
-                                          href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'}${selectedApplication.resumeUrl}`}
+                                          href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}${selectedApplication.resumeUrl}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="inline-flex items-center px-5 py-2 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white rounded-md transition-all duration-300 text-sm shadow-md hover:shadow-lg"
