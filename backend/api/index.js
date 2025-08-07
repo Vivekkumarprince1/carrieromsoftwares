@@ -18,25 +18,25 @@ console.log("Starting API server...");
 
 validateConfig();
 
-const fs = require("fs");
-const { ok } = require("assert");
-const uploadDirs = [
-  "./uploads",
-  "./uploads/resumes",
-  "./uploads/certificates",
-  "./uploads/offers",
-  "./temp",
-];
+// const fs = require("fs");
+// const { ok } = require("assert");
+// const uploadDirs = [
+//   "./uploads",
+//   "./uploads/resumes",
+//   "./uploads/certificates",
+//   "./uploads/offers",
+//   "./temp",
+// ];
 
-console.log("Creating upload dirs...");
-uploadDirs.forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    console.log(`Created: ${dir}`);
-  } else {
-    console.log(`Exists: ${dir}`);
-  }
-});
+// console.log("Creating upload dirs...");
+// uploadDirs.forEach(dir => {
+//   if (!fs.existsSync(dir)) {
+//     fs.mkdirSync(dir, { recursive: true });
+//     console.log(`Created: ${dir}`);
+//   } else {
+//     console.log(`Exists: ${dir}`);
+//   }
+// });
 
 const app = express();
 console.log("Init Express app");

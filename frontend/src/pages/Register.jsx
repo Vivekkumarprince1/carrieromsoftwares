@@ -147,11 +147,11 @@ const Register = () => {
             
             <p className="text-center text-xs text-gray-500 mt-4">
               By registering, you agree to our{' '}
-              <a href="/terms" className="text-lime-400 hover:text-lime-300">
+              <a href="https://omsoftwares.in/terms" className="text-lime-400 hover:text-lime-300">
                 Terms of Service
               </a>{' '}
               and{' '}
-              <a href="/privacy" className="text-lime-400 hover:text-lime-300">
+              <a href="https://omsoftwares.in/terms" className="text-lime-400 hover:text-lime-300">
                 Privacy Policy
               </a>
             </p>
