@@ -104,49 +104,21 @@ exports.downloadCertificate = async (req, res) => {
             return res.status(404).json({ message: "Certificate not found in database" });
         }
         
-        const certificatePath = path.join(__dirname, `../uploads/certificates/${certId}.pdf`);
+        console.log(`Generating PDF in memory for: ${certId}`);
         
-        console.log(`Checking file at: ${certificatePath}`);
-        if (!fs.existsSync(certificatePath)) {
-            console.log(`PDF file not found. Generating on-demand for: ${certId}`);
-            try {
-                await generateCertificatePDF(certificate);
-                console.log(`Certificate PDF generated successfully for ID: ${certId}`);
-            } catch (genError) {
-                console.error(`Error generating PDF: ${genError}`);
-                return res.status(500).json({ message: "Failed to generate certificate PDF" });
-            }
-        }
+        // Generate PDF directly in memory and stream to response
+        const pdfBuffer = await generateCertificatePDFBuffer(certificate);
         
-        console.log(`Starting download of: ${certificatePath}`);
+        console.log(`Starting download of: ${certId}`);
         
         // Set headers for download
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="certificate-${certId}.pdf"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
         
-        const fileStream = fs.createReadStream(certificatePath);
-          // Handle stream errors
-        fileStream.on('error', (error) => {
-            console.error("File stream error:", error);
-            res.status(500).json({ message: "Error streaming certificate file", error: error.message });
-        });
-
-        // Clean up PDF after download completes
-        fileStream.on('end', () => {
-            console.log(`Download completed for: ${certId}. Cleaning up...`);
-            setTimeout(() => {
-                try {
-                    if (fs.existsSync(certificatePath)) {
-                        fs.unlinkSync(certificatePath);
-                        console.log(`PDF deleted after download: ${certId}`);
-                    }
-                } catch (cleanupError) {
-                    console.error(`Cleanup error after download: ${cleanupError}`);
-                }
-            }, 1000); // Small delay to ensure download completes
-        });
+        // Send the PDF buffer directly
+        res.send(pdfBuffer);
         
-        fileStream.pipe(res);
     } catch (error) {
         console.error("Error downloading certificate:", error);
         res.status(500).json({ message: "Error downloading certificate", error: error.message });
@@ -173,9 +145,9 @@ exports.generateCertificate = async (req, res) => {
             return res.status(404).json({ message: "Certificate not found" });
         }
 
-        // Gen PDF
-        console.log(`Creating PDF`);
-        const pdfPath = await generateCertificatePDF(certificate);
+        // Generate PDF in memory (no file system operations)
+        console.log(`Creating PDF in memory`);
+        const pdfBuffer = await generateCertificatePDFBuffer(certificate);
         console.log(`PDF done`);
 
         res.status(200).json({
@@ -347,6 +319,143 @@ async function generateCertificatePDF(certificate) {
     }
 }
 
+// New memory-based PDF generation for serverless compatibility
+async function generateCertificatePDFBuffer(certificate) {
+    console.log(`Generating PDF buffer for: ${certificate._id}`);
+    try {
+        console.log(`Generating QR code in memory`);
+        const verifyUrl = `https://careers.omsoftwares.in/verify/${certificate._id}`;
+        const qrCodeBuffer = await QRCode.toBuffer(verifyUrl, { type: 'png' });
+        console.log(`QR code generated in memory`);
+        
+        console.log(`Initializing canvas`);
+        const canvas = createCanvas(842, 595);
+        const ctx = canvas.getContext("2d");
+        
+        console.log(`Drawing background`);
+        const bgImagePath = path.join(__dirname, "../assets/certificate for om softwares.jpg");
+        const bgImage = await loadImage(bgImagePath);
+        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+        
+        // Add logo
+        const logoPath = path.join(__dirname, "../assets/logo.png");
+        const logo = await loadImage(logoPath);
+        const logoWidth = 140;
+        const logoHeight = 80;
+        ctx.drawImage(logo, (canvas.width / 2) - (logoWidth / 2), 25, logoWidth, logoHeight);
+ 
+        // Title
+        ctx.fillStyle = "#c5f019"; 
+        ctx.font = "bold 50px Arial"; 
+        ctx.textAlign = "center";
+        ctx.fillText(`Certificate`, canvas.width / 2, 150);
+        
+        // Subtitle
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "24px Arial";
+        ctx.fillText(`Of Achievement`, canvas.width / 2, 190); 
+        
+        ctx.font = "25px Arial";
+        ctx.fillText(`Proudly Presented To`, canvas.width / 2, 240);
+        
+        // Name
+        ctx.font = "bold 36px Arial";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(certificate.name, canvas.width / 2, 300);
+        
+        // Underline
+        ctx.beginPath();
+        ctx.strokeStyle = "#84cc16";
+        ctx.lineWidth = 3;
+        ctx.moveTo(canvas.width / 2 - 200, 330);
+        ctx.lineTo(canvas.width / 2 + 200, 330);
+        ctx.stroke();
+        
+        // Description
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1;
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "25px Arial";
+        ctx.fillText(`for completing ${certificate.jobrole} internship at Om Softwares`, canvas.width / 2, 380);
+        
+        // Dates
+        ctx.font = "25px Arial";
+        ctx.fillText(`from ${new Date(certificate.fromDate).toLocaleDateString()} to ${new Date(certificate.toDate).toLocaleDateString()}`, canvas.width / 2, 420);
+        
+        // Footer
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        
+        const rowY = 480;
+        
+        // Date column
+        const leftColumnX = canvas.width / 4;
+        ctx.fillText(new Date().toLocaleDateString(), leftColumnX, rowY);
+        ctx.beginPath();
+        ctx.moveTo(leftColumnX - 100, rowY + 20);
+        ctx.lineTo(leftColumnX + 100, rowY + 20);
+        ctx.stroke();
+        ctx.fillText("Date", leftColumnX, rowY + 50); 
+        
+        // Signature column
+        const rightColumnX = (canvas.width * 3) / 4;
+        ctx.fillText(certificate.issuedBy, rightColumnX, rowY);
+        ctx.beginPath();
+        ctx.moveTo(rightColumnX - 100, rowY + 20);
+        ctx.lineTo(rightColumnX + 100, rowY + 20);
+        ctx.stroke();
+        ctx.fillText("Signature", rightColumnX, rowY + 50); 
+       
+        // Add QR code from buffer
+        console.log(`Adding QR code`);
+        const qrCode = await loadImage(qrCodeBuffer);
+        const qrSize = 90;
+        const middleColumnX = canvas.width / 2;
+        ctx.drawImage(qrCode, middleColumnX - (qrSize / 2), canvas.height - qrSize - 46, qrSize, qrSize);
+        
+        // Certificate ID
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.fillText(`Certificate ID: ${certificate._id}`, canvas.width / 2, canvas.height - 20);
+        
+        // Convert canvas to buffer
+        console.log(`Converting to image buffer`);
+        const certificateImageBuffer = canvas.toBuffer("image/png");
+        
+        // Create PDF in memory
+        console.log(`Creating PDF in memory`);
+        const doc = new PDFDocument({ size: 'A4', layout: 'landscape' });
+        
+        // Collect PDF data in memory
+        const buffers = [];
+        doc.on('data', buffers.push.bind(buffers));
+        
+        // Add image to PDF
+        doc.image(certificateImageBuffer, 0, 0, { width: 842 }); 
+        doc.end();
+        
+        // Return PDF as buffer
+        return new Promise((resolve, reject) => {
+            doc.on('end', () => {
+                console.log(`PDF generation completed in memory`);
+                const pdfBuffer = Buffer.concat(buffers);
+                resolve(pdfBuffer);
+            });
+            
+            doc.on('error', (error) => {
+                console.error(`PDF generation error: ${error}`);
+                reject(error);
+            });
+        });
+        
+    } catch (error) {
+        console.error("Error generating PDF buffer:", error);
+        throw error;
+    }
+}
+
 exports.sendCertificateEmail = async (req, res) => {
     console.log(`Send email`);
     try {
@@ -362,22 +471,18 @@ exports.sendCertificateEmail = async (req, res) => {
         if (!certificate) {
             console.log(`Cert not found: ${id}`);
             return res.status(404).json({ message: "Certificate not found" });
-        }        // Use existing PDF path for email (use stored PDF)
-        const certificatePath = path.join(__dirname, "../uploads/certificates", `${certificate._id}.pdf`);
-        
-        // Generate PDF if it doesn't exist
-        if (!fs.existsSync(certificatePath)) {
-            console.log(`PDF not found, generating for email: ${id}`);
-            await generateCertificatePDF(certificate);
-        }
+        }        // Generate PDF in memory for email
+        console.log(`Generating PDF for email: ${id}`);
+        const pdfBuffer = await generateCertificatePDFBuffer(certificate);
 
-        // Send email
-        await sendCertificateByEmail(
+        // Send email with buffer attachment
+        await sendCertificateByEmailBuffer(
             recipientEmail, 
             subject || `Certificate: ${certificate.jobrole}`, 
             message || `Congrats on completing your internship in ${certificate.domain}!`,
             certificate.name,
-            certificatePath
+            pdfBuffer,
+            `certificate-${certificate._id}.pdf`
         );
 
         console.log(`Email sent: ${recipientEmail}`);
@@ -413,6 +518,42 @@ async function sendCertificateByEmail(to, subject, message, recipientName, certi
                 {
                     filename: `${recipientName.replace(/\s+/g, '_')}_certificate.pdf`,
                     path: certificatePath
+                }
+            ]
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`Sent: ${info.messageId}`);
+        return info;
+    } catch (error) {
+        console.error(`Error:`, error);
+        throw error;
+    }
+}
+
+// New buffer-based email function for serverless compatibility
+async function sendCertificateByEmailBuffer(to, subject, message, recipientName, pdfBuffer, filename) {
+    console.log(`Email to: ${to}`);
+    try {
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to,
+            subject,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>Certificate of Completion</h2>
+                    <p>Dear ${recipientName},</p>
+                    <p>${message}</p>
+                    <p>Please find your certificate attached.</p>
+                    <p>This certificate can be verified online.</p>
+                    <p>Regards,<br>OM Softwares</p>
+                </div>
+            `,
+            attachments: [
+                {
+                    filename: filename,
+                    content: pdfBuffer,
+                    contentType: 'application/pdf'
                 }
             ]
         };

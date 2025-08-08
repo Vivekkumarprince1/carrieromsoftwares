@@ -55,8 +55,10 @@ console.log("CORS enabled with options");
 app.use(express.json());
 console.log("JSON parser enabled");
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-console.log("Static serving: /uploads");
+// Note: This static route for uploads is not needed in serverless deployment
+// as all files are now handled in memory and streamed directly
+// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+console.log("Static serving: /uploads (disabled for serverless compatibility)");
 
 
 app.get("/", (req, res) => {
