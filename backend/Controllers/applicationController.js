@@ -1,7 +1,6 @@
 const Application = require("../models/application");
 const Job = require("../models/job");
 const User = require("../models/user");
-const fs = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
@@ -417,31 +416,15 @@ exports.parseResume = async (req, res) => {
       });
     }
 
-    // Create a temporary file path for parsing
-    const tempFilePath = path.join(__dirname, '..', 'temp', `parse-${Date.now()}-${req.file.originalname}`);
-    
+    // Parse resume directly from buffer (no temp files needed)
     try {
-      // Ensure temp directory exists
-      const tempDir = path.dirname(tempFilePath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
+      const extractedData = await resumeParserService.parseResume(req.file.buffer, req.file.mimetype, req.file.originalname);
+      console.log("Parsed OK");
       
-      // Write buffer to temporary file for parsing
-      fs.writeFileSync(tempFilePath, req.file.buffer);
-    
-      // Parse using buffer directly instead of file path
-      try {
-        const extractedData = await resumeParserService.parseResume(req.file.buffer, req.file.mimetype, req.file.originalname);
-        console.log("Parsed OK");
-        
-        // Check if parsing was successful
-        if (!extractedData.success) {
-          throw new Error(extractedData.error || 'Failed to parse resume');
-        }
-        
-        // Clean up temporary file
-        fs.unlinkSync(tempFilePath);
+      // Check if parsing was successful
+      if (!extractedData.success) {
+        throw new Error(extractedData.error || 'Failed to parse resume');
+      }
         
         // Extract the parsed data structure
         const parsedData = extractedData.data;
@@ -507,12 +490,7 @@ exports.parseResume = async (req, res) => {
         console.error("Parse issue:", parseError.message);
         console.error(parseError.stack);
         
-        // Clean up temporary file if it exists
-        if (fs.existsSync(tempFilePath)) {
-          fs.unlinkSync(tempFilePath);
-        }
-        
-        // Return empty
+        // Return empty response for parsing errors
         res.status(200).json({ 
           message: "Resume processed with limited success.",
           fullName: '',
@@ -523,13 +501,6 @@ exports.parseResume = async (req, res) => {
           experience: ''
         });
       }
-    } catch (fileError) {
-      console.error("File handling error:", fileError);
-      return res.status(500).json({ 
-        message: "Failed to process resume file", 
-        error: fileError.message 
-      });
-    }
   } catch (error) {
     console.error("Error:", error);
     console.error(error.stack);
@@ -1082,25 +1053,11 @@ exports.parseResume = async (req, res) => {
       return res.status(400).json({ message: "No resume file uploaded" });
     }
 
-    // Save the uploaded file temporarily for parsing
-    const tempDir = path.join(__dirname, "../temp");
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-
-    const tempFilePath = path.join(tempDir, `${Date.now()}_${req.file.originalname}`);
-    fs.writeFileSync(tempFilePath, req.file.buffer);
-
     console.log(`Processing resume: ${req.file.originalname}`);
     console.log(`MIME type: ${req.file.mimetype}`);
 
-    // Parse the resume using buffer directly
+    // Parse the resume using buffer directly (no temp files needed)
     const parseResult = await resumeParserService.parseResume(req.file.buffer, req.file.mimetype, req.file.originalname);
-
-    // Clean up temporary file
-    if (fs.existsSync(tempFilePath)) {
-      fs.unlinkSync(tempFilePath);
-    }
 
     if (!parseResult.success) {
       console.error("Resume parsing failed:", parseResult.error);
@@ -1135,14 +1092,6 @@ exports.parseResume = async (req, res) => {
 
   } catch (error) {
     console.error("Error in parseResume:", error);
-    
-    // Clean up temp file on error
-    if (req.file) {
-      const tempFilePath = path.join(__dirname, "../temp", `${Date.now()}_${req.file.originalname}`);
-      if (fs.existsSync(tempFilePath)) {
-        fs.unlinkSync(tempFilePath);
-      }
-    }
     
     res.status(500).json({ 
       message: "Server error during resume parsing", 
