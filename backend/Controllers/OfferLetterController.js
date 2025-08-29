@@ -277,46 +277,78 @@ exports.sendOfferLetterEmail = async (req, res) => {
         const emailRecipient = recipientEmail || offerLetter.email;
         const acceptanceUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/offer-acceptance/${offerLetter.acceptanceToken}`;
 
+        // Determine if this is an internship
+        const isInternship = offerLetter.salary === 0 || 
+                           (offerLetter.position && offerLetter.position.toLowerCase().includes('intern'));
+
+        // Format date
+        const formatEmailDate = (date) => {
+            return new Date(date).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit', 
+                year: 'numeric'
+            });
+        };
+
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: emailRecipient,
-            subject: `Job Offer - ${offerLetter.position} at ${offerLetter.companyName || 'OM Softwares'}`,
+            subject: isInternship 
+                ? `Internship Offer - ${offerLetter.position} at ${offerLetter.companyName || 'OM Softwares'}`
+                : `Job Offer - ${offerLetter.position} at ${offerLetter.companyName || 'OM Softwares'}`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                     <div style="text-align: center; margin-bottom: 30px;">
                         <h1 style="color: #2c3e50; margin-bottom: 10px;">🎉 Congratulations ${offerLetter.candidateName}!</h1>
-                        <p style="color: #7f8c8d; font-size: 16px;">We are excited to extend this offer to you</p>
+                        <p style="color: #7f8c8d; font-size: 16px;">We are excited to extend this ${isInternship ? 'internship' : 'job'} offer to you</p>
                     </div>
                     
                     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
-                        <h2 style="margin: 0 0 15px 0; font-size: 24px;">Job Offer Details</h2>
+                        <h2 style="margin: 0 0 15px 0; font-size: 24px;">${isInternship ? '📄 Internship Overview' : 'Job Offer Details'}</h2>
                         <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
                             <p style="margin: 5px 0;"><strong>Position:</strong> ${offerLetter.position}</p>
                             <p style="margin: 5px 0;"><strong>Department:</strong> ${offerLetter.department}</p>
-                            <p style="margin: 5px 0;"><strong>Annual Salary:</strong> $${offerLetter.salary.toLocaleString()}</p>
-                            <p style="margin: 5px 0;"><strong>Start Date:</strong> ${new Date(offerLetter.startDate).toLocaleDateString()}</p>
+                            ${isInternship 
+                                ? `<p style="margin: 5px 0;"><strong>Stipend:</strong> ${offerLetter.salary === 0 ? 'Unpaid' : '$' + offerLetter.salary.toLocaleString()}</p>`
+                                : `<p style="margin: 5px 0;"><strong>Annual Salary:</strong> $${offerLetter.salary.toLocaleString()}</p>`
+                            }
+                            <p style="margin: 5px 0;"><strong>Start Date:</strong> ${formatEmailDate(offerLetter.startDate)}</p>
                             <p style="margin: 5px 0;"><strong>Location:</strong> ${offerLetter.joiningLocation}</p>
                             <p style="margin: 5px 0;"><strong>Work Type:</strong> ${offerLetter.workType}</p>
+                            ${isInternship ? '<p style="margin: 5px 0;"><strong>Certificate:</strong> Issued upon successful completion</p>' : ''}
                         </div>
                     </div>
                     
                     <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-                        <p style="margin: 0; color: #856404;"><strong>⏰ Important:</strong> This offer is valid until <strong>${new Date(offerLetter.validUntil).toLocaleDateString()}</strong></p>
+                        <p style="margin: 0; color: #856404;"><strong>⏰ Important:</strong> This offer is valid until <strong>${formatEmailDate(offerLetter.validUntil)}</strong></p>
                     </div>
+                    
+                    ${isInternship ? `
+                    <div style="background-color: #e7f3ff; border: 1px solid #b6d7ff; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                        <p style="margin: 0; color: #0066cc;">By accepting this offer, you agree to our terms at omsoftwares.in/terms, including confidentiality, performance expectations, and code ownership.</p>
+                    </div>
+                    ` : ''}
                     
                     <div style="text-align: center; margin: 30px 0;">
                         <h3 style="color: #2c3e50; margin-bottom: 20px;">📋 Next Steps</h3>
-                        <p style="color: #5d6d7e; margin-bottom: 25px;">Please review the attached offer letter and respond using the link below:</p>
+                        <p style="color: #5d6d7e; margin-bottom: 25px;">Please review the attached ${isInternship ? 'internship' : 'offer'} letter and respond using the link below:</p>
                         
                         <a href="${acceptanceUrl}" 
                            style="display: inline-block; background: linear-gradient(45deg, #56ab2f, #a8e6cf); color: white; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(86, 171, 47, 0.3); transition: transform 0.3s ease;">
-                            🚀 Review & Respond to Offer
+                            🚀 Review & Respond to ${isInternship ? 'Internship' : 'Offer'}
                         </a>
                         
                         <p style="color: #7f8c8d; font-size: 12px; margin-top: 15px;">
                             Can't click the button? Copy and paste this link:<br>
                             <span style="word-break: break-all;">${acceptanceUrl}</span>
                         </p>
+                        
+                        ${isInternship ? `
+                        <div style="margin-top: 20px; padding: 15px; background-color: #f0f8ff; border-radius: 8px;">
+                            <p style="color: #333; margin: 0;"><strong>For Internship Acceptance:</strong><br>
+                            Please reply with: "I accept the offer and agree to the terms and conditions."</p>
+                        </div>
+                        ` : ''}
                     </div>
                     
                     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 25px;">
@@ -330,8 +362,9 @@ exports.sendOfferLetterEmail = async (req, res) => {
                     <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1;">
                         <p style="color: #7f8c8d; margin: 0;">We look forward to welcoming you to our team!</p>
                         <p style="color: #2c3e50; font-weight: bold; margin: 10px 0 0 0;">
-                            Best regards,<br>
-                            ${offerLetter.companyName || 'OM Softwares'} Team
+                            Warm regards,<br>
+                            ${offerLetter.hrContactName || 'HR Team'}<br>
+                            ${offerLetter.companyName || 'OM Softwares'}
                         </p>
                     </div>
                 </div>
@@ -431,7 +464,11 @@ exports.addAcceptanceTokensToExisting = async (req, res) => {
 async function generateOfferLetterPDFInMemory(offerLetter) {
     return new Promise(async (resolve, reject) => {
         try {
-            const doc = new PDFDocument({ margin: 50 });
+            const doc = new PDFDocument({ 
+                size: 'A4',
+                margin: 40,
+                bufferPages: true 
+            });
             const buffers = [];
 
             // Collect PDF data in memory
@@ -443,85 +480,254 @@ async function generateOfferLetterPDFInMemory(offerLetter) {
             });
             doc.on('error', reject);
 
-            // Header
-            doc.fontSize(20).text(offerLetter.companyName || 'OM Softwares', { align: 'center' });
-            doc.fontSize(16).text('Job Offer Letter', { align: 'center' });
-            doc.moveDown(2);
+            // Determine if this is an internship offer
+            const isInternship = offerLetter.salary === 0 || 
+                               (offerLetter.position && offerLetter.position.toLowerCase().includes('intern')) ||
+                               (offerLetter.additionalNotes && offerLetter.additionalNotes.toLowerCase().includes('intern'));
 
-            // Date
-            doc.fontSize(12).text(`Date: ${new Date(offerLetter.issuedOn || offerLetter.createdAt).toLocaleDateString()}`, { align: 'right' });
-            doc.moveDown(1);
-
-            // Candidate details
-            doc.text(`Dear ${offerLetter.candidateName},`);
-            doc.moveDown(1);
-
-            // Offer content
-            doc.text(`We are pleased to offer you the position of ${offerLetter.position} in our ${offerLetter.department} department at ${offerLetter.companyName || 'OM Softwares'}.`);
-            doc.moveDown(1);
-
-            // Position details
-            doc.text('Position Details:', { underline: true });
-            doc.text(`Position: ${offerLetter.position}`);
-            doc.text(`Department: ${offerLetter.department}`);
-            doc.text(`Annual Salary: $${offerLetter.salary.toLocaleString()}`);
-            doc.text(`Start Date: ${new Date(offerLetter.startDate).toLocaleDateString()}`);
-            doc.text(`Work Location: ${offerLetter.joiningLocation}`);
-            doc.text(`Work Type: ${offerLetter.workType}`);
-            
-            if (offerLetter.reportingManager) {
-                doc.text(`Reporting Manager: ${offerLetter.reportingManager}`);
-            }
-            doc.moveDown(1);
-
-            // Benefits
-            if (offerLetter.benefits && offerLetter.benefits.length > 0) {
-                doc.text('Benefits:', { underline: true });
-                offerLetter.benefits.forEach(benefit => {
-                    doc.text(`• ${benefit}`);
+            // Format date in DD-MM-YYYY format
+            const formatDate = (date) => {
+                const d = new Date(date);
+                return d.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
                 });
-                doc.moveDown(1);
-            }
+            };
 
-            // Additional notes
-            if (offerLetter.additionalNotes) {
-                doc.text('Additional Information:', { underline: true });
-                doc.text(offerLetter.additionalNotes);
-                doc.moveDown(1);
-            }
-
-            // Validity
-            doc.text(`This offer is valid until ${new Date(offerLetter.validUntil).toLocaleDateString()}.`);
-            doc.moveDown(1);
-
-            // HR Contact
-            if (offerLetter.hrContactName || offerLetter.hrContactEmail || offerLetter.hrContactPhone) {
-                doc.text('For any questions, please contact:', { underline: true });
-                if (offerLetter.hrContactName) doc.text(`Name: ${offerLetter.hrContactName}`);
-                if (offerLetter.hrContactEmail) doc.text(`Email: ${offerLetter.hrContactEmail}`);
-                if (offerLetter.hrContactPhone) doc.text(`Phone: ${offerLetter.hrContactPhone}`);
-                doc.moveDown(1);
-            }
-
-            // Closing
-            doc.text('We look forward to welcoming you to our team!');
-            doc.moveDown(2);
-
-            doc.text('Sincerely,');
-            doc.text(`${offerLetter.companyName || 'OM Softwares'} HR Team`);
-
-            // Generate QR code for verification
+            // Load and add the offer letter template image as background (if exists)
+            const templatePath = path.join(__dirname, '../assets/offer-letter.png');
+            
             try {
-                const qrCodeData = `Offer Letter ID: ${offerLetter._id}\nCandidate: ${offerLetter.candidateName}\nPosition: ${offerLetter.position}`;
-                const qrCodeDataURL = await QRCode.toDataURL(qrCodeData);
-                const qrCodeBuffer = Buffer.from(qrCodeDataURL.split(',')[1], 'base64');
-                
-                doc.moveDown(2);
-                doc.image(qrCodeBuffer, doc.page.width - 150, doc.y, { width: 100 });
-                doc.text('Scan for verification', doc.page.width - 150, doc.y + 105, { width: 100, align: 'center' });
-            } catch (qrError) {
-                console.warn('Could not generate QR code:', qrError.message);
+                if (fs.existsSync(templatePath)) {
+                    console.log('Loading offer letter template image...');
+                    doc.image(templatePath, 0, 0, { 
+                        width: doc.page.width, 
+                        height: doc.page.height 
+                    });
+                }
+            } catch (imageError) {
+                console.log('Error loading template image, using text-based layout:', imageError.message);
             }
+
+            // Set starting position for content
+            let currentY = 160;
+
+            // Header with date
+            doc.fontSize(12)
+               .font('Helvetica-Bold')
+               .fillColor('white')
+               .text(`Date: ${formatDate(offerLetter.issuedOn || offerLetter.createdAt)}`, 50, currentY );
+
+            currentY += 30;
+
+            // Greeting
+            doc.fontSize(14)
+               .font('Helvetica-Bold')
+               .text(`Dear ${offerLetter.candidateName},`, 50, currentY);
+
+            currentY += 30;
+
+            // Company greeting
+            doc.fontSize(14)
+               .font('Helvetica')
+               .text(`Greetings from ${offerLetter.companyName || 'Om Softwares'}!`, 50, currentY);
+
+            currentY += 30;
+
+            // Main offer message
+            const offerMessage = `Congratulations! We're pleased to offer you the position of ${offerLetter.position} at ${offerLetter.companyName || 'Om Softwares'}. This role will provide valuable hands-on experience with real-world projects in ${offerLetter.department} development.`;
+            doc.fontSize(14)
+               .text(offerMessage, 50, currentY, {
+                   width: 500,
+                   align: 'left'
+               });
+
+            currentY += 60;
+
+            // Section header
+            doc.fontSize(14)
+               .font('Helvetica-Bold')
+               .text('Offer Details', 50, currentY);
+
+            currentY += 20;
+
+            // Details section
+           
+                // Job offer details
+                // doc.fontSize(11)
+                //    .font('Helvetica')
+                //    .text(`Position: ${offerLetter.position}`, 50, currentY);
+                // currentY += 20;
+
+                // doc.text(`Department: ${offerLetter.department}`, 50, currentY);
+                // currentY += 20;
+
+                doc.fontSize(14)
+                   .font('Helvetica-Bold')
+                   .fillColor('white')
+                   .text(`Annual Salary: $${offerLetter.salary.toLocaleString()}`, 50, currentY);
+                currentY += 20;
+
+                doc.fillColor('white')
+                   .fontSize(11)
+                   .font('Helvetica')
+                   .text(`Start Date: ${formatDate(offerLetter.startDate)}`, 50, currentY);
+                currentY += 20;
+
+                doc.text(`Location: ${offerLetter.joiningLocation}`, 50, currentY);
+                currentY += 20;
+
+                doc.text(`Work Type: ${offerLetter.workType}`, 50, currentY);
+                currentY += 30;
+
+            // Benefits section (if available)
+            if (offerLetter.benefits && offerLetter.benefits.length > 0) {
+                doc.fontSize(14)
+                   .font('Helvetica-Bold')
+                   .text('Benefits:', 50, currentY);
+                
+                currentY += 20;
+                offerLetter.benefits.forEach(benefit => {
+                    doc.fontSize(10)
+                       .font('Helvetica')
+                       .text(`• ${benefit}`, 70, currentY);
+                    currentY += 15;
+                });
+                currentY += 15;
+            }
+
+            // Terms and conditions section
+           
+                doc.fontSize(14)
+                   .font('Helvetica')
+                   .text(`By accepting this offer, you agree to our terms at omsoftwares.in/terms,`, 50, currentY, {
+                       width: 500,
+                       align: 'left'
+                   });
+                currentY += 18;
+                
+                doc.text(`including confidentiality, performance expectations, and code ownership.`, 50, currentY, {
+                    width: 500,
+                    align: 'left'
+                });
+                currentY += 35;
+
+                // Acceptance instruction
+                doc.fontSize(14)
+                   .font('Helvetica')
+                   .text('Please confirm your acceptance by replying:', 50, currentY);
+                currentY += 20;
+
+                doc.fontSize(14)
+                   .font('Helvetica')
+                   .fillColor('white')
+                   .text('"I accept the offer and agree to the terms and conditions."', 50, currentY, {
+                       width: 500,
+                       align: 'left'
+                   });
+                currentY += 40;
+
+            // // Additional notes
+            // if (offerLetter.additionalNotes && !isInternship) {
+            //     doc.fontSize(12)
+            //        .font('Helvetica-Bold')
+            //        .text('Additional Information:', 50, currentY);
+                
+            //     currentY += 20;
+            //     doc.fontSize(10)
+            //        .font('Helvetica')
+            //        .text(offerLetter.additionalNotes, 50, currentY, {
+            //            width: 500,
+            //            align: 'left'
+            //        });
+            //     currentY += 40;
+            // }
+
+            // Validity information
+            doc.fontSize(14)
+               .font('Helvetica-Bold')
+               .fillColor('white')
+               .text(`Valid until: ${formatDate(offerLetter.validUntil)}`, 50, currentY);
+            currentY += 30;
+
+            // Reset color
+            doc.fillColor('white');
+
+            // Closing message
+            doc.fontSize(14)
+               .font('Helvetica')
+               .text(`We're excited to have you on board!`, 50, currentY);
+            currentY += 25;
+
+            // Signature section
+            doc.fontSize(14)
+               .font('Helvetica')
+               .text('Warm regards,', 50, currentY);
+            currentY += 20;
+
+            // doc.fontSize(12)
+            //    .font('Helvetica-Bold')
+            //    .text(offerLetter.hrContactName || 'Pratika Rai', 50, currentY);
+            // currentY += 20;
+
+            doc.fontSize(14)
+               .font('Helvetica')
+               .text(`HR Team, ${offerLetter.companyName || 'Om Softwares'}`, 50, currentY);
+
+            // HR Contact information (if available)
+            // if (offerLetter.hrContactEmail || offerLetter.hrContactPhone) {
+            //     currentY += 30;
+            //     doc.fontSize(11)
+            //        .font('Helvetica-Bold')
+            //        .text('Contact Information:', 50, currentY);
+                
+            //     currentY += 20;
+            //     if (offerLetter.hrContactEmail) {
+            //         doc.fontSize(10)
+            //            .font('Helvetica')
+            //            .text(`Email: ${offerLetter.hrContactEmail}`, 50, currentY);
+            //         currentY += 15;
+            //     }
+                
+            //     if (offerLetter.hrContactPhone) {
+            //         doc.text(`Phone: ${offerLetter.hrContactPhone}`, 50, currentY);
+            //         currentY += 15;
+            //     }
+            // }
+
+            // Add a QR code for acceptance link if acceptance token exists
+            // if (offerLetter.acceptanceToken) {
+            //     try {
+            //         const acceptanceUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/offer-acceptance/${offerLetter.acceptanceToken}`;
+            //         const qrCodeDataUrl = await QRCode.toDataURL(acceptanceUrl, {
+            //             width: 100,
+            //             margin: 1,
+            //             color: {
+            //                 dark: '#000000',
+            //                 light: '#FFFFFF'
+            //             }
+            //         });
+                    
+            //         // Convert data URL to buffer
+            //         const qrBuffer = Buffer.from(qrCodeDataUrl.split(',')[1], 'base64');
+                    
+            //         // Add QR code to bottom right
+            //         doc.image(qrBuffer, doc.page.width - 120, doc.page.height - 120, { 
+            //             width: 80, 
+            //             height: 80 
+            //         });
+                    
+            //         // Add QR code label
+            //         doc.fontSize(8)
+            //            .text('Scan to respond', doc.page.width - 120, doc.page.height - 35, { 
+            //                width: 80, 
+            //                align: 'center' 
+            //            });
+            //     } catch (qrError) {
+            //         console.log('Error generating QR code:', qrError.message);
+            //     }
+            // }
 
             doc.end();
 

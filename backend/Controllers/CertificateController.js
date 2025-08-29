@@ -2,10 +2,14 @@ const Certificate = require("../models/certificate");
 const User = require("../models/user");
 const fs = require("fs");
 const path = require("path");
-const { createCanvas, loadImage } = require("canvas");
+const { createCanvas, loadImage, registerFont } = require("canvas");
 const QRCode = require("qrcode");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
+const fontManager = require("../utils/fontManager");
+
+// Initialize fonts
+fontManager.registerAllFonts();
 
 // Email setup
 const transporter = nodemailer.createTransport({
@@ -162,296 +166,367 @@ exports.generateCertificate = async (req, res) => {
 };
 
 // Gen PDF helper
-async function generateCertificatePDF(certificate) {
-    console.log(`PDF for: ${certificate._id}`);
-    try {
+// async function generateCertificatePDF(certificate) {
+//     console.log(`PDF for: ${certificate._id}`);
+//     try {
  
-        const certDir = path.join(__dirname, "../uploads/certificates");
-        if (!fs.existsSync(certDir)) {
-            console.log(`Create dir`);
-            fs.mkdirSync(certDir, { recursive: true });
-        }
+//         const certDir = path.join(__dirname, "../uploads/certificates");
+//         if (!fs.existsSync(certDir)) {
+//             console.log(`Create dir`);
+//             fs.mkdirSync(certDir, { recursive: true });
+//         }
         
-        const outputPath = path.join(certDir, `${certificate._id}.pdf`);
-        console.log(`Output: ${outputPath}`);
+//         const outputPath = path.join(certDir, `${certificate._id}.pdf`);
+//         console.log(`Output: ${outputPath}`);
         
-        // QR code
-        console.log(`Gen QR`);
-        const qrCodePath = path.join(certDir, `${certificate._id}_qr.png`);
-        const verifyUrl = `https://careers.omsoftwares.in/verify/${certificate._id}`;
-        await QRCode.toFile(qrCodePath, verifyUrl);
-        console.log(`QR done`);
+//         // QR code
+//         console.log(`Gen QR`);
+//         const qrCodePath = path.join(certDir, `${certificate._id}_qr.png`);
+//         const verifyUrl = `https://careers.omsoftwares.in/verify/${certificate._id}`;
+//         await QRCode.toFile(qrCodePath, verifyUrl);
+//         console.log(`QR done`);
         
-        console.log(`Init canvas`);
+//         console.log(`Init canvas`);
         
-        const canvas = createCanvas(842, 595);
-        const ctx = canvas.getContext("2d");
+//         const canvas = createCanvas(842, 595);
+//         const ctx = canvas.getContext("2d");
         
         
-        console.log(`Draw bg`);
-        const bgImagePath = path.join(__dirname, "../assets/certificate for om softwares.jpg");
-        const bgImage = await loadImage(bgImagePath);
-        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+//         console.log(`Draw bg`);
+//         const bgImagePath = path.join(__dirname, "../assets/certificate for om softwares.jpg");
+//         const bgImage = await loadImage(bgImagePath);
+//         ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
         
 
-        const logoPath = path.join(__dirname, "../assets/logo.png");
-        const logo = await loadImage(logoPath);
-        const logoWidth = 140; // Wider logo
-        const logoHeight = 80; // Less high
-        ctx.drawImage(logo, (canvas.width / 2) - (logoWidth / 2), 25, logoWidth, logoHeight);
+//         const logoPath = path.join(__dirname, "../assets/logo.png");
+//         const logo = await loadImage(logoPath);
+//         const logoWidth = 140; // Wider logo
+//         const logoHeight = 80; // Less high
+//         ctx.drawImage(logo, (canvas.width / 2) - (logoWidth / 2), 25, logoWidth, logoHeight);
  
-        ctx.fillStyle = "#c5f019"; 
-        ctx.font = "bold 50px Arial"; 
-        ctx.textAlign = "center";
-        ctx.fillText(`Certificate`, canvas.width / 2, 150);
+//         ctx.fillStyle = "#c5f019"; 
+//         ctx.font = "bold 50px Arial"; 
+//         ctx.textAlign = "center";
+//         ctx.fillText(`Certificate`, canvas.width / 2, 150);
         
       
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "24px Arial";
-        ctx.fillText(`Of Achievement`, canvas.width / 2, 190); 
+//         ctx.fillStyle = "#ffffff";
+//         ctx.font = "24px Arial";
+//         ctx.fillText(`Of Achievement`, canvas.width / 2, 190); 
         
-        ctx.font = "25px Arial";
-        ctx.fillText(`Proudly Presented To`, canvas.width / 2, 240);
+//         ctx.font = "25px Arial";
+//         ctx.fillText(`Proudly Presented To`, canvas.width / 2, 240);
         
        
-        ctx.font = "bold 36px Arial";
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText(certificate.name, canvas.width / 2, 300);
+//         ctx.font = "bold 36px Arial";
+//         ctx.fillStyle = "#ffffff";
+//         ctx.fillText(certificate.name, canvas.width / 2, 300);
         
       
-        ctx.beginPath();
-        ctx.strokeStyle = "#84cc16";
-        ctx.lineWidth = 3;
-        ctx.moveTo(canvas.width / 2 - 200, 330);
-        ctx.lineTo(canvas.width / 2 + 200, 330);
-        ctx.stroke();
+//         ctx.beginPath();
+//         ctx.strokeStyle = "#84cc16";
+//         ctx.lineWidth = 3;
+//         ctx.moveTo(canvas.width / 2 - 200, 330);
+//         ctx.lineTo(canvas.width / 2 + 200, 330);
+//         ctx.stroke();
         
        
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1;
+//         ctx.strokeStyle = "#ffffff";
+//         ctx.lineWidth = 1;
         
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "25px Arial";
-        ctx.fillText(`for completing ${certificate.jobrole} internship at Om Softwares`, canvas.width / 2, 380);
-        
-       
-        ctx.font = "25px Arial";
-        ctx.fillText(`from ${new Date(certificate.fromDate).toLocaleDateString()} to ${new Date(certificate.toDate).toLocaleDateString()}`, canvas.width / 2, 420);
+//         ctx.fillStyle = "#ffffff";
+//         ctx.font = "25px Arial";
+//         ctx.fillText(`for completing ${certificate.jobrole} internship at Om Softwares`, canvas.width / 2, 380);
         
        
-        ctx.font = "20px Arial";
-        ctx.fillStyle = "#ffffff";
-        ctx.textAlign = "center";
+//         ctx.font = "25px Arial";
+//         ctx.fillText(`from ${new Date(certificate.fromDate).toLocaleDateString()} to ${new Date(certificate.toDate).toLocaleDateString()}`, canvas.width / 2, 420);
+        
+       
+//         ctx.font = "20px Arial";
+//         ctx.fillStyle = "#ffffff";
+//         ctx.textAlign = "center";
         
         
-        const rowY = 480;
+//         const rowY = 480;
          
-        const leftColumnX = canvas.width / 4;
-        ctx.fillText(new Date().toLocaleDateString(), leftColumnX, rowY);
-        ctx.beginPath();
-        ctx.moveTo(leftColumnX - 100, rowY + 20);
-        ctx.lineTo(leftColumnX + 100, rowY + 20);
-        ctx.stroke();
-        ctx.fillText("Date", leftColumnX, rowY + 50); 
+//         const leftColumnX = canvas.width / 4;
+//         ctx.fillText(new Date().toLocaleDateString(), leftColumnX, rowY);
+//         ctx.beginPath();
+//         ctx.moveTo(leftColumnX - 100, rowY + 20);
+//         ctx.lineTo(leftColumnX + 100, rowY + 20);
+//         ctx.stroke();
+//         ctx.fillText("Date", leftColumnX, rowY + 50); 
         
         
-        const rightColumnX = (canvas.width * 3) / 4;
-        ctx.fillText(certificate.issuedBy, rightColumnX, rowY);
-        ctx.beginPath();
-        ctx.moveTo(rightColumnX - 100, rowY + 20);
-        ctx.lineTo(rightColumnX + 100, rowY + 20);
-        ctx.stroke();
-        ctx.fillText("Signature", rightColumnX, rowY + 50); 
+//         const rightColumnX = (canvas.width * 3) / 4;
+//         ctx.fillText(certificate.issuedBy, rightColumnX, rowY);
+//         ctx.beginPath();
+//         ctx.moveTo(rightColumnX - 100, rowY + 20);
+//         ctx.lineTo(rightColumnX + 100, rowY + 20);
+//         ctx.stroke();
+//         ctx.fillText("Signature", rightColumnX, rowY + 50); 
        
-        console.log(`Add QR`);
-        const qrCode = await loadImage(qrCodePath);
-        const qrSize = 90; // Smaller QR code
-        const middleColumnX = canvas.width / 2;
+//         console.log(`Add QR`);
+//         const qrCode = await loadImage(qrCodePath);
+//         const qrSize = 90; // Smaller QR code
+//         const middleColumnX = canvas.width / 2;
        
-        ctx.drawImage(qrCode, middleColumnX - (qrSize / 2), canvas.height - qrSize - 46, qrSize, qrSize);
+//         ctx.drawImage(qrCode, middleColumnX - (qrSize / 2), canvas.height - qrSize - 46, qrSize, qrSize);
         
         
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "#ffffff";
-        ctx.textAlign = "center";
-        ctx.fillText(`Certificate ID: ${certificate._id}`, canvas.width / 2, canvas.height - 20);
+//         ctx.font = "16px Arial";
+//         ctx.fillStyle = "#ffffff";
+//         ctx.textAlign = "center";
+//         ctx.fillText(`Certificate ID: ${certificate._id}`, canvas.width / 2, canvas.height - 20);
         
         
-        console.log(`Create buffer`);
-        const certificateImage = canvas.toBuffer("image/png");
-        const certificateImagePath = path.join(certDir, `${certificate._id}_cert.png`);
-        fs.writeFileSync(certificateImagePath, certificateImage);
-        console.log(`Image saved`);
+//         console.log(`Create buffer`);
+//         const certificateImage = canvas.toBuffer("image/png");
+//         const certificateImagePath = path.join(certDir, `${certificate._id}_cert.png`);
+//         fs.writeFileSync(certificateImagePath, certificateImage);
+//         console.log(`Image saved`);
         
-        console.log(`Create PDF`);
-        const doc = new PDFDocument({ size: 'A4', layout: 'landscape' });
-        const writeStream = fs.createWriteStream(outputPath);
-        doc.pipe(writeStream);
+//         console.log(`Create PDF`);
+//         const doc = new PDFDocument({ size: 'A4', layout: 'landscape' });
+//         const writeStream = fs.createWriteStream(outputPath);
+//         doc.pipe(writeStream);
         
        
-        doc.image(certificateImagePath, 0, 0, { width: 842 }); 
-        doc.end();
-          // Wait for PDF to be written before returning
-        return new Promise((resolve, reject) => {
-            writeStream.on("finish", () => {
-                console.log(`PDF creation completed`);
-                try {
-                    // Clean up temporary files but keep the PDF
-                    fs.unlinkSync(qrCodePath);
-                    fs.unlinkSync(certificateImagePath);
-                    console.log(`Temporary files cleaned up`);
-                    resolve(outputPath);
-                } catch (cleanupError) {
-                    console.error(`Cleanup error: ${cleanupError}`);
-                    // Still resolve since PDF was created successfully
-                    resolve(outputPath);
-                }
-            });
+//         doc.image(certificateImagePath, 0, 0, { width: 842 }); 
+//         doc.end();
+//           // Wait for PDF to be written before returning
+//         return new Promise((resolve, reject) => {
+//             writeStream.on("finish", () => {
+//                 console.log(`PDF creation completed`);
+//                 try {
+//                     // Clean up temporary files but keep the PDF
+//                     fs.unlinkSync(qrCodePath);
+//                     fs.unlinkSync(certificateImagePath);
+//                     console.log(`Temporary files cleaned up`);
+//                     resolve(outputPath);
+//                 } catch (cleanupError) {
+//                     console.error(`Cleanup error: ${cleanupError}`);
+//                     // Still resolve since PDF was created successfully
+//                     resolve(outputPath);
+//                 }
+//             });
             
-            writeStream.on("error", (error) => {
-                console.error(`PDF write error: ${error}`);
-                reject(error);
-            });
-        });
-    } catch (error) {
-        console.error("Error:", error);
-        throw error;
-    }
-}
+//             writeStream.on("error", (error) => {
+//                 console.error(`PDF write error: ${error}`);
+//                 reject(error);
+//             });
+//         });
+//     } catch (error) {
+//         console.error("Error:", error);
+//         throw error;
+//     }
+// }
 
 // New memory-based PDF generation for serverless compatibility
 async function generateCertificatePDFBuffer(certificate) {
-    console.log(`Generating PDF buffer for: ${certificate._id}`);
+    console.log(`Generating styled certificate for: ${certificate.name}`);
     try {
-        console.log(`Generating QR code in memory`);
         const verifyUrl = `https://careers.omsoftwares.in/verify/${certificate._id}`;
-        const qrCodeBuffer = await QRCode.toBuffer(verifyUrl, { type: 'png' });
-        console.log(`QR code generated in memory`);
+        // Generate QR code with advanced style to match the attached image
+        const qrOptions = {
+            type: 'png',
+            width: 320,
+            margin: 0,
+            errorCorrectionLevel: 'H',
+            color: {
+                dark: '#d6f300', // lime green dots
+                light: '#111111', // black background
+            },
+            // Customize finder patterns (corners)
+            rendererOpts: {
+                // Use rounded modules for dots
+                shape: 'circle',
+            }
+        };
+        // Generate base QR code
+        const qrCodeBuffer = await QRCode.toBuffer(verifyUrl, qrOptions);
+
+        // Draw white corner squares over the QR code (simulate the image's style)
+        // This requires drawing on a canvas after loading the QR code image
+        const qrCanvas = createCanvas(320, 320);
+        const qrCtx = qrCanvas.getContext('2d');
+        const qrImg = await loadImage(qrCodeBuffer);
+        qrCtx.drawImage(qrImg, 0, 0, 320, 320);
+        qrCtx.strokeStyle = '#fff';
+        qrCtx.lineWidth = 4;
+        // Top-left
+        qrCtx.strokeRect(8, 8, 32, 32);
+        // Top-right
+        qrCtx.strokeRect(320 - 40, 8, 32, 32);
+        // Bottom-left
+        qrCtx.strokeRect(8, 320 - 40, 32, 32);
+        // Bottom-right (optional, not in most QR codes)
+        // qrCtx.strokeRect(320 - 40, 320 - 40, 32, 32);
+        // Use this canvas as the QR code image
+        const styledQrCodeBuffer = qrCanvas.toBuffer('image/png');
+
+        // Load the certificate background image
+        const certificateTemplatePath = path.join(__dirname, "../assets/complition certificate.png");
+        const templateImage = await loadImage(certificateTemplatePath);
         
-        console.log(`Initializing canvas`);
-        const canvas = createCanvas(842, 595);
+        // Create canvas with the same dimensions as the template image
+        const canvas = createCanvas(templateImage.width, templateImage.height);
         const ctx = canvas.getContext("2d");
+
+        // Draw the background certificate template
+        ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height);
+
+        // ==== DYNAMIC CONTENT OVERLAY ====
         
-        console.log(`Drawing background`);
-        const bgImagePath = path.join(__dirname, "../assets/certificate for om softwares.jpg");
-        const bgImage = await loadImage(bgImagePath);
-        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+        // Position the recipient name in the green section (main focus) - Increased size
+        // Try elegant fonts first, fallback to Britannic, then system fonts
+        if (fontManager.isFontRegistered('Allura')) {
+            ctx.font = fontManager.getFontString(180, 'Allura', 'normal', 'cursive');
+        } else if (fontManager.isFontRegistered('Great Vibes')) {
+            ctx.font = fontManager.getFontString(180, 'Great Vibes', 'normal', 'cursive');
+        } else if (fontManager.isFontRegistered('Britannic')) {
+            ctx.font = fontManager.getFontString(180, 'Britannic', 'bold', 'Georgia, serif');
+        } else {
+            ctx.font = "bold 180px 'Georgia', serif"; // Fallback system font with increased size
+        }
         
-        // Add logo
-        const logoPath = path.join(__dirname, "../assets/logo.png");
-        const logo = await loadImage(logoPath);
-        const logoWidth = 140;
-        const logoHeight = 80;
-        ctx.drawImage(logo, (canvas.width / 2) - (logoWidth / 2), 25, logoWidth, logoHeight);
- 
-        // Title
-        ctx.fillStyle = "#c5f019"; 
-        ctx.font = "bold 50px Arial"; 
+        ctx.fillStyle = "#000"; // Black text on the green background
         ctx.textAlign = "center";
-        ctx.fillText(`Certificate`, canvas.width / 2, 150);
-        
-        // Subtitle
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "24px Arial";
-        ctx.fillText(`Of Achievement`, canvas.width / 2, 190); 
-        
-        ctx.font = "25px Arial";
-        ctx.fillText(`Proudly Presented To`, canvas.width / 2, 240);
-        
-        // Name
-        ctx.font = "bold 36px Arial";
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText(certificate.name, canvas.width / 2, 300);
-        
-        // Underline
-        ctx.beginPath();
-        ctx.strokeStyle = "#84cc16";
-        ctx.lineWidth = 3;
-        ctx.moveTo(canvas.width / 2 - 200, 330);
-        ctx.lineTo(canvas.width / 2 + 200, 330);
-        ctx.stroke();
-        
-        // Description
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1;
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "25px Arial";
-        ctx.fillText(`for completing ${certificate.jobrole} internship at Om Softwares`, canvas.width / 2, 380);
-        
-        // Dates
-        ctx.font = "25px Arial";
-        ctx.fillText(`from ${new Date(certificate.fromDate).toLocaleDateString()} to ${new Date(certificate.toDate).toLocaleDateString()}`, canvas.width / 2, 420);
-        
-        // Footer
-        ctx.font = "20px Arial";
-        ctx.fillStyle = "#ffffff";
-        ctx.textAlign = "center";
-        
-        const rowY = 480;
-        
-        // Date column
-        const leftColumnX = canvas.width / 4;
-        ctx.fillText(new Date().toLocaleDateString(), leftColumnX, rowY);
-        ctx.beginPath();
-        ctx.moveTo(leftColumnX - 100, rowY + 20);
-        ctx.lineTo(leftColumnX + 100, rowY + 20);
-        ctx.stroke();
-        ctx.fillText("Date", leftColumnX, rowY + 50); 
-        
-        // Signature column
-        const rightColumnX = (canvas.width * 3) / 4;
-        ctx.fillText(certificate.issuedBy, rightColumnX, rowY);
-        ctx.beginPath();
-        ctx.moveTo(rightColumnX - 100, rowY + 20);
-        ctx.lineTo(rightColumnX + 100, rowY + 20);
-        ctx.stroke();
-        ctx.fillText("Signature", rightColumnX, rowY + 50); 
-       
-        // Add QR code from buffer
-        console.log(`Adding QR code`);
-        const qrCode = await loadImage(qrCodeBuffer);
-        const qrSize = 90;
-        const middleColumnX = canvas.width / 2;
-        ctx.drawImage(qrCode, middleColumnX - (qrSize / 2), canvas.height - qrSize - 46, qrSize, qrSize);
-        
-        // Certificate ID
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "#ffffff";
-        ctx.textAlign = "center";
-        ctx.fillText(`Certificate ID: ${certificate._id}`, canvas.width / 2, canvas.height - 20);
-        
-        // Convert canvas to buffer
-        console.log(`Converting to image buffer`);
-        const certificateImageBuffer = canvas.toBuffer("image/png");
-        
-        // Create PDF in memory
-        console.log(`Creating PDF in memory`);
-        const doc = new PDFDocument({ size: 'A4', layout: 'landscape' });
-        
-        // Collect PDF data in memory
-        const buffers = [];
-        doc.on('data', buffers.push.bind(buffers));
-        
-        // Add image to PDF
-        doc.image(certificateImageBuffer, 0, 0, { width: 842 }); 
-        doc.end();
-        
-        // Return PDF as buffer
-        return new Promise((resolve, reject) => {
-            doc.on('end', () => {
-                console.log(`PDF generation completed in memory`);
-                const pdfBuffer = Buffer.concat(buffers);
-                resolve(pdfBuffer);
-            });
+        ctx.fillText(certificate.name, canvas.width / 2, canvas.height * 0.56); // Centered in green area
+
+        // Add detailed description text with increased font size
+        const descriptionFont = fontManager.isFontRegistered('Playfair Display') 
+            ? fontManager.getFontString(45, 'Playfair Display', 'normal', 'serif')
+            : fontManager.isFontRegistered('Britannic')
+            ? fontManager.getFontString(45, 'Britannic', 'normal', 'Arial, sans-serif')
+            : "45px 'Georgia', serif";
             
-            doc.on('error', (error) => {
-                console.error(`PDF generation error: ${error}`);
-                reject(error);
-            });
-        });
+        ctx.font = descriptionFont;
+        ctx.fillStyle = "#000";
+        ctx.textAlign = "center";
         
+        // First line of description
+        const baseText = "In recognition of the successful completion of the ";
+        const jobroleText = `${certificate.jobrole}`;
+        const internship = " Internship Program";
+
+        // Measure widths to properly center the combined text
+        const baseWidth = ctx.measureText(baseText).width;
+        
+        // Use FontManager for jobrole text with increased size and maximum weight
+        const jobroleFont = fontManager.isFontRegistered('Britannic')
+            ? fontManager.getFontString(52, 'Britannic', '900', 'Arial, sans-serif')
+            : "900 52px Arial, sans-serif";
+        ctx.font = jobroleFont;
+        const jobroleWidth = ctx.measureText(jobroleText).width;        // Calculate positions for proper alignment
+        const totalWidth = baseWidth + jobroleWidth + ctx.measureText(internship).width;
+        let startX = canvas.width / 2 - totalWidth / 2;
+        
+        // Draw the base text with FontManager
+        const baseFont = fontManager.isFontRegistered('Britannic')
+            ? fontManager.getFontString(45, 'Britannic', 'normal', 'Arial, sans-serif')
+            : "45px Arial, sans-serif";
+        ctx.font = baseFont;
+        ctx.fillText(baseText, startX + baseWidth / 2, canvas.height * 0.63);
+        
+        // Draw the jobrole text in bold with increased size
+        ctx.font = jobroleFont;
+        ctx.fillText(jobroleText, startX + baseWidth + jobroleWidth / 2, canvas.height * 0.63);
+
+        // Draw the internship text after jobrole text
+        ctx.font = baseFont;
+        const internshipWidth = ctx.measureText(internship).width;
+        ctx.fillText(internship, startX + baseWidth + jobroleWidth + internshipWidth / 2, canvas.height * 0.63);
+
+        
+        
+        // Second line of description with increased font size
+        const secondLineFont = fontManager.isFontRegistered('Britannic')
+            ? fontManager.getFontString(45, 'Britannic', 'normal', 'Arial, sans-serif')
+            : "45px 'Georgia', serif";
+        ctx.font = secondLineFont;
+        ctx.fillStyle = "#000";
+        ctx.textAlign = "center";
+        const description = "and in appreciation of outstanding commitment, professionalism, and dedication to both personal and professional growth.";
+        ctx.fillText(description, canvas.width / 2, canvas.height * 0.67);
+
+        // Add domain information if available
+        // if (certificate.domain) {
+        //     ctx.font = "18px Arial";
+        //     ctx.fillStyle = "#000";
+        //     ctx.fillText(`Domain: ${certificate.domain}`, canvas.width / 2, canvas.height * 0.65);
+        // }
+
+
+        // ==== QR CODE (bottom-left) ====
+        const qrCode = await loadImage(qrCodeBuffer);
+        const qrSize = 240;
+        const qrX = 145;
+        const qrY = canvas.height - qrSize - 130;
+        ctx.drawImage(qrCode, qrX, qrY, qrSize, qrSize);
+
+        // ==== DATES & ID (positioned in the template's designated areas) ====
+        // Increased font size for better visibility using Britannic font
+        const dateFont = fontManager.isFontRegistered('Britannic')
+            ? fontManager.getFontString(36, 'Britannic', 'normal', 'Arial, sans-serif')
+            : "36px Arial, sans-serif";
+        ctx.font = dateFont;
+        ctx.fillStyle = "#fff";
+        
+        // Left side - Internship dates
+        ctx.textAlign = "left";
+        const leftX = 1000;
+        const leftY = canvas.height - 245;
+        // ctx.fillText(`Internship Start Date:`, leftX, leftY);
+        ctx.fillText(new Date(certificate.fromDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }), leftX, leftY + 13);
+        
+        // ctx.fillText(`Internship End Date:`, leftX, leftY + 50);
+        ctx.fillText(new Date(certificate.toDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }), leftX - 5, leftY + 73);
+        
+        // Right side - Certificate details
+        const rightX = canvas.width - 400;
+        // ctx.fillText(`Id:`, rightX, leftY);
+        ctx.fillText(`${certificate._id}`, rightX - 210, leftY + 13 );
+        
+        // ctx.fillText(`Certificate Issue Date:`, rightX, leftY + 50);
+        ctx.fillText(new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }), rightX + 105 , leftY + 73);
+        
+        // Add issued by information
+        // if (certificate.issuedBy) {
+        //     ctx.fillText(`Issued By: ${certificate.issuedBy}`, rightX, leftY + 100);
+        // }
+
+        // Add verification text under QR code
+        // ctx.textAlign = "center";
+        // ctx.font = "12px Arial";
+        // ctx.fillStyle = "#c5f019";
+        // ctx.fillText("Can Be Verified At", qrX + qrSize/2, qrY + qrSize + 20);
+        // ctx.font = "10px Arial";
+        // ctx.fillStyle = "#fff";
+        // ctx.fillText("https://careers.omsoftwares.in/verify", qrX + qrSize/2, qrY + qrSize + 35);
+
+        // ==== BOTTOM NOTE (as in original) ====
+        // ctx.textAlign = "center";
+        // ctx.font = "12px Arial";
+        // ctx.fillStyle = "#fff";
+        // ctx.fillText("Note: This is a digitally issued certificate and is valid without a physical signature. It can be verified via the QR code provided.", canvas.width / 2, canvas.height - 20);
+
+        // ==== CONVERT TO PDF ====
+        const doc = new PDFDocument({ size: 'A4', layout: 'landscape' });
+        const buffers = [];
+        doc.on("data", buffers.push.bind(buffers));
+
+        const certImageBuffer = canvas.toBuffer("image/png");
+        doc.image(certImageBuffer, 0, 0, { width: 842 }); // scale to A4 landscape
+        doc.end();
+
+        return new Promise((resolve, reject) => {
+            doc.on("end", () => resolve(Buffer.concat(buffers)));
+            doc.on("error", reject);
+        });
     } catch (error) {
-        console.error("Error generating PDF buffer:", error);
+        console.error("Error generating styled certificate:", error);
         throw error;
     }
 }
@@ -497,39 +572,39 @@ exports.sendCertificateEmail = async (req, res) => {
 };
 
 // Email helper
-async function sendCertificateByEmail(to, subject, message, recipientName, certificatePath) {
-    console.log(`Email to: ${to}`);
-    try {
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to,
-            subject,
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2>Certificate of Completion</h2>
-                    <p>Dear ${recipientName},</p>
-                    <p>${message}</p>
-                    <p>Please find your certificate attached.</p>
-                    <p>This certificate can be verified online.</p>
-                    <p>Regards,<br>OM Softwares</p>
-                </div>
-            `,
-            attachments: [
-                {
-                    filename: `${recipientName.replace(/\s+/g, '_')}_certificate.pdf`,
-                    path: certificatePath
-                }
-            ]
-        };
+// async function sendCertificateByEmail(to, subject, message, recipientName, certificatePath) {
+//     console.log(`Email to: ${to}`);
+//     try {
+//         const mailOptions = {
+//             from: process.env.EMAIL_USER,
+//             to,
+//             subject,
+//             html: `
+//                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//                     <h2>Certificate of Completion</h2>
+//                     <p>Dear ${recipientName},</p>
+//                     <p>${message}</p>
+//                     <p>Please find your certificate attached.</p>
+//                     <p>This certificate can be verified online.</p>
+//                     <p>Regards,<br>OM Softwares</p>
+//                 </div>
+//             `,
+//             attachments: [
+//                 {
+//                     filename: `${recipientName.replace(/\s+/g, '_')}_certificate.pdf`,
+//                     path: certificatePath
+//                 }
+//             ]
+//         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`Sent: ${info.messageId}`);
-        return info;
-    } catch (error) {
-        console.error(`Error:`, error);
-        throw error;
-    }
-}
+//         const info = await transporter.sendMail(mailOptions);
+//         console.log(`Sent: ${info.messageId}`);
+//         return info;
+//     } catch (error) {
+//         console.error(`Error:`, error);
+//         throw error;
+//     }
+// }
 
 // New buffer-based email function for serverless compatibility
 async function sendCertificateByEmailBuffer(to, subject, message, recipientName, pdfBuffer, filename) {
