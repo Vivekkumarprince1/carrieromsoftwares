@@ -309,8 +309,8 @@ exports.sendOfferLetterEmail = async (req, res) => {
                             <p style="margin: 5px 0;"><strong>Position:</strong> ${offerLetter.position}</p>
                             <p style="margin: 5px 0;"><strong>Department:</strong> ${offerLetter.department}</p>
                             ${isInternship 
-                                ? `<p style="margin: 5px 0;"><strong>Stipend:</strong> ${offerLetter.salary === 0 ? 'Unpaid' : '$' + offerLetter.salary.toLocaleString()}</p>`
-                                : `<p style="margin: 5px 0;"><strong>Annual Salary:</strong> $${offerLetter.salary.toLocaleString()}</p>`
+                                ? `<p style="margin: 5px 0;"><strong>Stipend:</strong> ${offerLetter.salary === 0 ? 'Unpaid' : '₹' + offerLetter.salary.toLocaleString()}</p>`
+                                : `<p style="margin: 5px 0;"><strong>Annual Salary:</strong> ₹${offerLetter.salary.toLocaleString()}</p>`
                             }
                             <p style="margin: 5px 0;"><strong>Start Date:</strong> ${formatEmailDate(offerLetter.startDate)}</p>
                             <p style="margin: 5px 0;"><strong>Location:</strong> ${offerLetter.joiningLocation}</p>
