@@ -545,57 +545,35 @@ async function generateOfferLetterPDFInMemory(offerLetter) {
 
             currentY += 60;
 
-            // Section header
+            // Internship Overview section
             doc.fontSize(14)
                .font('Helvetica-Bold')
-               .text('Offer Details', 50, currentY);
+               .fillColor('white')
+               .text('Internship Overview', 50, currentY);
 
-            currentY += 20;
+            currentY += 25;
 
-            // Details section
-           
-                // Job offer details
-                // doc.fontSize(11)
-                //    .font('Helvetica')
-                //    .text(`Position: ${offerLetter.position}`, 50, currentY);
-                // currentY += 20;
+            // Duration
+            doc.fontSize(14)
+               .font('Helvetica')
+               .text(`Duration: ${offerLetter.duration || 'Until project completion or 3 months (whichever is longer)'}`, 50, currentY, {
+                   width: 500,
+                   align: 'left'
+               });
+            currentY += 25;
 
-                // doc.text(`Department: ${offerLetter.department}`, 50, currentY);
-                // currentY += 20;
+            // Stipend
+            const stipendText = offerLetter.salary === 0 ? 'Unpaid' : `₹${offerLetter.salary.toLocaleString()}`;
+            doc.text(`Stipend: ${stipendText}`, 50, currentY);
+            currentY += 25;
 
-                doc.fontSize(14)
-                   .font('Helvetica-Bold')
-                   .fillColor('white')
-                   .text(`Annual Salary: $${offerLetter.salary.toLocaleString()}`, 50, currentY);
-                currentY += 20;
+            // Mode
+            doc.text(`Mode: ${offerLetter.workType || 'Work from Home'}`, 50, currentY);
+            currentY += 25;
 
-                doc.fillColor('white')
-                   .fontSize(11)
-                   .font('Helvetica')
-                   .text(`Start Date: ${formatDate(offerLetter.startDate)}`, 50, currentY);
-                currentY += 20;
-
-                doc.text(`Location: ${offerLetter.joiningLocation}`, 50, currentY);
-                currentY += 20;
-
-                doc.text(`Work Type: ${offerLetter.workType}`, 50, currentY);
-                currentY += 30;
-
-            // Benefits section (if available)
-            if (offerLetter.benefits && offerLetter.benefits.length > 0) {
-                doc.fontSize(14)
-                   .font('Helvetica-Bold')
-                   .text('Benefits:', 50, currentY);
-                
-                currentY += 20;
-                offerLetter.benefits.forEach(benefit => {
-                    doc.fontSize(10)
-                       .font('Helvetica')
-                       .text(`• ${benefit}`, 70, currentY);
-                    currentY += 15;
-                });
-                currentY += 15;
-            }
+            // Certificate
+            doc.text('Certificate: Issued upon successful completion', 50, currentY);
+            currentY += 40;
 
             // Terms and conditions section
            
