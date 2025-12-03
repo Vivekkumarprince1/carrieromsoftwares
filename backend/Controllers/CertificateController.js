@@ -2,14 +2,14 @@ const Certificate = require("../models/certificate");
 const User = require("../models/user");
 const fs = require("fs");
 const path = require("path");
-const { createCanvas, loadImage, registerFont } = require("canvas");
+const { createCanvas, loadImage, GlobalFonts } = require("@napi-rs/canvas");
 const QRCode = require("qrcode");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 const fontManager = require("../utils/fontManager");
 
-// Initialize fonts
-fontManager.registerAllFonts();
+// Initialize fonts using @napi-rs/canvas
+fontManager.registerAllFonts(GlobalFonts);
 
 // Email setup
 const transporter = nodemailer.createTransport({
