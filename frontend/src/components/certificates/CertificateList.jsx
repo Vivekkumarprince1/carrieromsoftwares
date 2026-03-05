@@ -18,7 +18,7 @@ const CertificateList = ({ certificates, loading, onEmailCertificate }) => {
   const handleShowEmailModal = (certificate) => {
     setEmailData({
       id: certificate._id,
-      email: certificate.userId?.email || ''
+      email: certificate.recipientEmail || certificate.userId?.email || ''
     });
     setShowEmailModal(true);
   };

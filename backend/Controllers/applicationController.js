@@ -7,7 +7,7 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const resumeParserService = require("../services/resumeParserService");
 const recaptchaService = require("../services/recaptchaService");
-const { uploadFile, uploadQuestionFile, deleteImage } = require('../config/cloudinary');
+const { cloudinary, uploadFile, uploadQuestionFile, deleteImage } = require('../config/cloudinary');
 
 // Email setup
 const transporter = nodemailer.createTransport({
@@ -665,6 +665,47 @@ const formatExperienceArray = (experience) => {
   }).filter(exp => exp.length > 0).join('\n\n');
 };
 
+const buildSignedResumeUrl = (application) => {
+  const expiresAt = Math.round(Date.now() / 1000) + 3600;
+  const rawResumeUrl = typeof application.resumeUrl === 'string' ? application.resumeUrl.trim() : '';
+
+  let publicId = application.cloudinaryPublicId;
+  if (!publicId && rawResumeUrl) {
+    try {
+      const parsed = new URL(rawResumeUrl);
+      const pathSegments = decodeURIComponent(parsed.pathname).split('/');
+      const uploadIndex = pathSegments.indexOf('upload');
+      if (uploadIndex !== -1) {
+        const publicIdParts = pathSegments
+          .slice(uploadIndex + 1)
+          .filter(Boolean)
+          .filter(segment => !/^v\d+$/.test(segment));
+        publicId = publicIdParts.join('/');
+      }
+    } catch (_error) {
+      publicId = null;
+    }
+  }
+
+  if (!publicId) {
+    return {
+      url: rawResumeUrl,
+      expiresAt
+    };
+  }
+
+  const signedUrl = cloudinary.utils.private_download_url(publicId, null, {
+    resource_type: 'raw',
+    type: 'upload',
+    expires_at: expiresAt
+  });
+
+  return {
+    url: signedUrl,
+    expiresAt
+  };
+};
+
 // Get user applications
 exports.getMyApplications = async (req, res) => {
   console.log("Get: my apps");
@@ -724,6 +765,41 @@ exports.getApplicationDetail = async (req, res) => {
     res.status(200).json(application);
   } catch (error) {
     handleError(res, error, "getAppDetail");
+  }
+};
+
+exports.getResumeAccessUrl = async (req, res) => {
+  console.log("Get: resume access", req.params.id);
+  try {
+    const application = await Application.findById(req.params.id).select('userId resumeUrl cloudinaryPublicId');
+
+    if (!application || !application.resumeUrl) {
+      return res.status(404).json({ message: 'Resume not found for this application' });
+    }
+
+    const requestUser = await User.findById(req.user.userId).select('role');
+    if (!requestUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isAdmin = requestUser.role === 'admin';
+    const isOwner = application.userId && application.userId.toString() === req.user.userId;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ message: 'Not authorized to access this resume' });
+    }
+
+    const { url, expiresAt } = buildSignedResumeUrl(application);
+    if (!url) {
+      return res.status(404).json({ message: 'Resume URL is not available' });
+    }
+
+    return res.status(200).json({
+      url,
+      expiresAt
+    });
+  } catch (error) {
+    handleError(res, error, 'getResumeAccessUrl');
   }
 };
 

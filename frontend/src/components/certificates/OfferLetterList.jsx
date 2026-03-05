@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ExtendOfferModal from './ExtendOfferModal';
 
 const OfferLetterList = ({ 
@@ -8,13 +8,35 @@ const OfferLetterList = ({
   onSendEmail, 
   onUpdateStatus,
   onExtend,
-  currentUser 
+  currentUser,
+  autoOpenExtendEmail = '',
+  filterEmail = ''
 }) => {
   const [expandedLetter, setExpandedLetter] = useState(null);
   const [sendingEmail, setSendingEmail] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(null);
   const [extendModalOpen, setExtendModalOpen] = useState(false);
   const [selectedLetterForExtend, setSelectedLetterForExtend] = useState(null);
+
+  const displayedOfferLetters = filterEmail
+    ? offerLetters.filter((letter) => letter.email?.toLowerCase() === filterEmail.toLowerCase())
+    : offerLetters;
+
+  useEffect(() => {
+    if (!autoOpenExtendEmail || !offerLetters?.length) return;
+
+    const normalizedEmail = autoOpenExtendEmail.toLowerCase();
+    const eligibleOffers = offerLetters
+      .filter((letter) => letter.email?.toLowerCase() === normalizedEmail && letter.status === 'Accepted')
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
+    if (eligibleOffers.length > 0) {
+      const targetOffer = eligibleOffers[0];
+      setExpandedLetter(targetOffer._id);
+      setSelectedLetterForExtend(targetOffer);
+      setExtendModalOpen(true);
+    }
+  }, [autoOpenExtendEmail, offerLetters]);
 
   const handleSendEmail = async (letterId, email) => {
     setSendingEmail(letterId);
@@ -98,13 +120,26 @@ const OfferLetterList = ({
     );
   }
 
+  if (displayedOfferLetters.length === 0) {
+    return (
+      <div className="bg-secondary-black rounded-lg shadow-md border border-dark-gray p-6">
+        <div className="text-center py-8">
+          <p className="text-gray-400 text-lg">No offer letters found for selected user</p>
+          <p className="text-gray-500 text-sm mt-2">Try clearing the user filter</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-secondary-black rounded-lg shadow-md border border-dark-gray">
       <div className="p-6">
-        <h3 className="text-xl font-semibold text-white mb-6">All Offer Letters ({offerLetters.length})</h3>
+        <h3 className="text-xl font-semibold text-white mb-6">
+          {filterEmail ? `Offer History (${displayedOfferLetters.length})` : `All Offer Letters (${displayedOfferLetters.length})`}
+        </h3>
         
         <div className="space-y-4">
-          {offerLetters.map((letter) => (
+          {displayedOfferLetters.map((letter) => (
             <div 
               key={letter._id} 
               className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden"
@@ -201,6 +236,36 @@ const OfferLetterList = ({
                         <p className="text-white text-sm bg-gray-700 p-3 rounded">
                           {letter.additionalNotes}
                         </p>
+                      </div>
+                    )}
+
+                    {letter.extensionHistory && letter.extensionHistory.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-gray-400 text-sm mb-2">Extension History</p>
+                        <div className="space-y-2">
+                          {letter.extensionHistory
+                            .slice()
+                            .reverse()
+                            .map((entry, index) => (
+                              <div key={`${letter._id}-ext-${index}`} className="bg-gray-700 p-3 rounded">
+                                <p className="text-xs text-gray-300">
+                                  Extended On: {new Date(entry.extendedAt).toLocaleDateString()}
+                                </p>
+                                <p className="text-xs text-gray-300">
+                                  Valid Until: {new Date(entry.oldValidUntil).toLocaleDateString()} → {new Date(entry.newValidUntil).toLocaleDateString()}
+                                </p>
+                                <p className="text-xs text-gray-300">
+                                  Start Date: {new Date(entry.oldStartDate).toLocaleDateString()} → {new Date(entry.newStartDate).toLocaleDateString()}
+                                </p>
+                                {entry.previousOfferSnapshot?.salary !== undefined && (
+                                  <p className="text-xs text-gray-300">
+                                    Salary: ${entry.previousOfferSnapshot.salary?.toLocaleString?.() || entry.previousOfferSnapshot.salary}
+                                  </p>
+                                )}
+                                {entry.notes && <p className="text-xs text-gray-200 mt-1">Notes: {entry.notes}</p>}
+                              </div>
+                            ))}
+                        </div>
                       </div>
                     )}
 

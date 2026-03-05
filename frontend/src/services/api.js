@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { isTokenExpired } from '../utils/tokenUtils';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '')).replace(/\/+$/, '');
+const buildApiUrl = (endpoint) => `${API_URL}${endpoint}`;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -222,6 +223,7 @@ export const applicationService = {
   getMyApplications: () => api.get('/api/applications/my'),
   getApplicationsForRecommendation: () => api.get('/api/applications/for-recommendation'),
   getApplicationById: (id) => api.get(`/api/applications/${id}/detail`),
+  getResumeAccessUrl: (id) => api.get(`/api/applications/${id}/resume-access`),
   checkApplicationStatus: (jobId) => api.get(`/api/applications/check-status/${jobId}`),
   createApplication: (formData, onUploadProgress = null) => {
     const config = {
@@ -368,7 +370,7 @@ export const certificateService = {
   // Download certificate as a blob
   downloadCertificate: (id) => {
     // Using direct fetch to avoid issues with axios interceptors
-    return fetch(`${API_URL}/api/certification/download/${id}`, {
+    return fetch(buildApiUrl(`/api/certification/download/${id}`), {
       method: 'GET',
       headers: {
         'Accept': 'application/pdf',
@@ -412,7 +414,7 @@ export const offerLetterService = {
   
   // Download offer letter as a blob
   downloadOfferLetter: (id) => {
-    return fetch(`${API_URL}/api/certification/offer-letters/${id}/download`, {
+    return fetch(buildApiUrl(`/api/certification/offer-letters/${id}/download`), {
       method: 'GET',
       headers: {
         'Accept': 'application/pdf',
@@ -567,6 +569,7 @@ export const userService = {
   getUserById: (id) => api.get(`/api/users/${id}`),
   updateUserStatus: (id, userData) => api.put(`/api/users/${id}/status`, userData),
   updateAccountStatus: (id, accountStatusData) => api.put(`/api/users/${id}/account-status`, accountStatusData),
+  terminateEmployee: (id, terminationData = {}) => api.put(`/api/users/${id}/terminate`, terminationData),
   updateUserRole: (id, roleData) => api.put(`/api/users/${id}/role`, roleData),
   updateSpecialAuthority: (id, specialAuthorityData) => api.put(`/api/users/${id}/special-authority`, specialAuthorityData),
   deleteUser: (id) => api.delete(`/api/users/${id}`)

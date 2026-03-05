@@ -38,11 +38,7 @@ This repository contains a full-stack web application for managing careers, job 
 - MongoDB (local or cloud)
 
 ### Setup
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Vivekkumarprince1/careers.omsoftwares.in.git
-   cd careers.omsoftwares.in
-   ```
+
 2. **Backend setup:**
    - Copy `.env.example` to `.env` and fill in required values.
    - Install dependencies:
@@ -81,7 +77,47 @@ This repository contains a full-stack web application for managing careers, job 
 - Responsive UI with Tailwind CSS
 
 ## Deployment
-- Vercel configuration files are included for both frontend and backend.
+
+### Backend (Vercel)
+1. Import the `backend` folder as a Vercel project.
+2. Framework preset: `Other`.
+3. Build command: leave empty.
+4. Output directory: leave empty.
+5. Ensure server entry is `api/index.js` (already wired in `backend/vercel.json`).
+
+Set these Environment Variables in Vercel Project Settings:
+
+- Required
+  - `MONGO_URI`
+  - `JWT_SECRET`
+  - `JWT_EXPIRES_IN`
+  - `JWT_COOKIE_EXPIRES_IN`
+  - `NODE_ENV=production`
+- Email (Gmail)
+  - `EMAIL_USER` (full Gmail address)
+  - `EMAIL_PASS` (Google App Password, 16 chars, no spaces)
+- Optional SMTP (for non-Gmail providers)
+  - `MAIL_HOST`
+  - `MAIL_PORT`
+  - `MAIL_SECURE` (`true` for 465, `false` for 587)
+  - `MAIL_USER`
+  - `MAIL_PASS`
+- Other app vars
+  - `CLOUDINARY_CLOUD_NAME`
+  - `CLOUDINARY_API_KEY`
+  - `CLOUDINARY_API_SECRET`
+  - `CLOUDINARY_URL`
+  - `FRONTEND_URL`
+  - `RECAPTCHA_SECRET_KEY`
+
+### Frontend (Vercel)
+1. Import the `frontend` folder as a separate Vercel project.
+2. Framework preset: `Vite`.
+3. Add frontend API base URL env vars as required by your frontend config.
+
+### Post-deploy check
+- Hit backend health/root route once so startup logs confirm `Email transport verified`.
+- Trigger one test email flow (certificate/offer letter) to confirm delivery in production.
 
 ## Contributing
 Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.

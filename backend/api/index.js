@@ -40,6 +40,19 @@ validateConfig();
 
 const app = express();
 console.log("Init Express app");
+const isVercel = process.env.VERCEL === "1";
+let dbConnectionPromise = null;
+
+const ensureDbConnection = async () => {
+  if (!dbConnectionPromise) {
+    dbConnectionPromise = connectDB().catch((error) => {
+      dbConnectionPromise = null;
+      throw error;
+    });
+  }
+
+  await dbConnectionPromise;
+};
 
 // Configure CORS to allow all origins
 const corsOptions = {
@@ -54,6 +67,16 @@ app.use(cors(corsOptions));
 console.log("CORS enabled with options");
 app.use(express.json());
 console.log("JSON parser enabled");
+
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbConnection();
+    next();
+  } catch (error) {
+    console.error("Database connection failed:", error.message);
+    res.status(500).json({ message: "Database connection failed" });
+  }
+});
 
 // Note: This static route for uploads is not needed in serverless deployment
 // as all files are now handled in memory and streamed directly
@@ -90,12 +113,14 @@ app.use("/api/notifications", notificationRoutes);
 
 const PORT = authConfig.port;
 
-connectDB()
-  .then(() => {
+if (!isVercel) {
+  ensureDbConnection().then(() => {
     app.listen(PORT, () => {
       console.log(`✅ Server running: http://localhost:${PORT}`);
     });
-  })
-  .catch(err => {
+  }).catch(err => {
     console.error("Start failed:", err);
   });
+}
+
+module.exports = app;

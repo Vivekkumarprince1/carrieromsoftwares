@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { applicationService, jobService, offerLetterService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import JobUpdateBanner from '../components/notifications/JobUpdateBanner';
+import { getResumeViewUrl } from '../utils/urlUtils';
 
 
 const MyApplications = () => {
@@ -185,6 +186,23 @@ const MyApplications = () => {
       console.error('Error loading offer letter:', err);
       return null;
     }
+  };
+
+  const handleViewResume = async (application) => {
+    if (!application?._id || !application?.resumeUrl) return;
+
+    try {
+      const response = await applicationService.getResumeAccessUrl(application._id);
+      const secureUrl = response?.data?.url;
+      if (secureUrl) {
+        window.open(secureUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+    } catch (resumeError) {
+      console.error('Error fetching secure resume URL:', resumeError);
+    }
+
+    window.open(getResumeViewUrl(application.resumeUrl), '_blank', 'noopener,noreferrer');
   };
 
   // Download offer letter PDF
@@ -516,17 +534,16 @@ const MyApplications = () => {
                                         Resume
                                       </h4>
                                       {selectedApplication.resumeUrl ? (
-                                        <a
-                                          href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}${selectedApplication.resumeUrl}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
+                                        <button
+                                          type="button"
+                                          onClick={() => handleViewResume(selectedApplication)}
                                           className="inline-flex items-center px-5 py-2 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white rounded-md transition-all duration-300 text-sm shadow-md hover:shadow-lg"
                                         >
                                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                           </svg>
                                           View Resume
-                                        </a>
+                                        </button>
                                       ) : (
                                         <p className="text-gray-500 italic">No resume file available</p>
                                       )}

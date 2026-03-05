@@ -11,6 +11,16 @@ import { useAuth } from '../hooks/useAuth';
 const Certificates = () => {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
+  const actionParam = searchParams.get('action');
+  const emailParam = searchParams.get('email') || '';
+  const prefillData = {
+    name: searchParams.get('name') || '',
+    email: searchParams.get('email') || '',
+    domain: searchParams.get('domain') || '',
+    jobrole: searchParams.get('jobrole') || '',
+    fromDate: searchParams.get('fromDate') || '',
+    toDate: searchParams.get('toDate') || ''
+  };
   const [activeTab, setActiveTab] = useState(tabParam || 'issue');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -290,7 +300,11 @@ const Certificates = () => {
 
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
         {activeTab === 'issue' && (
-          <IssueForm onSubmit={handleIssue} loading={loading} />
+          <IssueForm
+            onSubmit={handleIssue}
+            loading={loading}
+            initialData={prefillData}
+          />
         )}
         
         {activeTab === 'offer' && (
@@ -314,6 +328,8 @@ const Certificates = () => {
             onUpdateStatus={handleUpdateOfferLetterStatus}
             onExtend={handleExtendOfferLetter}
             currentUser={currentUser}
+            autoOpenExtendEmail={actionParam === 'extend' ? emailParam : ''}
+            filterEmail={emailParam}
           />
         )}
         

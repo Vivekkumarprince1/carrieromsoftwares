@@ -8,21 +8,24 @@
   font-family: "Outfit", sans-serif;
   --font-body: "Outfit", sans-serif;
   --font-heading: "Marcellus", serif;
-  --color-primary: #9abe0c;
-  --color-heading: #131217;
+  --color-primary: #a3c614;
+  --color-primary-hover: #bde02e;
+  --color-heading: #ffffff;
   --xb-track-color: #16171b;
-  --color-dark: #0f172a;
-  --color-white: #fff;
-  --color-black: #000;
+  --color-dark: #000000;
+  --color-white: #ffffff;
+  --color-black: #000000;
   --color-default: #a8a8a8;
-  --color-gray: #f8f8f8;
-  --color-border: #eff5f8;
+  --color-muted: #9ca3af;
+  --color-border: #374151;
+  --color-surface: #111827;
+  --color-surface-elevated: #1f2937;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: var(--color-black);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -33,24 +36,79 @@
 /* Global dark theme */
 @layer base {
   html, body {
-    @apply bg-black text-white min-h-screen;
+    @apply min-h-screen;
+    background-color: var(--color-black);
+    color: var(--color-white);
+    font-family: var(--font-body);
+  }
+
+  #root {
+    @apply min-h-screen;
+    background-color: var(--color-black);
+    color: var(--color-white);
   }
   
   h1, h2, h3, h4, h5, h6  {
     font-family: var(--font-heading);
   }
 
+  input,
+  select,
+  textarea {
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-white);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-muted);
+  }
+
   /* Ensure all sections have black background */
   section {
-    @apply bg-black;
+    background-color: var(--color-black);
   }
 }
 
 /* Page Alignment System */
 @layer components {
+  .app-container {
+    @apply min-h-screen;
+    background-color: var(--color-black);
+    color: var(--color-white);
+  }
+
+  .theme-surface {
+    background-color: var(--color-surface);
+    color: var(--color-white);
+    border-color: var(--color-border);
+  }
+
+  .theme-surface-elevated {
+    background-color: var(--color-surface-elevated);
+    color: var(--color-white);
+    border-color: var(--color-border);
+  }
+
+  .theme-text-muted {
+    color: var(--color-muted);
+  }
+
+  .theme-btn-primary {
+    background-color: var(--color-primary);
+    color: #0b0b0b;
+  }
+
+  .theme-btn-primary:hover {
+    background-color: var(--color-primary-hover);
+  }
+
   /* Main page container for consistent alignment */
   .page-container {
-    @apply min-h-screen bg-black text-white;
+    @apply min-h-screen;
+    background-color: var(--color-black);
+    color: var(--color-white);
   }
   
   /* Content wrapper with consistent padding and max-width */

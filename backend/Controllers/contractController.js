@@ -72,6 +72,7 @@ const acceptOffer = async (req, res) => {
   try {
     const { token } = req.params;
     const contractData = req.body;
+    let savedContract = null;
     
     const offerLetter = await OfferLetter.findOne({ 
       acceptanceToken: token,
@@ -124,7 +125,7 @@ const acceptOffer = async (req, res) => {
         agreementTerms: contractData.agreementTerms
       });
       
-      const savedContract = await contract.save();
+      savedContract = await contract.save();
       console.log("Created contract:", savedContract._id);
       
       // Link contract to offer letter
@@ -144,6 +145,7 @@ const acceptOffer = async (req, res) => {
     const user = await User.findOne({ email: offerLetter.email });
     if (user && user.employeeStatus !== 'employee') {
       user.employeeStatus = 'offer_recipient';
+      user.offerLetter = offerLetter._id;
       await user.save();
     }
     
@@ -163,7 +165,7 @@ const acceptOffer = async (req, res) => {
     
     res.status(201).json({
       message: "Offer accepted and contract submitted successfully!",
-      contractId: savedContract._id,
+      contractId: savedContract?._id,
       status: 'Accepted'
     });
     

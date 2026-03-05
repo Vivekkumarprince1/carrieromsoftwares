@@ -46,6 +46,7 @@ router.get("/my", auth, applicationController.getMyApplications);
 router.get("/my/:applicationId/offer-letter", auth, applicationController.getMyApplicationOfferLetter);
 router.get("/for-recommendation", auth, applicationController.getApplicationsForRecommendation);
 router.get("/check-status/:jobId", auth, applicationController.checkApplicationStatus);
+router.get("/:id/resume-access", auth, applicationController.getResumeAccessUrl);
 
 // New routes for question handling
 router.post("/upload-question-file", auth, questionFileUpload.single("file"), applicationController.uploadQuestionFile);

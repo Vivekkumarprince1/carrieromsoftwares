@@ -1,24 +1,39 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const IssueForm = ({ onSubmit, loading }) => {
+const getDefaultFormData = () => ({
+  name: '',
+  domain: '',
+  jobrole: '',
+  fromDate: '',
+  toDate: '',
+  email: '',
+  issuedBy: 'OM Softwares'
+});
+
+const IssueForm = ({ onSubmit, loading, initialData = {} }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    domain: '',
-    jobrole: '',
-    fromDate: '',
-    toDate: '',
-    email: '',
-    issuedBy: 'OM Softwares'
+    ...getDefaultFormData(),
+    ...initialData,
+    issuedBy: initialData?.issuedBy || 'OM Softwares'
   });
+
+  useEffect(() => {
+    setFormData({
+      ...getDefaultFormData(),
+      ...initialData,
+      issuedBy: initialData?.issuedBy || 'OM Softwares'
+    });
+  }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    await onSubmit(formData);
+    setFormData(getDefaultFormData());
   };
 
   return (

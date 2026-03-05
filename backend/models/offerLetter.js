@@ -9,6 +9,7 @@ const offerLetterSchema = new mongoose.Schema({
   department: { type: String, required: true },
   salary: { type: Number, required: true },
   startDate: { type: Date, required: true },
+  duration: { type: String },
   joiningLocation: { type: String, required: true },
   workType: { type: String, enum: ['Remote', 'On-site', 'Hybrid'], default: 'On-site' },
   benefits: [{ type: String }],
@@ -22,6 +23,17 @@ const offerLetterSchema = new mongoose.Schema({
   status: { type: String, enum: ['Pending', 'Accepted', 'Rejected'], default: 'Pending' },
   validUntil: { type: Date, required: true },
   additionalNotes: { type: String },
+  extensionHistory: [{
+    oldValidUntil: { type: Date },
+    newValidUntil: { type: Date },
+    oldStartDate: { type: Date },
+    newStartDate: { type: Date },
+    notes: { type: String },
+    previousOfferSnapshot: { type: mongoose.Schema.Types.Mixed },
+    updatedOfferSnapshot: { type: mongoose.Schema.Types.Mixed },
+    extendedAt: { type: Date, default: Date.now },
+    extendedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+  }],
   
   // Acceptance workflow fields
   acceptedAt: { type: Date },

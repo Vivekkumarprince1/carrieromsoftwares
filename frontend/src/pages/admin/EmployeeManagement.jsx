@@ -5,9 +5,11 @@ import { motion } from 'framer-motion';
 import { FaUser, FaUserTie, FaUserShield, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaCheck, FaTimes, FaDownload, FaCog, FaUsers, FaClock, FaBan, FaCrown } from 'react-icons/fa';
 import { CSVLink } from 'react-csv';
 import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const EmployeeManagement = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,6 +19,7 @@ const EmployeeManagement = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [showUserModal, setShowUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
   const [showCSVModal, setShowCSVModal] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState({
     name: true,
@@ -78,7 +81,7 @@ const EmployeeManagement = () => {
 
       const response = await userService.getAllUsers(params);
       setUsers(response.data.users);
-      setTotalPages(response.data.totalPages);
+      setTotalPages(response.data.pagination?.totalPages || response.data.totalPages || 1);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to fetch users');
@@ -253,7 +256,8 @@ const EmployeeManagement = () => {
     setSelectedColumns(allDeselected);
   };
 
-  const handleViewUser = (user) => {
+  const handleViewUser = async (user) => {
+    setUserDetailLoading(true);
     setSelectedUser(user);
     setEditForm({
       role: user.role,
@@ -264,6 +268,20 @@ const EmployeeManagement = () => {
       specialAuthority: user.specialAuthority || false
     });
     setShowUserModal(true);
+
+    try {
+      const response = await userService.getUserById(user._id);
+      setSelectedUser({
+        ...response.data.user,
+        offerLetters: response.data.offerLetters || [],
+        certificates: response.data.certificates || []
+      });
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      toast.error('Failed to load complete user details');
+    } finally {
+      setUserDetailLoading(false);
+    }
   };
 
   const handleUpdateUser = async () => {
@@ -319,6 +337,77 @@ const EmployeeManagement = () => {
         toast.error('Failed to delete user');
       }
     }
+  };
+
+  const handleTerminateEmployee = async (user) => {
+    if (user.employeeStatus === 'former_employee') {
+      toast.info('This user is already terminated');
+      return;
+    }
+
+    const confirmed = window.confirm(`Are you sure you want to terminate ${user.name}?`);
+    if (!confirmed) return;
+
+    const reason = window.prompt('Enter termination reason (optional):') || '';
+
+    try {
+      await userService.terminateEmployee(user._id, { reason });
+      toast.success(`${user.name} has been terminated successfully`);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error terminating employee:', error);
+      toast.error(error.response?.data?.message || 'Failed to terminate employee');
+    }
+  };
+
+  const handleIssueCertificateForUser = (user) => {
+    const fromDate = user.latestOffer?.startDate
+      ? new Date(user.latestOffer.startDate).toISOString().split('T')[0]
+      : '';
+    const toDate = user.latestOffer?.validUntil
+      ? new Date(user.latestOffer.validUntil).toISOString().split('T')[0]
+      : '';
+
+    const query = new URLSearchParams({
+      tab: 'issue',
+      name: user.name || '',
+      email: user.email || '',
+      domain: user.department || 'Internship',
+      jobrole: user.position || 'Intern',
+      fromDate,
+      toDate
+    }).toString();
+
+    navigate(`/certificates?${query}`);
+  };
+
+  const handleManageOfferLetter = (user) => {
+    if (!user.email) {
+      toast.error('User email is required to manage offer letters');
+      return;
+    }
+
+    const query = new URLSearchParams({
+      tab: 'alloffers',
+      email: user.email || '',
+      action: 'extend'
+    }).toString();
+
+    navigate(`/certificates?${query}`);
+  };
+
+  const handleViewOfferHistory = (user) => {
+    if (!user.email) {
+      toast.error('User email is required to view offer history');
+      return;
+    }
+
+    const query = new URLSearchParams({
+      tab: 'alloffers',
+      email: user.email || ''
+    }).toString();
+
+    navigate(`/certificates?${query}`);
   };
 
   const handleUpdateUserRole = async (userId, newRole) => {
@@ -659,6 +748,14 @@ const EmployeeManagement = () => {
                             <div className="ml-4">
                               <div className="text-sm font-medium text-white">
                                 {user.name}
+                                {user.hasExpiredOffer && (
+                                  <span
+                                    className="ml-2 text-yellow-400"
+                                    title="Offer validity date has expired"
+                                  >
+                                    ⚠
+                                  </span>
+                                )}
                               </div>
                               <div className="text-sm text-gray-400">{user.email}</div>
                               {user.phone && (
@@ -676,17 +773,6 @@ const EmployeeManagement = () => {
                                   {user.role}
                                 </span>
                               </div>
-                              {currentUser?.specialAuthority && (
-                                <select
-                                  value={user.role}
-                                  onChange={(e) => handleUpdateUserRole(user._id, e.target.value)}
-                                  className="ml-2 text-xs bg-gray-700 border border-gray-600 text-white rounded px-2 py-1 focus:ring-2 focus:ring-blue-500"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <option value="user">User</option>
-                                  <option value="admin">Admin</option>
-                                </select>
-                              )}
                             </div>
                             {user.position && (
                               <div className="text-xs text-gray-400">
@@ -748,6 +834,27 @@ const EmployeeManagement = () => {
                           {formatDate(user.createdAt)}
                         </td> */}
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => handleManageOfferLetter(user)}
+                            className="text-purple-500 hover:text-purple-400 mr-4"
+                            title="Manage or Extend Offer Letter"
+                          >
+                            <FaClock />
+                          </button>
+                          <button
+                            onClick={() => handleIssueCertificateForUser(user)}
+                            className="text-green-500 hover:text-green-400 mr-4"
+                            title="Issue Certificate"
+                          >
+                            <FaCheck />
+                          </button>
+                          <button
+                            onClick={() => handleTerminateEmployee(user)}
+                            className="text-orange-500 hover:text-orange-400 mr-4"
+                            title="Terminate Employee"
+                          >
+                            <FaBan />
+                          </button>
                           <button
                             onClick={() => handleViewUser(user)}
                             className="text-blue-600 hover:text-blue-900 mr-4"
@@ -825,11 +932,36 @@ const EmployeeManagement = () => {
         {/* User Details Modal */}
         {showUserModal && selectedUser && (
           <div className="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border border-gray-600 w-96 shadow-lg rounded-md bg-gray-800">
+            <div className="relative top-20 mx-auto p-5 border border-gray-600 w-full max-w-3xl shadow-lg rounded-md bg-gray-800">
               <div className="mt-3 text-center">
                 <h3 className="text-lg font-medium text-white mb-4">
                   Edit User: {selectedUser.name}
                 </h3>
+
+                <div className="flex flex-wrap gap-2 justify-center mb-4">
+                  <button
+                    onClick={() => handleViewOfferHistory(selectedUser)}
+                    className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded"
+                  >
+                    Open Offer Letter
+                  </button>
+                  <button
+                    onClick={() => handleManageOfferLetter(selectedUser)}
+                    className="px-3 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded"
+                  >
+                    Extend Offer
+                  </button>
+                  <button
+                    onClick={() => handleIssueCertificateForUser(selectedUser)}
+                    className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded"
+                  >
+                    Issue Certificate
+                  </button>
+                </div>
+
+                {userDetailLoading && (
+                  <div className="text-sm text-blue-300 mb-4">Loading user details...</div>
+                )}
                 
                 <div className="space-y-4">
                   {/* User Info */}
@@ -839,6 +971,58 @@ const EmployeeManagement = () => {
                     <p className="text-sm text-gray-300">
                       Joined: {formatDate(selectedUser.createdAt)}
                     </p>
+                    {selectedUser.terminatedAt && (
+                      <p className="text-sm text-orange-300">
+                        Terminated: {formatDate(selectedUser.terminatedAt)}
+                        {selectedUser.terminationReason ? ` (${selectedUser.terminationReason})` : ''}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="text-left border border-gray-700 rounded-md p-3 bg-gray-900">
+                    <p className="text-sm font-semibold text-white mb-2">Offer Letters</p>
+                    {(selectedUser.offerLetters || []).length === 0 ? (
+                      <p className="text-xs text-gray-400">No offer letters found for this user.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {selectedUser.offerLetters.map((offer) => (
+                          <div key={offer._id} className="text-xs text-gray-300 bg-gray-800 rounded p-2">
+                            <div>Status: {offer.status} | Valid Until: {formatDate(offer.validUntil)}</div>
+                            <div>Position: {offer.position} | Dept: {offer.department}</div>
+                            <div>Extensions: {offer.extensionHistory?.length || 0}</div>
+                            {offer.extensionHistory?.length > 0 && (
+                              <div className="mt-1 space-y-1 border-t border-gray-700 pt-1">
+                                {offer.extensionHistory.slice().reverse().map((entry, index) => (
+                                  <div key={`${offer._id}-modal-ext-${index}`} className="text-[11px] text-gray-400">
+                                    <div>
+                                      {formatDate(entry.oldValidUntil)} → {formatDate(entry.newValidUntil)}
+                                    </div>
+                                    {entry.notes && <div>Notes: {entry.notes}</div>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-left border border-gray-700 rounded-md p-3 bg-gray-900">
+                    <p className="text-sm font-semibold text-white mb-2">Certificates</p>
+                    {(selectedUser.certificates || []).length === 0 ? (
+                      <p className="text-xs text-gray-400">No certificates found for this user.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {selectedUser.certificates.map((certificate) => (
+                          <div key={certificate._id} className="text-xs text-gray-300 bg-gray-800 rounded p-2">
+                            <div>Role: {certificate.jobrole}</div>
+                            <div>Domain: {certificate.domain}</div>
+                            <div>Duration: {formatDate(certificate.fromDate)} - {formatDate(certificate.toDate)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Edit Form */}

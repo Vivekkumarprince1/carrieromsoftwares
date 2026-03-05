@@ -2,7 +2,6 @@ const OfferLetter = require("../models/offerLetter");
 const User = require("../models/user");
 const fs = require("fs");
 const path = require("path");
-const { createCanvas, loadImage } = require("canvas");
 const QRCode = require("qrcode");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
@@ -27,6 +26,7 @@ exports.issueOfferLetter = async (req, res) => {
             department, 
             salary, 
             startDate, 
+            duration,
             joiningLocation, 
             workType,
             benefits,
@@ -48,6 +48,12 @@ exports.issueOfferLetter = async (req, res) => {
         const userId = req.user.userId;
         console.log(`Issuer: ${userId}`);
 
+        const parsedStartDate = new Date(startDate);
+        const parsedValidUntil = new Date(validUntil);
+        const resolvedDuration = (typeof duration === 'string' && duration.trim())
+            ? duration.trim()
+            : (calculateDurationText(parsedStartDate, parsedValidUntil) || 'Until project completion or 3 months (whichever is longer)');
+
         console.log("Creating offer letter");
         const offerLetter = new OfferLetter({
             userId,
@@ -56,7 +62,8 @@ exports.issueOfferLetter = async (req, res) => {
             position,
             department,
             salary,
-            startDate: new Date(startDate),
+            startDate: parsedStartDate,
+            duration: resolvedDuration,
             joiningLocation,
             workType: workType || 'On-site',
             benefits: benefits || [],
@@ -64,7 +71,7 @@ exports.issueOfferLetter = async (req, res) => {
             hrContactName,
             hrContactEmail,
             hrContactPhone,
-            validUntil: new Date(validUntil),
+            validUntil: parsedValidUntil,
             additionalNotes
         });
 
@@ -126,14 +133,40 @@ exports.updateOfferLetterStatus = async (req, res) => {
             return res.status(400).json({ message: "Invalid status" });
         }
 
+        const updateData = { status };
+        if (status === 'Accepted') {
+            updateData.acceptedAt = new Date();
+            updateData.rejectedAt = undefined;
+        }
+        if (status === 'Rejected') {
+            updateData.rejectedAt = new Date();
+            updateData.acceptedAt = undefined;
+        }
+        if (status === 'Pending') {
+            updateData.acceptedAt = undefined;
+            updateData.rejectedAt = undefined;
+        }
+
         const offerLetter = await OfferLetter.findByIdAndUpdate(
             offerLetterId,
-            { status },
+            updateData,
             { new: true }
         );
 
         if (!offerLetter) {
             return res.status(404).json({ message: "Offer letter not found" });
+        }
+
+        const linkedUser = await User.findOne({ email: offerLetter.email });
+        if (linkedUser) {
+            const userUpdate = { offerLetter: offerLetter._id };
+            if (status === 'Accepted') {
+                userUpdate.employeeStatus = 'offer_recipient';
+            } else if (status === 'Rejected' && linkedUser.employeeStatus === 'offer_recipient') {
+                userUpdate.employeeStatus = 'applicant';
+            }
+
+            await User.findByIdAndUpdate(linkedUser._id, userUpdate, { runValidators: true });
         }
 
         res.status(200).json({
@@ -184,18 +217,59 @@ exports.extendOfferLetter = async (req, res) => {
             }
         }
 
+        // Build extension history entry
+        const extensionHistoryEntry = {
+            oldValidUntil: offerLetter.validUntil,
+            newValidUntil: newValidDate,
+            oldStartDate: offerLetter.startDate,
+            newStartDate: newStartDate ? new Date(newStartDate) : offerLetter.startDate,
+            notes: additionalNotes || null,
+            previousOfferSnapshot: {
+                position: offerLetter.position,
+                department: offerLetter.department,
+                salary: offerLetter.salary,
+                joiningLocation: offerLetter.joiningLocation,
+                workType: offerLetter.workType,
+                reportingManager: offerLetter.reportingManager,
+                validUntil: offerLetter.validUntil,
+                startDate: offerLetter.startDate
+            },
+            updatedOfferSnapshot: {
+                position: offerLetter.position,
+                department: offerLetter.department,
+                salary: offerLetter.salary,
+                joiningLocation: offerLetter.joiningLocation,
+                workType: offerLetter.workType,
+                reportingManager: offerLetter.reportingManager,
+                validUntil: newValidDate,
+                startDate: newStartDate ? new Date(newStartDate) : offerLetter.startDate
+            },
+            extendedAt: new Date(),
+            extendedBy: req.user.userId
+        };
+
         // Update the offer letter
         const updateData = {
-            validUntil: newValidDate,
-            updatedAt: new Date()
+            $set: {
+                validUntil: newValidDate,
+                updatedAt: new Date()
+            },
+            $push: {
+                extensionHistory: extensionHistoryEntry
+            }
         };
 
         if (newStartDate) {
-            updateData.startDate = new Date(newStartDate);
+            updateData.$set.startDate = new Date(newStartDate);
         }
 
+        const effectiveStartDate = newStartDate ? new Date(newStartDate) : offerLetter.startDate;
+        updateData.$set.duration = calculateDurationText(effectiveStartDate, newValidDate)
+            || offerLetter.duration
+            || 'Until project completion or 3 months (whichever is longer)';
+
         if (additionalNotes) {
-            updateData.additionalNotes = additionalNotes;
+            updateData.$set.additionalNotes = additionalNotes;
         }
 
         const updatedOfferLetter = await OfferLetter.findByIdAndUpdate(
@@ -461,6 +535,51 @@ exports.addAcceptanceTokensToExisting = async (req, res) => {
     }
 };
 
+function calculateDurationText(startDate, validUntil) {
+    const start = new Date(startDate);
+    const end = new Date(validUntil);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return null;
+    }
+
+    const diffMs = end.getTime() - start.getTime();
+    if (diffMs <= 0) {
+        return null;
+    }
+
+    const totalDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const months = Math.floor(totalDays / 30);
+    const days = totalDays % 30;
+
+    if (months > 0 && days > 0) {
+        return `${months} month${months > 1 ? 's' : ''} ${days} day${days > 1 ? 's' : ''}`;
+    }
+
+    if (months > 0) {
+        return `${months} month${months > 1 ? 's' : ''}`;
+    }
+
+    return `${totalDays} day${totalDays > 1 ? 's' : ''}`;
+}
+
+function getOfferDurationText(offerLetter) {
+    const storedDuration = typeof offerLetter.duration === 'string' ? offerLetter.duration.trim() : '';
+    if (storedDuration) {
+        return storedDuration;
+    }
+
+    return calculateDurationText(offerLetter.startDate, offerLetter.validUntil)
+        || 'Until project completion or 3 months (whichever is longer)';
+}
+
+function getHrSignatoryName(offerLetter) {
+    const hrName = typeof offerLetter.hrContactName === 'string' ? offerLetter.hrContactName.trim() : '';
+    const issuedBy = typeof offerLetter.issuedBy === 'string' ? offerLetter.issuedBy.trim() : '';
+
+    return hrName || issuedBy || 'HR Team';
+}
+
 async function generateOfferLetterPDFInMemory(offerLetter) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -511,7 +630,7 @@ async function generateOfferLetterPDFInMemory(offerLetter) {
             }
 
             // Set starting position for content
-            let currentY = 160;
+            let currentY = 180;
 
             // Header with date
             doc.fontSize(12)
@@ -536,14 +655,14 @@ async function generateOfferLetterPDFInMemory(offerLetter) {
             currentY += 30;
 
             // Main offer message
-            const offerMessage = `Congratulations! We're pleased to offer you the position of ${offerLetter.position} at ${offerLetter.companyName || 'Om Softwares'}. This role will provide valuable hands-on experience with real-world projects in ${offerLetter.department} development.`;
+            const offerMessage = `Congratulations! We're pleased to offer you the position of ${offerLetter.position} at ${offerLetter.companyName || 'Om Softwares'}. This role will provide valuable hands-on experience with real-world projects in ${offerLetter.department}.`;
             doc.fontSize(14)
                .text(offerMessage, 50, currentY, {
                    width: 500,
                    align: 'left'
                });
 
-            currentY += 60;
+            currentY += 80;
 
             // Internship Overview section
             doc.fontSize(14)
@@ -554,26 +673,25 @@ async function generateOfferLetterPDFInMemory(offerLetter) {
             currentY += 25;
 
             // Duration
+                const offerDurationText = getOfferDurationText(offerLetter);
             doc.fontSize(14)
                .font('Helvetica')
-               .text(`Duration: ${offerLetter.duration || 'Until project completion or 3 months (whichever is longer)'}`, 50, currentY, {
+                    .text(`Duration: ${offerDurationText}`, 50, currentY, {
                    width: 500,
                    align: 'left'
                });
             currentY += 25;
 
             // Stipend
-            const stipendText = offerLetter.salary === 0 ? 'Unpaid' : `₹${offerLetter.salary.toLocaleString()}`;
+            const stipendText = offerLetter.salary === 0 ? 'Unpaid' : '₹'+`${offerLetter.salary.toLocaleString()}`;
             doc.text(`Stipend: ${stipendText}`, 50, currentY);
             currentY += 25;
 
             // Mode
             doc.text(`Mode: ${offerLetter.workType || 'Work from Home'}`, 50, currentY);
-            currentY += 25;
+            currentY += 50;
 
-            // Certificate
-            doc.text('Certificate: Issued upon successful completion', 50, currentY);
-            currentY += 40;
+            
 
             // Terms and conditions section
            
@@ -589,7 +707,13 @@ async function generateOfferLetterPDFInMemory(offerLetter) {
                     width: 500,
                     align: 'left'
                 });
-                currentY += 35;
+                currentY += 18;
+                doc.text(`of all work produced during your internship.`, 50, currentY, {
+                    width: 500,
+                    align: 'left'
+                });
+
+                currentY += 40;
 
                 // Acceptance instruction
                 doc.fontSize(14)
@@ -606,28 +730,14 @@ async function generateOfferLetterPDFInMemory(offerLetter) {
                    });
                 currentY += 40;
 
-            // // Additional notes
-            // if (offerLetter.additionalNotes && !isInternship) {
-            //     doc.fontSize(12)
-            //        .font('Helvetica-Bold')
-            //        .text('Additional Information:', 50, currentY);
-                
-            //     currentY += 20;
-            //     doc.fontSize(10)
-            //        .font('Helvetica')
-            //        .text(offerLetter.additionalNotes, 50, currentY, {
-            //            width: 500,
-            //            align: 'left'
-            //        });
-            //     currentY += 40;
-            // }
+            
 
             // Validity information
-            doc.fontSize(14)
-               .font('Helvetica-Bold')
-               .fillColor('white')
-               .text(`Valid until: ${formatDate(offerLetter.validUntil)}`, 50, currentY);
-            currentY += 30;
+            // doc.fontSize(14)
+            //    .font('Helvetica-Bold')
+            //    .fillColor('white')
+            //    .text(`Valid until: ${formatDate(offerLetter.validUntil)}`, 50, currentY);
+            // currentY += 30;
 
             // Reset color
             doc.fillColor('white');
@@ -644,10 +754,10 @@ async function generateOfferLetterPDFInMemory(offerLetter) {
                .text('Warm regards,', 50, currentY);
             currentY += 20;
 
-            // doc.fontSize(12)
-            //    .font('Helvetica-Bold')
-            //    .text(offerLetter.hrContactName || 'Pratika Rai', 50, currentY);
-            // currentY += 20;
+            doc.fontSize(12)
+               .font('Helvetica-Bold')
+                    .text(getHrSignatoryName(offerLetter), 50, currentY);
+            currentY += 20;
 
             doc.fontSize(14)
                .font('Helvetica')

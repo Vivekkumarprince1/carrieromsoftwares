@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { applicationService, jobService, offerLetterService, contractService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import ApplicationOfferForm from '../components/ApplicationOfferForm';
+import { getResumeViewUrl } from '../utils/urlUtils';
 
 const ApplicationDetail = () => {
   const { id } = useParams();
@@ -140,6 +141,23 @@ const ApplicationDetail = () => {
     } finally {
       setOfferLetterLoading(false);
     }
+  };
+
+  const handleViewResume = async () => {
+    if (!application?._id || !application?.resumeUrl) return;
+
+    try {
+      const response = await applicationService.getResumeAccessUrl(application._id);
+      const secureUrl = response?.data?.url;
+      if (secureUrl) {
+        window.open(secureUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+    } catch (resumeError) {
+      console.error('Error fetching secure resume URL:', resumeError);
+    }
+
+    window.open(getResumeViewUrl(application.resumeUrl), '_blank', 'noopener,noreferrer');
   };
 
   // New function to manually refresh offer letter data
@@ -472,17 +490,16 @@ const ApplicationDetail = () => {
               {application.resumeUrl && (
                 <div>
                   <p className="text-gray-400 text-sm mb-2">Resume</p>
-                  <a 
-                    href={application.resumeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button 
+                    type="button"
+                    onClick={handleViewResume}
                     className="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                     </svg>
                     View Resume
-                  </a>
+                  </button>
                 </div>
               )}
             </div>

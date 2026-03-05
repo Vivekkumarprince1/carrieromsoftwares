@@ -353,3 +353,39 @@ exports.sendPasswordResetOTP = async (email, otp, name) => {
     throw error;
   }
 };
+
+exports.sendTerminationEmail = async ({ email, name, reason }) => {
+  console.log(`Sending termination email to: ${email}`);
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Employment Status Update - OM Softwares',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+          <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="color: #1f2937; margin-bottom: 16px;">Employment Update</h2>
+            <p style="color: #374151;">Dear ${name || 'User'},</p>
+            <p style="color: #374151; line-height: 1.6;">
+              This is to formally inform you that your employment/internship engagement with OM Softwares has been concluded.
+            </p>
+            ${reason ? `
+              <div style="background-color: #f3f4f6; border-left: 4px solid #6b7280; padding: 12px 16px; margin: 18px 0;">
+                <p style="margin: 0; color: #374151;"><strong>Reason:</strong> ${reason}</p>
+              </div>
+            ` : ''}
+            <p style="color: #374151; line-height: 1.6;">
+              If you have questions, please contact the HR team.
+            </p>
+            <p style="color: #6b7280; margin-top: 24px;">Regards,<br/><strong>HR Team, OM Softwares</strong></p>
+          </div>
+        </div>
+      `
+    };
+
+    return await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Failed to send termination email:', error);
+    throw error;
+  }
+};

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { jobService } from '../services/api';
+import { applicationService, jobService } from '../services/api';
 import JobQuestionManager from '../components/JobQuestionManager';
+import { getResumeViewUrl } from '../utils/urlUtils';
 
 const JobForm = () => {
   const { id } = useParams();
@@ -180,6 +181,23 @@ const JobForm = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric', month: 'short', day: 'numeric'
     });
+  };
+
+  const handleViewResume = async (applicationId, resumeUrl) => {
+    if (!applicationId || !resumeUrl) return;
+
+    try {
+      const response = await applicationService.getResumeAccessUrl(applicationId);
+      const secureUrl = response?.data?.url;
+      if (secureUrl) {
+        window.open(secureUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+    } catch (resumeError) {
+      console.error('Error fetching secure resume URL:', resumeError);
+    }
+
+    window.open(getResumeViewUrl(resumeUrl), '_blank', 'noopener,noreferrer');
   };
 
   const getStatusBadgeColor = (status) => {
@@ -639,7 +657,7 @@ const JobForm = () => {
                           {app.resumeUrl && (
                             <button
                               className="px-3 py-1.5 bg-gray-700 text-white text-xs font-medium rounded hover:bg-gray-600 transition"
-                             onClick={() => window.open(app.resumeUrl, '_blank')}
+                             onClick={() => handleViewResume(app._id, app.resumeUrl)}
 
                             >
                               View Resume

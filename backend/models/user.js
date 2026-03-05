@@ -48,6 +48,14 @@ const userSchema = new mongoose.Schema({
     unique: true, 
     sparse: true // Only required for employees, allows null values 
   },
+  terminatedAt: {
+    type: Date,
+    default: null
+  },
+  terminationReason: {
+    type: String,
+    default: null
+  },
   createdAt: { type: Date, default: Date.now }
 });
 

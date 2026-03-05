@@ -1,5 +1,8 @@
 const User = require("../models/user");
 const Application = require("../models/application");
+const OfferLetter = require("../models/offerLetter");
+const Certificate = require("../models/certificate");
+const emailService = require("../services/emailService");
 
 // Helper function to determine the best employee status based on application statuses
 const getBestEmployeeStatus = (applicationStatuses) => {
@@ -87,6 +90,48 @@ const getAllUsers = async (req, res) => {
             .limit(limit * 1)
             .skip((page - 1) * limit);
 
+        const userEmails = users.map((user) => user.email).filter(Boolean);
+        const offerLetters = userEmails.length > 0
+            ? await OfferLetter.find({ email: { $in: userEmails } })
+                .select('email status validUntil position department startDate updatedAt')
+                .sort({ updatedAt: -1, createdAt: -1 })
+            : [];
+
+        const latestOfferByEmail = new Map();
+        offerLetters.forEach((offerLetter) => {
+            const normalizedEmail = offerLetter.email?.toLowerCase();
+            if (normalizedEmail && !latestOfferByEmail.has(normalizedEmail)) {
+                latestOfferByEmail.set(normalizedEmail, offerLetter);
+            }
+        });
+
+        const now = new Date();
+        const usersWithOfferMeta = users.map((user) => {
+            const userObj = user.toObject();
+            const latestOffer = latestOfferByEmail.get(userObj.email?.toLowerCase());
+            const hasExpiredOffer = Boolean(
+                latestOffer &&
+                latestOffer.validUntil &&
+                new Date(latestOffer.validUntil) < now &&
+                latestOffer.status !== 'Rejected'
+            );
+
+            return {
+                ...userObj,
+                latestOffer: latestOffer
+                    ? {
+                        _id: latestOffer._id,
+                        status: latestOffer.status,
+                        validUntil: latestOffer.validUntil,
+                        startDate: latestOffer.startDate,
+                        position: latestOffer.position,
+                        department: latestOffer.department
+                    }
+                    : null,
+                hasExpiredOffer
+            };
+        });
+
         const total = await User.countDocuments(filter);
 
         // Get statistics
@@ -107,7 +152,7 @@ const getAllUsers = async (req, res) => {
         ]);
 
         res.status(200).json({
-            users,
+            users: usersWithOfferMeta,
             pagination: {
                 total,
                 page: parseInt(page),
@@ -146,7 +191,49 @@ const getUserById = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json({ user });
+        const normalizedEmail = user.email?.toLowerCase();
+        const now = new Date();
+
+        const [offerLetters, certificates] = await Promise.all([
+            OfferLetter.find({ email: user.email })
+                .sort({ createdAt: -1 })
+                .populate('userId', 'name email'),
+            Certificate.find({
+                $or: [
+                    { recipientEmail: user.email },
+                    { name: user.name }
+                ]
+            }).sort({ createdAt: -1 })
+        ]);
+
+        const latestOffer = offerLetters.length > 0 ? offerLetters[0] : null;
+        const hasExpiredOffer = Boolean(
+            latestOffer &&
+            latestOffer.validUntil &&
+            new Date(latestOffer.validUntil) < now &&
+            latestOffer.status !== 'Rejected'
+        );
+
+        const userWithMeta = {
+            ...user.toObject(),
+            latestOffer: latestOffer
+                ? {
+                    _id: latestOffer._id,
+                    status: latestOffer.status,
+                    validUntil: latestOffer.validUntil,
+                    startDate: latestOffer.startDate,
+                    position: latestOffer.position,
+                    department: latestOffer.department
+                }
+                : null,
+            hasExpiredOffer
+        };
+
+        res.status(200).json({
+            user: userWithMeta,
+            offerLetters,
+            certificates
+        });
 
     } catch (error) {
         console.error("Error fetching user:", error);
@@ -280,6 +367,56 @@ const updateAccountStatus = async (req, res) => {
         res.status(500).json({ 
             message: "Failed to update account status", 
             error: error.message 
+        });
+    }
+};
+
+// Terminate employee (admin only)
+const terminateEmployee = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { reason } = req.body;
+
+        const user = await User.findById(userId).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const updateData = {
+            employeeStatus: 'former_employee',
+            accountStatus: 'inactive',
+            terminatedAt: new Date(),
+            terminationReason: reason?.trim() || null
+        };
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (updatedUser.email) {
+            try {
+                await emailService.sendTerminationEmail({
+                    email: updatedUser.email,
+                    name: updatedUser.name,
+                    reason: updateData.terminationReason
+                });
+            } catch (emailError) {
+                console.error('Termination email failed:', emailError.message);
+            }
+        }
+
+        res.status(200).json({
+            message: "Employee terminated successfully",
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error("Error terminating employee:", error);
+        res.status(500).json({
+            message: "Failed to terminate employee",
+            error: error.message
         });
     }
 };
@@ -515,6 +652,7 @@ module.exports = {
     updateAccountStatus,
     updateUserRole,
     updateSpecialAuthority,
+    terminateEmployee,
     bulkUpdateUserStatusFromApplications,
     deleteUser
 };

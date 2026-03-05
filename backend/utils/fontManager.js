@@ -1,4 +1,4 @@
-const { registerFont } = require("canvas");
+const { registerFont } = require("./canvasAdapter");
 const path = require("path");
 const fs = require("fs");
 
@@ -6,7 +6,7 @@ class FontManager {
     constructor() {
         this.registeredFonts = new Set();
         this.fontDirectory = path.join(__dirname, "../assets/fonts");
-        
+
         // Ensure fonts directory exists
         if (!fs.existsSync(this.fontDirectory)) {
             fs.mkdirSync(this.fontDirectory, { recursive: true });
@@ -23,18 +23,18 @@ class FontManager {
     registerFont(fontPath, fontFamily, weight = 'normal', style = 'normal') {
         try {
             const fullPath = path.isAbsolute(fontPath) ? fontPath : path.join(this.fontDirectory, fontPath);
-            
+
             if (!fs.existsSync(fullPath)) {
                 console.error(`Font file not found: ${fullPath}`);
                 return false;
             }
 
-            registerFont(fullPath, { 
-                family: fontFamily, 
-                weight: weight, 
-                style: style 
+            registerFont(fullPath, {
+                family: fontFamily,
+                weight: weight,
+                style: style
             });
-            
+
             const fontKey = `${fontFamily}-${weight}-${style}`;
             this.registeredFonts.add(fontKey);
             console.log(`✅ Font registered: ${fontFamily} (${weight} ${style})`);
@@ -52,12 +52,15 @@ class FontManager {
         const commonFonts = [
             // Existing font (now in fonts directory)
             { file: "Britannic D Extra Light.ttf", family: "Britannic", weight: "normal" },
-            
+
             // Add these if you download them
             { file: "Allura-Regular.ttf", family: "Allura", weight: "normal" },
             { file: "PlayfairDisplay-Regular.ttf", family: "Playfair Display", weight: "normal" },
             { file: "PlayfairDisplay-Bold.ttf", family: "Playfair Display", weight: "bold" },
             { file: "Montserrat-Regular.ttf", family: "Montserrat", weight: "normal" },
+            { file: "Montserrat-Light.ttf", family: "Montserrat", weight: "300" },
+            { file: "Montserrat-Medium.ttf", family: "Montserrat", weight: "500" },
+            { file: "Montserrat-SemiBold.ttf", family: "Montserrat", weight: "600" },
             { file: "Montserrat-Bold.ttf", family: "Montserrat", weight: "bold" },
             { file: "GreatVibes-Regular.ttf", family: "Great Vibes", weight: "normal" },
             { file: "DancingScript-Regular.ttf", family: "Dancing Script", weight: "normal" },

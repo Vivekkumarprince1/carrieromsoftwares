@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from 'react';
 
-const OfferLetterForm = ({ onSubmit, loading, editData = null, onCancel }) => {
-  const [formData, setFormData] = useState({
-    candidateName: '',
-    email: '',
-    position: '',
-    department: '',
-    companyName: '',
-    salary: '',
-    startDate: '',
-    joiningLocation: '',
-    workType: 'On-site',
-    benefits: '',
-    reportingManager: '',
-    hrContactName: '',
-    hrContactEmail: '',
-    hrContactPhone: '',
-    validUntil: '',
-    additionalNotes: ''
-  });
+const getDefaultOfferFormData = () => ({
+  candidateName: '',
+  email: '',
+  position: '',
+  department: '',
+  companyName: '',
+  salary: '',
+  startDate: '',
+  joiningLocation: '',
+  workType: 'On-site',
+  benefits: '',
+  reportingManager: '',
+  hrContactName: '',
+  hrContactEmail: '',
+  hrContactPhone: '',
+  validUntil: '',
+  additionalNotes: ''
+});
+
+const OfferLetterForm = ({ onSubmit, loading, editData = null }) => {
+  const [formData, setFormData] = useState(getDefaultOfferFormData());
   const [showForm, setShowForm] = useState(false);
 
   // Effect to populate form data when editing
@@ -51,7 +53,7 @@ const OfferLetterForm = ({ onSubmit, loading, editData = null, onCancel }) => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     // Convert benefits string to array
     const processedData = {
@@ -59,7 +61,9 @@ const OfferLetterForm = ({ onSubmit, loading, editData = null, onCancel }) => {
       benefits: formData.benefits ? formData.benefits.split(',').map(b => b.trim()).filter(b => b) : [],
       salary: parseFloat(formData.salary)
     };
-    onSubmit(processedData);
+    await onSubmit(processedData);
+    setFormData(getDefaultOfferFormData());
+    setShowForm(false);
   };
 
   return (

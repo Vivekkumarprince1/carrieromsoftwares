@@ -6,6 +6,7 @@ const {
     getUserById,
     updateUserStatus,
     updateAccountStatus,
+    terminateEmployee,
     bulkUpdateUserStatusFromApplications,
     deleteUser,
     updateUserRole,
@@ -17,6 +18,7 @@ router.get('/', verifyAdmin, getAllUsers);
 router.get('/:userId', verifyAdmin, getUserById);
 router.put('/:userId/status', verifyAdmin, updateUserStatus);
 router.put('/:userId/account-status', verifyAdmin, updateAccountStatus);
+router.put('/:userId/terminate', verifyAdmin, terminateEmployee);
 router.put('/bulk/update-status', verifyAdmin, bulkUpdateUserStatusFromApplications);
 
 // Special authority required routes for critical operations

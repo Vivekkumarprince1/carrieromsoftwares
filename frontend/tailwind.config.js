@@ -7,15 +7,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        'primary-black': '#121212',
-        'secondary-black': '#1a1a1a',
-        'primary-yellow': '#ffc107',
-        'secondary-yellow': '#ffa000',
-        'text-light': '#f9f9f9',
-        'dark-gray': '#2a2a2a',
-        'card-bg': '#1e1e1e',
-        'lime-brand': '#a3c614',
-        'lime-brand-light': '#bde02e',
+        'primary-black': 'var(--color-black)',
+        'secondary-black': 'var(--color-surface)',
+        'primary-yellow': 'var(--color-primary)',
+        'secondary-yellow': 'var(--color-primary-hover)',
+        'text-light': 'var(--color-white)',
+        'dark-gray': 'var(--color-surface-elevated)',
+        'card-bg': 'var(--color-surface)',
+        'lime-brand': 'var(--color-primary)',
+        'lime-brand-light': 'var(--color-primary-hover)',
         'lime-brand-dark': '#8aab0a',
       },
       backgroundColor: {
