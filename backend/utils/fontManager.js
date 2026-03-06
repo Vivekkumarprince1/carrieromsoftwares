@@ -5,6 +5,7 @@ const fs = require("fs");
 class FontManager {
     constructor() {
         this.registeredFonts = new Set();
+        this.fontVariants = new Map();
         this.fontDirectory = this.resolveFontDirectory();
     }
 
@@ -34,6 +35,8 @@ class FontManager {
     registerFont(fontPath, fontFamily, weight = 'normal', style = 'normal') {
         try {
             const fullPath = path.isAbsolute(fontPath) ? fontPath : path.join(this.fontDirectory, fontPath);
+            const fontKey = `${fontFamily}-${weight}-${style}`;
+            const variantFamily = this.getVariantFamilyName(fontFamily, weight, style);
 
             if (!fs.existsSync(fullPath)) {
                 console.error(`Font file not found: ${fullPath}`);
@@ -41,13 +44,13 @@ class FontManager {
             }
 
             registerFont(fullPath, {
-                family: fontFamily,
+                family: variantFamily,
                 weight: weight,
                 style: style
             });
 
-            const fontKey = `${fontFamily}-${weight}-${style}`;
             this.registeredFonts.add(fontKey);
+            this.fontVariants.set(fontKey, variantFamily);
             console.log(`✅ Font registered: ${fontFamily} (${weight} ${style})`);
             return true;
         } catch (error) {
@@ -99,18 +102,30 @@ class FontManager {
      */
     getFontString(size, family, weight = 'normal', fallback = 'Arial, sans-serif') {
         const weightString = weight !== 'normal' ? `${weight} ` : '';
-        return `${weightString}${size}px '${family}', ${fallback}`;
+        const variantFamily = this.getRegisteredVariant(family, weight);
+        const preferredFamily = variantFamily || family;
+        return `${weightString}${size}px '${preferredFamily}', ${fallback}`;
     }
 
     getSafeCanvasFont(size, preferredFamily, options = {}) {
-        const { weight = 'normal', fallbackFamily = 'Arial' } = options;
+        const { weight = 'normal', style = 'normal', fallbackFamily = 'Arial' } = options;
         const weightString = weight !== 'normal' ? `${weight} ` : '';
+        const variantFamily = this.getRegisteredVariant(preferredFamily, weight, style);
 
-        if (preferredFamily && this.isFontRegistered(preferredFamily, weight)) {
-            return `${weightString}${size}px '${preferredFamily}'`;
+        if (variantFamily) {
+            return `${weightString}${size}px '${variantFamily}'`;
         }
 
         return `${weightString}${size}px '${fallbackFamily}'`;
+    }
+
+    getVariantFamilyName(fontFamily, weight = 'normal', style = 'normal') {
+        return `${fontFamily}__${weight}__${style}`;
+    }
+
+    getRegisteredVariant(fontFamily, weight = 'normal', style = 'normal') {
+        const fontKey = `${fontFamily}-${weight}-${style}`;
+        return this.fontVariants.get(fontKey) || null;
     }
 
     /**

@@ -273,151 +273,155 @@ async function generateCertificatePDFBuffer(certificate) {
 
         const styledQrCodeBuffer = dotCanvas.toBuffer('image/png');
 
-        // Load the certificate background image
         const certificateTemplatePath = resolveBackendAssetPath("assets", "complition certificate.png");
         const templateImage = await loadImage(certificateTemplatePath);
+        const regularCondensedFontPath = resolveBackendAssetPath("assets", "fonts", "OpenSansCondensed-Regular.ttf");
+        const boldCondensedFontPath = resolveBackendAssetPath("assets", "fonts", "OpenSansCondensed-Bold.ttf");
+        const signatureFontPath = resolveBackendAssetPath("assets", "fonts", "Allura-Regular.ttf");
 
-        // Create canvas with the same dimensions as the template image
-        const canvas = createCanvas(templateImage.width, templateImage.height);
-        const ctx = canvas.getContext("2d");
-
-        // Draw the background certificate template
-        ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height);
-
-        // ==== DYNAMIC CONTENT OVERLAY ====
-
-        const scale = canvas.width / 1920;
-
-        // Helper: draw semi-bold text (thin stroke + fill to simulate weight between Light and Bold)
-        const drawSemiBold = (text, x, y) => {
-            ctx.fillText(text, x, y);
-            ctx.fillText(text, x + (0.45 * scale), y);
-        };
-
-        const setCanvasFont = (size, preferredFamily, options = {}) => {
-            const { weight = 'normal', fallbackFamily = 'Arial' } = options;
-            ctx.font = fontManager.getSafeCanvasFont(size, preferredFamily, { weight, fallbackFamily });
-        };
-
-        // "This is proudly presented to"
-        const titleSize = Math.floor(46 * scale);
-        setCanvasFont(titleSize, 'Open Sans Condensed', { fallbackFamily: 'Arial' });
-        ctx.fillStyle = "#000";
-        ctx.textAlign = "center";
-
-        drawSemiBold("This is proudly presented to", canvas.width / 2, canvas.height * 0.44);
-
-        // Position the recipient name in the green section
-        const nameSize = Math.floor(180 * scale); // Requested: Allura(300)
-        setCanvasFont(nameSize, 'Allura', { fallbackFamily: 'Georgia' });
-
-        ctx.fillStyle = "#000";
-        ctx.textAlign = "center";
-        ctx.fillText(certificate.name, canvas.width / 2, canvas.height * 0.54);
-
-        // Description text - OPEN SANS CONDENSED(80)
-        const descSize = Math.floor(46 * scale);
-        const descriptionFont = fontManager.getSafeCanvasFont(descSize, 'Open Sans Condensed', { fallbackFamily: 'Arial' });
-
-        // Job role bold
-        const jobroleFont = fontManager.getSafeCanvasFont(descSize, 'Open Sans Condensed', { weight: 'bold', fallbackFamily: 'Arial' });
-
-        ctx.fillStyle = "#000";
-        ctx.textAlign = "center";
-
-        // First line of description
-        const baseText = "In recognition of the successful completion of the ";
-        const jobroleText = `${certificate.jobrole}`;
-        const internship = " Internship Program";
-
-        ctx.font = descriptionFont;
-        const baseWidth = ctx.measureText(baseText).width;
-        const internshipWidth = ctx.measureText(internship).width;
-        ctx.font = jobroleFont;
-        const jobroleWidth = ctx.measureText(jobroleText).width;
-
-        const totalWidth = baseWidth + jobroleWidth + internshipWidth;
-        let startX = canvas.width / 2 - totalWidth / 2;
-
-        ctx.font = descriptionFont;
-        drawSemiBold(baseText, startX + baseWidth / 2, canvas.height * 0.61);
-
-        ctx.font = jobroleFont;
-        drawSemiBold(jobroleText, startX + baseWidth + jobroleWidth / 2, canvas.height * 0.61);
-
-        ctx.font = descriptionFont;
-        drawSemiBold(internship, startX + baseWidth + jobroleWidth + internshipWidth / 2, canvas.height * 0.61);
-
-        // Second line:
-        ctx.font = descriptionFont;
-        ctx.fillStyle = "#000";
-        ctx.textAlign = "center";
-        const description = "and in appreciation of outstanding commitment, professionalism, and dedication to both personal and professional growth.";
-        drawSemiBold(description, canvas.width / 2, canvas.height * 0.655);
-
-        // ==== QR CODE (bottom-left) ====
-        const qrSize = Math.floor(260 * scale);
-        const qrCode = await loadImage(styledQrCodeBuffer);
-        const qrX = canvas.width * 0.065;
-        const qrY = canvas.height * 0.73;
-        ctx.drawImage(qrCode, qrX, qrY, qrSize, qrSize);
-
-        // Verify text under QR code
-        // ctx.font = fontManager.getFontString(Math.floor(40 * scale), 'Open Sans Condensed', 'normal', 'Arial');
-        // ctx.fillStyle = "#ccc";
-        // ctx.textAlign = "center";
-        // ctx.fillText("Can Be Verified At", qrX + qrSize / 2, qrY + qrSize + Math.floor(45 * scale));
-        // ctx.fillText(`https://careers.omsoftwares.in/verify`, qrX + qrSize / 2, qrY + qrSize + Math.floor(85 * scale));
-
-        // ==== DATES & ID ====
-        // Requested: OPEN SANS CONDENSED(70)
-        const dateSize = Math.floor(43 * scale);
-        const dateFont = fontManager.getSafeCanvasFont(dateSize, 'Open Sans Condensed', { fallbackFamily: 'Arial' });
-
-        ctx.fillStyle = "#ccc";
-        ctx.textAlign = "left";
-
-        // Exact calculated positions mapping for the date text based on template
-        const leftColX = canvas.width * 0.28;
-        const rightColX = canvas.width * 0.63;
-        const topRowY = canvas.height * 0.83;
-        const bottomRowY = canvas.height * 0.88;
-
-        const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-
-        const drawLabelValue = (label, value, x, y) => {
-            ctx.font = dateFont;
-            ctx.fillStyle = "#fff";
-            const labelW = ctx.measureText(label).width;
-            drawSemiBold(label, x, y);
-            ctx.font = dateFont;
-            drawSemiBold(value, x + labelW, y);
-        };
-
-        drawLabelValue("Internship Start Date: ", formatDate(certificate.fromDate), leftColX, topRowY);
-        drawLabelValue("Internship End Date: ", formatDate(certificate.toDate), leftColX, bottomRowY);
-        drawLabelValue("Id: ", `${certificate._id}`, rightColX, topRowY);
-        drawLabelValue("Certificate Issue Date: ", formatDate(new Date()), rightColX, bottomRowY);
-
-        // Bottom note: small font
-        // const bottomNoteSize = Math.floor(35 * scale);
-        // const bottomNoteFont = fontManager.isFontRegistered('Open Sans Condensed')
-        //     ? fontManager.getFontString(bottomNoteSize, 'Open Sans Condensed', 'normal', 'Arial, sans-serif')
-        //     : bottomNoteSize + "px 'Arial', sans-serif";
-        // ctx.font = bottomNoteFont;
-        // ctx.fillStyle = "#999";
-        // ctx.textAlign = "center";
-
-        // ctx.fillText("Note: This is a digitally issued certificate and is valid without a physical signature. It can be verified via the QR code provided.", 
-        //              canvas.width * 0.55, canvas.height * 0.97);
-
-        // ==== CONVERT TO PDF ====
-        const doc = new PDFDocument({ size: 'A4', layout: 'landscape' });
+        const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
         const buffers = [];
         doc.on("data", buffers.push.bind(buffers));
 
-        const certImageBuffer = canvas.toBuffer("image/png");
-        doc.image(certImageBuffer, 0, 0, { width: 842 }); // scale to A4 landscape
+        const pageWidth = doc.page.width;
+        const pageHeight = doc.page.height;
+        const scale = pageWidth / 1920;
+
+        doc.image(certificateTemplatePath, 0, 0, { width: pageWidth, height: pageHeight });
+
+        const measureTextWidth = (text, fontPath, fontSize) => {
+            doc.font(fontPath).fontSize(fontSize);
+            return doc.widthOfString(text);
+        };
+
+        const drawText = (text, x, baselineY, options = {}) => {
+            const {
+                fontPath,
+                fontSize,
+                color = '#000000',
+                align = 'left',
+                baselineFactor = 0.78,
+            } = options;
+
+            const topY = baselineY - (fontSize * baselineFactor);
+            doc.font(fontPath).fontSize(fontSize).fillColor(color);
+
+            if (align === 'center') {
+                const textWidth = measureTextWidth(text, fontPath, fontSize);
+                doc.text(text, (pageWidth - textWidth) / 2, topY, { lineBreak: false });
+                return;
+            }
+
+            doc.text(text, x, topY, { lineBreak: false });
+        };
+
+        const drawCenteredSegmentLine = (segments, baselineY) => {
+            const widths = segments.map((segment) => measureTextWidth(segment.text, segment.fontPath, segment.fontSize));
+            const totalWidth = widths.reduce((sum, width) => sum + width, 0);
+            let cursorX = (pageWidth - totalWidth) / 2;
+
+            segments.forEach((segment, index) => {
+                drawText(segment.text, cursorX, baselineY, {
+                    fontPath: segment.fontPath,
+                    fontSize: segment.fontSize,
+                    color: segment.color || '#000000',
+                    baselineFactor: segment.baselineFactor,
+                });
+                cursorX += widths[index];
+            });
+        };
+
+        const titleSize = Math.floor(46 * scale);
+        const nameSize = Math.floor(180 * scale);
+        const descSize = Math.floor(46 * scale);
+        const dateSize = Math.floor(43 * scale);
+
+        drawText("This is proudly presented to", 0, pageHeight * 0.44, {
+            fontPath: regularCondensedFontPath,
+            fontSize: titleSize,
+            color: '#000000',
+            align: 'center',
+            baselineFactor: 0.84,
+        });
+
+        drawText(certificate.name, 0, pageHeight * 0.54, {
+            fontPath: signatureFontPath,
+            fontSize: nameSize,
+            color: '#000000',
+            align: 'center',
+            baselineFactor: 0.80,
+        });
+
+        drawCenteredSegmentLine([
+            {
+                text: "In recognition of the successful completion of the ",
+                fontPath: regularCondensedFontPath,
+                fontSize: descSize,
+                color: '#000000',
+                baselineFactor: 0.84,
+            },
+            {
+                text: `${certificate.jobrole}`,
+                fontPath: boldCondensedFontPath,
+                fontSize: descSize,
+                color: '#000000',
+                baselineFactor: 0.84,
+            },
+            {
+                text: " Internship Program",
+                fontPath: regularCondensedFontPath,
+                fontSize: descSize,
+                color: '#000000',
+                baselineFactor: 0.84,
+            },
+        ], pageHeight * 0.61);
+
+        drawText(
+            "and in appreciation of outstanding commitment, professionalism, and dedication to both personal and professional growth.",
+            0,
+            pageHeight * 0.655,
+            {
+                fontPath: regularCondensedFontPath,
+                fontSize: descSize,
+                color: '#000000',
+                align: 'center',
+                baselineFactor: 0.84,
+            }
+        );
+
+        const qrSize = Math.floor(260 * scale);
+        doc.image(styledQrCodeBuffer, pageWidth * 0.065, pageHeight * 0.73, {
+            width: qrSize,
+            height: qrSize,
+        });
+
+        const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        });
+
+        const drawLabelValue = (label, value, x, baselineY) => {
+            const labelWidth = measureTextWidth(label, regularCondensedFontPath, dateSize);
+            drawText(label, x, baselineY, {
+                fontPath: regularCondensedFontPath,
+                fontSize: dateSize,
+                color: '#ffffff',
+                baselineFactor: 0.84,
+            });
+            drawText(value, x + labelWidth, baselineY, {
+                fontPath: regularCondensedFontPath,
+                fontSize: dateSize,
+                color: '#ffffff',
+                baselineFactor: 0.84,
+            });
+        };
+
+        drawLabelValue("Internship Start Date: ", formatDate(certificate.fromDate), pageWidth * 0.28, pageHeight * 0.83);
+        drawLabelValue("Internship End Date: ", formatDate(certificate.toDate), pageWidth * 0.28, pageHeight * 0.88);
+        drawLabelValue("Id: ", `${certificate._id}`, pageWidth * 0.63, pageHeight * 0.83);
+        drawLabelValue("Certificate Issue Date: ", formatDate(new Date()), pageWidth * 0.63, pageHeight * 0.88);
+
         doc.end();
 
         return new Promise((resolve, reject) => {
