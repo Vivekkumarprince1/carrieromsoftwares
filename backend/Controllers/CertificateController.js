@@ -3,7 +3,6 @@ const User = require("../models/user");
 const fs = require("fs");
 const path = require("path");
 const QRCode = require("qrcode");
-const sharp = require("sharp");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 
@@ -187,80 +186,6 @@ async function generateCertificatePDFBuffer(certificate) {
         const frontendBaseUrl = (process.env.FRONTEND_URL || "https://careers.omsoftwares.in").replace(/\/+$/, "");
         const verifyUrl = `${frontendBaseUrl}/verify/${certificate._id}`;
 
-        // Generate Styled QR code using pure SVG (No canvas dependency to avoid Vercel SIGSEGV)
-        const qrCodeData = QRCode.create(verifyUrl, { errorCorrectionLevel: 'H' });
-        const moduleCount = qrCodeData.modules.size;
-
-        // Settings matching the old canvas design
-        const qrCanvasSize = 1200;
-        const padding = 30;
-        const effectiveSize = qrCanvasSize - (padding * 2);
-        const moduleSize = effectiveSize / moduleCount;
-
-        // Gradient Colors for dots (Lime Green to White)
-        const topColor = { r: 214, g: 243, b: 0 };
-        const bottomColor = { r: 255, g: 255, b: 255 };
-
-        let svgPaths = '';
-
-        const getColorAtY = (yIndex) => {
-            const t = yIndex / (moduleCount - 1);
-            const r = Math.round(topColor.r * (1 - t) + bottomColor.r * t);
-            const g = Math.round(topColor.g * (1 - t) + bottomColor.g * t);
-            const b = Math.round(topColor.b * (1 - t) + bottomColor.b * t);
-            return `rgb(${r},${g},${b})`;
-        };
-
-        const drawFinderPatternSVG = (row, col) => {
-            const centerX = padding + (col + 3.5) * moduleSize;
-            const centerY = padding + (row + 3.5) * moduleSize;
-            const eyeColor = getColorAtY(row + 3.5);
-
-            // Outer ring
-            svgPaths += `<circle cx="${centerX}" cy="${centerY}" r="${3.5 * moduleSize}" fill="${eyeColor}" />`;
-            // Middle black ring
-            svgPaths += `<circle cx="${centerX}" cy="${centerY}" r="${2.5 * moduleSize}" fill="#111111" />`;
-            // Inner eye
-            svgPaths += `<circle cx="${centerX}" cy="${centerY}" r="${1.5 * moduleSize}" fill="${eyeColor}" />`;
-        };
-
-        for (let row = 0; row < moduleCount; row++) {
-            for (let col = 0; col < moduleCount; col++) {
-                if (qrCodeData.modules.get(row, col)) {
-                    const isTopLeft = row < 7 && col < 7;
-                    const isTopRight = row < 7 && col >= moduleCount - 7;
-                    const isBottomLeft = row >= moduleCount - 7 && col < 7;
-
-                    if (isTopLeft || isTopRight || isBottomLeft) {
-                        if (row === 0 && col === 0) drawFinderPatternSVG(0, 0);
-                        if (row === 0 && col === moduleCount - 7) drawFinderPatternSVG(0, moduleCount - 7);
-                        if (row === moduleCount - 7 && col === 0) drawFinderPatternSVG(moduleCount - 7, 0);
-                        continue;
-                    }
-
-                    const centerX = padding + col * moduleSize + moduleSize / 2;
-                    const centerY = padding + row * moduleSize + moduleSize / 2;
-                    const radius = (moduleSize / 2) * 0.95;
-                    const dotColor = getColorAtY(row);
-
-                    svgPaths += `<circle cx="${centerX}" cy="${centerY}" r="${radius}" fill="${dotColor}" />`;
-                }
-            }
-        }
-
-        // Wrap paths in SVG container black background
-        const svgString = `
-            <svg width="${qrCanvasSize}" height="${qrCanvasSize}" xmlns="http://www.w3.org/2000/svg">
-                <rect width="100%" height="100%" fill="#000000" />
-                ${svgPaths}
-            </svg>
-        `;
-
-        // Convert pure SVG to PNG buffer using sharp (already in package.json, compiled for Vercel)
-        const qrPngBuffer = await sharp(Buffer.from(svgString))
-            .png()
-            .toBuffer();
-
         // Resolve asset paths
         const templatePath = resolveBackendAssetPath("assets", "complition certificate.png");
         const alluraFontPath = resolveBackendAssetPath("assets", "fonts", "Allura-Regular.ttf");
@@ -342,13 +267,72 @@ async function generateCertificatePDFBuffer(certificate) {
         const line2W = doc.widthOfString(line2);
         doc.text(line2, (pageW - line2W) / 2, pageH * 0.625, { lineBreak: false });
 
-        // 4. QR Code (bottom-left area)
-        // Original canvas size was 260 * (canvas.width / 1920). 
-        // In PDF points: 260 * (841.89 / 1920) ≈ 114
-        const qrSize = 114;
+        // 4. Draw Styled Vector QR Code directly to PDF (bottom-left area)
+        // Original canvas size was 260 * (canvas.width / 1920) => PDF points ≈ 114
+        const qrSizePDF = 114;
         const qrX = pageW * 0.065;
         const qrY = pageH * 0.73;
-        doc.image(qrPngBuffer, qrX, qrY, { width: qrSize, height: qrSize });
+
+        const qrCodeData = QRCode.create(verifyUrl, { errorCorrectionLevel: 'H' });
+        const moduleCount = qrCodeData.modules.size;
+
+        // Settings matching the old canvas proportional design mathematically
+        const paddingRatio = 30 / 1200; // 0.025 padding on each edge
+        const paddingPDF = qrSizePDF * paddingRatio;
+        const effectiveSizePDF = qrSizePDF - (paddingPDF * 2);
+        const moduleSizePDF = effectiveSizePDF / moduleCount;
+
+        // Black Base Background for QR
+        doc.rect(qrX, qrY, qrSizePDF, qrSizePDF).fill('#000000');
+
+        // Gradient Colors for dots (Lime Green to White)
+        const topColor = { r: 214, g: 243, b: 0 };
+        const bottomColor = { r: 255, g: 255, b: 255 };
+
+        const getColorAtY = (yIndex) => {
+            const t = yIndex / (moduleCount - 1);
+            const r = Math.round(topColor.r * (1 - t) + bottomColor.r * t);
+            const g = Math.round(topColor.g * (1 - t) + bottomColor.g * t);
+            const b = Math.round(topColor.b * (1 - t) + bottomColor.b * t);
+            return [r, g, b]; // PDFKit native true-color array format
+        };
+
+        const drawFinderPatternPDF = (row, col) => {
+            const centerX = qrX + paddingPDF + (col + 3.5) * moduleSizePDF;
+            const centerY = qrY + paddingPDF + (row + 3.5) * moduleSizePDF;
+            const eyeColor = getColorAtY(row + 3.5);
+
+            // Outer ring
+            doc.circle(centerX, centerY, 3.5 * moduleSizePDF).fill(eyeColor);
+            // Middle black ring
+            doc.circle(centerX, centerY, 2.5 * moduleSizePDF).fill('#111111');
+            // Inner eye
+            doc.circle(centerX, centerY, 1.5 * moduleSizePDF).fill(eyeColor);
+        };
+
+        for (let row = 0; row < moduleCount; row++) {
+            for (let col = 0; col < moduleCount; col++) {
+                if (qrCodeData.modules.get(row, col)) {
+                    const isTopLeft = row < 7 && col < 7;
+                    const isTopRight = row < 7 && col >= moduleCount - 7;
+                    const isBottomLeft = row >= moduleCount - 7 && col < 7;
+
+                    if (isTopLeft || isTopRight || isBottomLeft) {
+                        if (row === 0 && col === 0) drawFinderPatternPDF(0, 0);
+                        if (row === 0 && col === moduleCount - 7) drawFinderPatternPDF(0, moduleCount - 7);
+                        if (row === moduleCount - 7 && col === 0) drawFinderPatternPDF(moduleCount - 7, 0);
+                        continue;
+                    }
+
+                    const centerX = qrX + paddingPDF + col * moduleSizePDF + moduleSizePDF / 2;
+                    const centerY = qrY + paddingPDF + row * moduleSizePDF + moduleSizePDF / 2;
+                    const radius = (moduleSizePDF / 2) * 0.95;
+                    const dotColor = getColorAtY(row);
+
+                    doc.circle(centerX, centerY, radius).fill(dotColor);
+                }
+            }
+        }
 
         // 5. Date labels and values (bottom section)
         const dateFontSize = 19;
