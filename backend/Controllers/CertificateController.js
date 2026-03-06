@@ -8,6 +8,22 @@ const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 const fontManager = require("../utils/fontManager");
 
+function resolveBackendAssetPath(...segments) {
+    const candidates = [
+        path.join(__dirname, "..", ...segments),
+        path.join(process.cwd(), ...segments),
+        path.join(process.cwd(), "backend", ...segments),
+    ];
+
+    const assetPath = candidates.find((candidate) => fs.existsSync(candidate));
+
+    if (!assetPath) {
+        throw new Error(`Asset not found: ${segments.join("/")}`);
+    }
+
+    return assetPath;
+}
+
 // Initialize fonts
 fontManager.registerAllFonts();
 // Email setup
@@ -258,7 +274,7 @@ async function generateCertificatePDFBuffer(certificate) {
         const styledQrCodeBuffer = dotCanvas.toBuffer('image/png');
 
         // Load the certificate background image
-        const certificateTemplatePath = path.join(__dirname, "../assets/complition certificate.png");
+        const certificateTemplatePath = resolveBackendAssetPath("assets", "complition certificate.png");
         const templateImage = await loadImage(certificateTemplatePath);
 
         // Create canvas with the same dimensions as the template image
@@ -274,17 +290,18 @@ async function generateCertificatePDFBuffer(certificate) {
 
         // Helper: draw semi-bold text (thin stroke + fill to simulate weight between Light and Bold)
         const drawSemiBold = (text, x, y) => {
-            ctx.strokeStyle = ctx.fillStyle;
-            ctx.lineWidth = 0.5 * scale;
-            ctx.strokeText(text, x, y);
             ctx.fillText(text, x, y);
+            ctx.fillText(text, x + (0.45 * scale), y);
+        };
+
+        const setCanvasFont = (size, preferredFamily, options = {}) => {
+            const { weight = 'normal', fallbackFamily = 'Arial' } = options;
+            ctx.font = fontManager.getSafeCanvasFont(size, preferredFamily, { weight, fallbackFamily });
         };
 
         // "This is proudly presented to"
         const titleSize = Math.floor(46 * scale);
-        ctx.font = fontManager.isFontRegistered('Open Sans Condensed')
-            ? `${titleSize}px 'Open Sans Condensed', sans-serif`
-            : `${titleSize}px Arial`;
+        setCanvasFont(titleSize, 'Open Sans Condensed', { fallbackFamily: 'Arial' });
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
 
@@ -292,9 +309,7 @@ async function generateCertificatePDFBuffer(certificate) {
 
         // Position the recipient name in the green section
         const nameSize = Math.floor(180 * scale); // Requested: Allura(300)
-        ctx.font = fontManager.isFontRegistered('Allura')
-            ? `${nameSize}px 'Allura', cursive`
-            : `italic ${nameSize}px Georgia`;
+        setCanvasFont(nameSize, 'Allura', { fallbackFamily: 'Georgia' });
 
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
@@ -302,14 +317,10 @@ async function generateCertificatePDFBuffer(certificate) {
 
         // Description text - OPEN SANS CONDENSED(80)
         const descSize = Math.floor(46 * scale);
-        const descriptionFont = fontManager.isFontRegistered('Open Sans Condensed')
-            ? `${descSize}px 'Open Sans Condensed', sans-serif`
-            : `${descSize}px Arial`;
+        const descriptionFont = fontManager.getSafeCanvasFont(descSize, 'Open Sans Condensed', { fallbackFamily: 'Arial' });
 
         // Job role bold
-        const jobroleFont = fontManager.isFontRegistered('Open Sans Condensed', 'bold')
-            ? `bold ${descSize}px 'Open Sans Condensed', sans-serif`
-            : `bold ${descSize}px Arial`;
+        const jobroleFont = fontManager.getSafeCanvasFont(descSize, 'Open Sans Condensed', { weight: 'bold', fallbackFamily: 'Arial' });
 
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
@@ -361,12 +372,7 @@ async function generateCertificatePDFBuffer(certificate) {
         // ==== DATES & ID ====
         // Requested: OPEN SANS CONDENSED(70)
         const dateSize = Math.floor(43 * scale);
-        const dateFont = fontManager.isFontRegistered('Open Sans Condensed')
-            ? `${dateSize}px 'Open Sans Condensed', sans-serif`
-            : `${dateSize}px Arial`;
-        const jobroleValueFont = fontManager.isFontRegistered('Open Sans Condensed', 'bold')
-            ? `bold ${dateSize}px 'Open Sans Condensed', sans-serif`
-            : `bold ${dateSize}px Arial`;
+        const dateFont = fontManager.getSafeCanvasFont(dateSize, 'Open Sans Condensed', { fallbackFamily: 'Arial' });
 
         ctx.fillStyle = "#ccc";
         ctx.textAlign = "left";
@@ -384,6 +390,7 @@ async function generateCertificatePDFBuffer(certificate) {
             ctx.fillStyle = "#fff";
             const labelW = ctx.measureText(label).width;
             drawSemiBold(label, x, y);
+            ctx.font = dateFont;
             drawSemiBold(value, x + labelW, y);
         };
 

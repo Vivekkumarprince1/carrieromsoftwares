@@ -5,12 +5,23 @@ const fs = require("fs");
 class FontManager {
     constructor() {
         this.registeredFonts = new Set();
-        this.fontDirectory = path.join(__dirname, "../assets/fonts");
+        this.fontDirectory = this.resolveFontDirectory();
+    }
 
-        // Ensure fonts directory exists
-        if (!fs.existsSync(this.fontDirectory)) {
-            fs.mkdirSync(this.fontDirectory, { recursive: true });
+    resolveFontDirectory() {
+        const candidates = [
+            path.join(__dirname, "../assets/fonts"),
+            path.join(process.cwd(), "assets/fonts"),
+            path.join(process.cwd(), "backend/assets/fonts"),
+        ];
+
+        const existingDirectory = candidates.find((candidate) => fs.existsSync(candidate));
+
+        if (existingDirectory) {
+            return existingDirectory;
         }
+
+        return candidates[0];
     }
 
     /**
@@ -89,6 +100,17 @@ class FontManager {
     getFontString(size, family, weight = 'normal', fallback = 'Arial, sans-serif') {
         const weightString = weight !== 'normal' ? `${weight} ` : '';
         return `${weightString}${size}px '${family}', ${fallback}`;
+    }
+
+    getSafeCanvasFont(size, preferredFamily, options = {}) {
+        const { weight = 'normal', fallbackFamily = 'Arial' } = options;
+        const weightString = weight !== 'normal' ? `${weight} ` : '';
+
+        if (preferredFamily && this.isFontRegistered(preferredFamily, weight)) {
+            return `${weightString}${size}px '${preferredFamily}'`;
+        }
+
+        return `${weightString}${size}px '${fallbackFamily}'`;
     }
 
     /**
