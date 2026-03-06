@@ -3,7 +3,7 @@ const User = require("../models/user");
 const fs = require("fs");
 const path = require("path");
 const QRCode = require("qrcode");
-const { createCanvas } = require("@napi-rs/canvas");
+const sharp = require("sharp");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 
@@ -187,24 +187,21 @@ async function generateCertificatePDFBuffer(certificate) {
         const frontendBaseUrl = (process.env.FRONTEND_URL || "https://careers.omsoftwares.in").replace(/\/+$/, "");
         const verifyUrl = `${frontendBaseUrl}/verify/${certificate._id}`;
 
-        // Generate Styled QR code using canvas (Old Style)
+        // Generate Styled QR code using pure SVG (No canvas dependency to avoid Vercel SIGSEGV)
         const qrCodeData = QRCode.create(verifyUrl, { errorCorrectionLevel: 'H' });
         const moduleCount = qrCodeData.modules.size;
-        const qrCanvasSize = 1200;
-        const dotCanvas = createCanvas(qrCanvasSize, qrCanvasSize);
-        const dctx = dotCanvas.getContext('2d');
 
+        // Settings matching the old canvas design
+        const qrCanvasSize = 1200;
         const padding = 30;
         const effectiveSize = qrCanvasSize - (padding * 2);
         const moduleSize = effectiveSize / moduleCount;
 
-        // Background
-        dctx.fillStyle = '#000000ff';
-        dctx.fillRect(0, 0, qrCanvasSize, qrCanvasSize);
-
         // Gradient Colors for dots (Lime Green to White)
         const topColor = { r: 214, g: 243, b: 0 };
         const bottomColor = { r: 255, g: 255, b: 255 };
+
+        let svgPaths = '';
 
         const getColorAtY = (yIndex) => {
             const t = yIndex / (moduleCount - 1);
@@ -214,25 +211,17 @@ async function generateCertificatePDFBuffer(certificate) {
             return `rgb(${r},${g},${b})`;
         };
 
-        const drawFinderPattern = (row, col) => {
+        const drawFinderPatternSVG = (row, col) => {
             const centerX = padding + (col + 3.5) * moduleSize;
             const centerY = padding + (row + 3.5) * moduleSize;
             const eyeColor = getColorAtY(row + 3.5);
 
-            dctx.fillStyle = eyeColor;
-            dctx.beginPath();
-            dctx.arc(centerX, centerY, 3.5 * moduleSize, 0, Math.PI * 2);
-            dctx.fill();
-
-            dctx.fillStyle = '#111111';
-            dctx.beginPath();
-            dctx.arc(centerX, centerY, 2.5 * moduleSize, 0, Math.PI * 2);
-            dctx.fill();
-
-            dctx.fillStyle = eyeColor;
-            dctx.beginPath();
-            dctx.arc(centerX, centerY, 1.5 * moduleSize, 0, Math.PI * 2);
-            dctx.fill();
+            // Outer ring
+            svgPaths += `<circle cx="${centerX}" cy="${centerY}" r="${3.5 * moduleSize}" fill="${eyeColor}" />`;
+            // Middle black ring
+            svgPaths += `<circle cx="${centerX}" cy="${centerY}" r="${2.5 * moduleSize}" fill="#111111" />`;
+            // Inner eye
+            svgPaths += `<circle cx="${centerX}" cy="${centerY}" r="${1.5 * moduleSize}" fill="${eyeColor}" />`;
         };
 
         for (let row = 0; row < moduleCount; row++) {
@@ -243,23 +232,34 @@ async function generateCertificatePDFBuffer(certificate) {
                     const isBottomLeft = row >= moduleCount - 7 && col < 7;
 
                     if (isTopLeft || isTopRight || isBottomLeft) {
-                        if (row === 0 && col === 0) drawFinderPattern(0, 0);
-                        if (row === 0 && col === moduleCount - 7) drawFinderPattern(0, moduleCount - 7);
-                        if (row === moduleCount - 7 && col === 0) drawFinderPattern(moduleCount - 7, 0);
+                        if (row === 0 && col === 0) drawFinderPatternSVG(0, 0);
+                        if (row === 0 && col === moduleCount - 7) drawFinderPatternSVG(0, moduleCount - 7);
+                        if (row === moduleCount - 7 && col === 0) drawFinderPatternSVG(moduleCount - 7, 0);
                         continue;
                     }
 
-                    dctx.fillStyle = getColorAtY(row);
-                    dctx.beginPath();
                     const centerX = padding + col * moduleSize + moduleSize / 2;
                     const centerY = padding + row * moduleSize + moduleSize / 2;
-                    dctx.arc(centerX, centerY, (moduleSize / 2) * 0.95, 0, Math.PI * 2);
-                    dctx.fill();
+                    const radius = (moduleSize / 2) * 0.95;
+                    const dotColor = getColorAtY(row);
+
+                    svgPaths += `<circle cx="${centerX}" cy="${centerY}" r="${radius}" fill="${dotColor}" />`;
                 }
             }
         }
 
-        const qrPngBuffer = dotCanvas.toBuffer('image/png');
+        // Wrap paths in SVG container black background
+        const svgString = `
+            <svg width="${qrCanvasSize}" height="${qrCanvasSize}" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100%" height="100%" fill="#000000" />
+                ${svgPaths}
+            </svg>
+        `;
+
+        // Convert pure SVG to PNG buffer using sharp (already in package.json, compiled for Vercel)
+        const qrPngBuffer = await sharp(Buffer.from(svgString))
+            .png()
+            .toBuffer();
 
         // Resolve asset paths
         const templatePath = resolveBackendAssetPath("assets", "complition certificate.png");
