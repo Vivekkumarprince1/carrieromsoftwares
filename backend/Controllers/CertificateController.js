@@ -10,7 +10,6 @@ const fontManager = require("../utils/fontManager");
 
 // Initialize fonts
 fontManager.registerAllFonts();
-
 // Email setup
 const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -274,37 +273,35 @@ async function generateCertificatePDFBuffer(certificate) {
         const scale = canvas.width / 1920;
 
         // "This is proudly presented to"
-        const titleSize = Math.floor(40 * scale);
+        const titleSize = Math.floor(80 * scale);
         ctx.font = fontManager.isFontRegistered('Open Sans Condensed')
-            ? fontManager.getFontString(titleSize, 'Open Sans Condensed', 'normal', 'Arial, sans-serif')
-            : titleSize + "px 'Arial', sans-serif";
+            ? `${titleSize}px 'Open Sans Condensed', sans-serif`
+            : `${titleSize}px Arial`;
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
 
         ctx.fillText("This is proudly presented to", canvas.width / 2, canvas.height * 0.44);
 
         // Position the recipient name in the green section
-        const nameSize = Math.floor(180 * scale);
-        if (fontManager.isFontRegistered('Allura')) {
-            ctx.font = fontManager.getFontString(nameSize, 'Allura', 'normal', 'cursive');
-        } else {
-            ctx.font = "bold " + nameSize + "px 'Georgia', serif";
-        }
+        const nameSize = Math.floor(300 * scale); // Requested: Allura(300)
+        ctx.font = fontManager.isFontRegistered('Allura')
+            ? `${nameSize}px 'Allura', cursive`
+            : `italic ${nameSize}px Georgia`;
 
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
         ctx.fillText(certificate.name, canvas.width / 2, canvas.height * 0.54);
 
         // Description text - OPEN SANS CONDENSED(80)
-        const descSize = Math.floor(35 * scale);
+        const descSize = Math.floor(80 * scale);
         const descriptionFont = fontManager.isFontRegistered('Open Sans Condensed')
-            ? fontManager.getFontString(descSize, 'Open Sans Condensed', 'normal', 'Arial, sans-serif')
-            : descSize + "px 'Arial', sans-serif";
+            ? `${descSize}px 'Open Sans Condensed', sans-serif`
+            : `${descSize}px Arial`;
 
         // Job role bold
         const jobroleFont = fontManager.isFontRegistered('Open Sans Condensed', 'bold')
-            ? fontManager.getFontString(descSize, 'Open Sans Condensed', 'bold', 'Arial, sans-serif')
-            : "bold " + descSize + "px 'Arial', sans-serif";
+            ? `bold ${descSize}px 'Open Sans Condensed', sans-serif`
+            : `bold ${descSize}px Arial`;
 
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
@@ -354,14 +351,14 @@ async function generateCertificatePDFBuffer(certificate) {
         // ctx.fillText(`https://careers.omsoftwares.in/verify`, qrX + qrSize / 2, qrY + qrSize + Math.floor(85 * scale));
 
         // ==== DATES & ID ====
-        // OPEN SANS CONDENSED(70)
-        const dateSize = Math.floor(33 * scale);
+        // Requested: OPEN SANS CONDENSED(70)
+        const dateSize = Math.floor(70 * scale);
         const dateFont = fontManager.isFontRegistered('Open Sans Condensed')
-            ? fontManager.getFontString(dateSize, 'Open Sans Condensed', 'normal', 'Arial, sans-serif')
-            : dateSize + "px 'Arial', sans-serif";
+            ? `${dateSize}px 'Open Sans Condensed', sans-serif`
+            : `${dateSize}px Arial`;
         const jobroleValueFont = fontManager.isFontRegistered('Open Sans Condensed', 'bold')
-            ? fontManager.getFontString(dateSize, 'Open Sans Condensed', 'bold', 'Arial, sans-serif')
-            : "bold " + dateSize + "px 'Arial', sans-serif";
+            ? `bold ${dateSize}px 'Open Sans Condensed', sans-serif`
+            : `bold ${dateSize}px Arial`;
 
         ctx.fillStyle = "#ccc";
         ctx.textAlign = "left";
