@@ -272,18 +272,26 @@ async function generateCertificatePDFBuffer(certificate) {
 
         const scale = canvas.width / 1920;
 
+        // Helper: draw semi-bold text (thin stroke + fill to simulate weight between Light and Bold)
+        const drawSemiBold = (text, x, y) => {
+            ctx.strokeStyle = ctx.fillStyle;
+            ctx.lineWidth = 0.5 * scale;
+            ctx.strokeText(text, x, y);
+            ctx.fillText(text, x, y);
+        };
+
         // "This is proudly presented to"
-        const titleSize = Math.floor(80 * scale);
+        const titleSize = Math.floor(46 * scale);
         ctx.font = fontManager.isFontRegistered('Open Sans Condensed')
             ? `${titleSize}px 'Open Sans Condensed', sans-serif`
             : `${titleSize}px Arial`;
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
 
-        ctx.fillText("This is proudly presented to", canvas.width / 2, canvas.height * 0.44);
+        drawSemiBold("This is proudly presented to", canvas.width / 2, canvas.height * 0.44);
 
         // Position the recipient name in the green section
-        const nameSize = Math.floor(300 * scale); // Requested: Allura(300)
+        const nameSize = Math.floor(180 * scale); // Requested: Allura(300)
         ctx.font = fontManager.isFontRegistered('Allura')
             ? `${nameSize}px 'Allura', cursive`
             : `italic ${nameSize}px Georgia`;
@@ -293,7 +301,7 @@ async function generateCertificatePDFBuffer(certificate) {
         ctx.fillText(certificate.name, canvas.width / 2, canvas.height * 0.54);
 
         // Description text - OPEN SANS CONDENSED(80)
-        const descSize = Math.floor(80 * scale);
+        const descSize = Math.floor(46 * scale);
         const descriptionFont = fontManager.isFontRegistered('Open Sans Condensed')
             ? `${descSize}px 'Open Sans Condensed', sans-serif`
             : `${descSize}px Arial`;
@@ -321,20 +329,20 @@ async function generateCertificatePDFBuffer(certificate) {
         let startX = canvas.width / 2 - totalWidth / 2;
 
         ctx.font = descriptionFont;
-        ctx.fillText(baseText, startX + baseWidth / 2, canvas.height * 0.61);
+        drawSemiBold(baseText, startX + baseWidth / 2, canvas.height * 0.61);
 
         ctx.font = jobroleFont;
-        ctx.fillText(jobroleText, startX + baseWidth + jobroleWidth / 2, canvas.height * 0.61);
+        drawSemiBold(jobroleText, startX + baseWidth + jobroleWidth / 2, canvas.height * 0.61);
 
         ctx.font = descriptionFont;
-        ctx.fillText(internship, startX + baseWidth + jobroleWidth + internshipWidth / 2, canvas.height * 0.61);
+        drawSemiBold(internship, startX + baseWidth + jobroleWidth + internshipWidth / 2, canvas.height * 0.61);
 
         // Second line:
         ctx.font = descriptionFont;
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
         const description = "and in appreciation of outstanding commitment, professionalism, and dedication to both personal and professional growth.";
-        ctx.fillText(description, canvas.width / 2, canvas.height * 0.655);
+        drawSemiBold(description, canvas.width / 2, canvas.height * 0.655);
 
         // ==== QR CODE (bottom-left) ====
         const qrSize = Math.floor(260 * scale);
@@ -352,7 +360,7 @@ async function generateCertificatePDFBuffer(certificate) {
 
         // ==== DATES & ID ====
         // Requested: OPEN SANS CONDENSED(70)
-        const dateSize = Math.floor(70 * scale);
+        const dateSize = Math.floor(43 * scale);
         const dateFont = fontManager.isFontRegistered('Open Sans Condensed')
             ? `${dateSize}px 'Open Sans Condensed', sans-serif`
             : `${dateSize}px Arial`;
@@ -375,8 +383,8 @@ async function generateCertificatePDFBuffer(certificate) {
             ctx.font = dateFont;
             ctx.fillStyle = "#fff";
             const labelW = ctx.measureText(label).width;
-            ctx.fillText(label, x, y);
-            ctx.fillText(value, x + labelW, y);
+            drawSemiBold(label, x, y);
+            drawSemiBold(value, x + labelW, y);
         };
 
         drawLabelValue("Internship Start Date: ", formatDate(certificate.fromDate), leftColX, topRowY);
