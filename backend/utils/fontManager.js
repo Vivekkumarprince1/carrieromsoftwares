@@ -64,20 +64,7 @@ class FontManager {
      */
     registerAllFonts() {
         const commonFonts = [
-            // Existing font (now in fonts directory)
-            { file: "Britannic D Extra Light.ttf", family: "Britannic", weight: "normal" },
-
-            // Add these if you download them
-            { file: "Allura-Regular.ttf", family: "Allura", weight: "normal" },
-            { file: "PlayfairDisplay-Regular.ttf", family: "Playfair Display", weight: "normal" },
-            { file: "Montserrat-Regular.ttf", family: "Montserrat", weight: "normal" },
-            { file: "Montserrat-Light.ttf", family: "Montserrat", weight: "300" },
-            { file: "Montserrat-Medium.ttf", family: "Montserrat", weight: "500" },
-            { file: "Montserrat-SemiBold.ttf", family: "Montserrat", weight: "600" },
-            { file: "Montserrat-Bold.ttf", family: "Montserrat", weight: "bold" },
-            { file: "GreatVibes-Regular.ttf", family: "Great Vibes", weight: "normal" },
-            { file: "DancingScript-Regular.ttf", family: "Dancing Script", weight: "normal" },
-            { file: "OpenSansCondensed-Light.ttf", family: "Open Sans Condensed", weight: "300" },
+            { file: "Allura-Regular.ttf", family: "Allura", weight: "300" },
             { file: "OpenSansCondensed-Regular.ttf", family: "Open Sans Condensed", weight: "normal" },
             { file: "OpenSansCondensed-Bold.ttf", family: "Open Sans Condensed", weight: "bold" },
         ];

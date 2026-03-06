@@ -2,11 +2,10 @@ const Certificate = require("../models/certificate");
 const User = require("../models/user");
 const fs = require("fs");
 const path = require("path");
-const { createCanvas, loadImage } = require("../utils/canvasAdapter");
 const QRCode = require("qrcode");
+const { createCanvas } = require("@napi-rs/canvas");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
-const fontManager = require("../utils/fontManager");
 
 function resolveBackendAssetPath(...segments) {
     const candidates = [
@@ -24,8 +23,6 @@ function resolveBackendAssetPath(...segments) {
     return assetPath;
 }
 
-// Initialize fonts
-fontManager.registerAllFonts();
 // Email setup
 const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -181,32 +178,33 @@ exports.generateCertificate = async (req, res) => {
     }
 };
 
-// New memory-based PDF generation for serverless compatibility
+// ============================================================
+// PDFKit-native certificate generation (no canvas dependency)
+// ============================================================
 async function generateCertificatePDFBuffer(certificate) {
     console.log(`Generating styled certificate for: ${certificate.name}`);
     try {
         const frontendBaseUrl = (process.env.FRONTEND_URL || "https://careers.omsoftwares.in").replace(/\/+$/, "");
         const verifyUrl = `${frontendBaseUrl}/verify/${certificate._id}`;
 
-        // Manual QR Code generation for high customization to match the provided image
+        // Generate Styled QR code using canvas (Old Style)
         const qrCodeData = QRCode.create(verifyUrl, { errorCorrectionLevel: 'H' });
         const moduleCount = qrCodeData.modules.size;
         const qrCanvasSize = 1200;
         const dotCanvas = createCanvas(qrCanvasSize, qrCanvasSize);
         const dctx = dotCanvas.getContext('2d');
 
-        // Add a small padding (quiet zone) for better scannability
         const padding = 30;
         const effectiveSize = qrCanvasSize - (padding * 2);
         const moduleSize = effectiveSize / moduleCount;
 
         // Background
-        dctx.fillStyle = '#111111'; // Pure black background
+        dctx.fillStyle = '#000000ff';
         dctx.fillRect(0, 0, qrCanvasSize, qrCanvasSize);
 
-        // Gradient Colors
-        const topColor = { r: 214, g: 243, b: 0 }; // Lime green
-        const bottomColor = { r: 255, g: 255, b: 255 }; // White
+        // Gradient Colors for dots (Lime Green to White)
+        const topColor = { r: 214, g: 243, b: 0 };
+        const bottomColor = { r: 255, g: 255, b: 255 };
 
         const getColorAtY = (yIndex) => {
             const t = yIndex / (moduleCount - 1);
@@ -216,212 +214,163 @@ async function generateCertificatePDFBuffer(certificate) {
             return `rgb(${r},${g},${b})`;
         };
 
-        // Helper for custom finder patterns (Eyes) - Improved for scannability
         const drawFinderPattern = (row, col) => {
             const centerX = padding + (col + 3.5) * moduleSize;
             const centerY = padding + (row + 3.5) * moduleSize;
-            const eyeColor = getColorAtY(row + 3.5); // consistent with gradient
+            const eyeColor = getColorAtY(row + 3.5);
 
-            // 1. Outer Ring Circle
             dctx.fillStyle = eyeColor;
             dctx.beginPath();
             dctx.arc(centerX, centerY, 3.5 * moduleSize, 0, Math.PI * 2);
             dctx.fill();
 
-            // 2. Black Gap Circle
             dctx.fillStyle = '#111111';
             dctx.beginPath();
             dctx.arc(centerX, centerY, 2.5 * moduleSize, 0, Math.PI * 2);
             dctx.fill();
 
-            // 3. Inner Solid Circle
             dctx.fillStyle = eyeColor;
             dctx.beginPath();
             dctx.arc(centerX, centerY, 1.5 * moduleSize, 0, Math.PI * 2);
             dctx.fill();
         };
 
-        // Draw all modules
         for (let row = 0; row < moduleCount; row++) {
             for (let col = 0; col < moduleCount; col++) {
                 if (qrCodeData.modules.get(row, col)) {
-                    // Check if it's a finder pattern
                     const isTopLeft = row < 7 && col < 7;
                     const isTopRight = row < 7 && col >= moduleCount - 7;
                     const isBottomLeft = row >= moduleCount - 7 && col < 7;
 
                     if (isTopLeft || isTopRight || isBottomLeft) {
-                        // Skip individual modules; we'll draw the whole pattern once
                         if (row === 0 && col === 0) drawFinderPattern(0, 0);
                         if (row === 0 && col === moduleCount - 7) drawFinderPattern(0, moduleCount - 7);
                         if (row === moduleCount - 7 && col === 0) drawFinderPattern(moduleCount - 7, 0);
                         continue;
                     }
 
-                    // Regular module: draw a smooth dot
                     dctx.fillStyle = getColorAtY(row);
                     dctx.beginPath();
                     const centerX = padding + col * moduleSize + moduleSize / 2;
                     const centerY = padding + row * moduleSize + moduleSize / 2;
-                    // Slightly larger dots (0.9 vs 0.85) to ensure they overlap/touch enough for scanners
-                    const radius = (moduleSize / 2) * 0.95;
-                    dctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                    dctx.arc(centerX, centerY, (moduleSize / 2) * 0.95, 0, Math.PI * 2);
                     dctx.fill();
                 }
             }
         }
 
-        const styledQrCodeBuffer = dotCanvas.toBuffer('image/png');
+        const qrPngBuffer = dotCanvas.toBuffer('image/png');
 
-        const certificateTemplatePath = resolveBackendAssetPath("assets", "complition certificate.png");
-        const templateImage = await loadImage(certificateTemplatePath);
-        const regularCondensedFontPath = resolveBackendAssetPath("assets", "fonts", "OpenSansCondensed-Regular.ttf");
-        const boldCondensedFontPath = resolveBackendAssetPath("assets", "fonts", "OpenSansCondensed-Bold.ttf");
-        const signatureFontPath = resolveBackendAssetPath("assets", "fonts", "Allura-Regular.ttf");
+        // Resolve asset paths
+        const templatePath = resolveBackendAssetPath("assets", "complition certificate.png");
+        const alluraFontPath = resolveBackendAssetPath("assets", "fonts", "Allura-Regular.ttf");
+        const openSansPath = resolveBackendAssetPath("assets", "fonts", "OpenSans_Condensed-Regular.ttf");
+        const openSansBoldPath = resolveBackendAssetPath("assets", "fonts", "OpenSans_Condensed-Bold.ttf");
 
-        const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
+        // A4 landscape dimensions in points (72 points per inch)
+        const pageW = 841.89;
+        const pageH = 595.28;
+
+        // Create PDF document — A4 landscape, no margins (we draw everything ourselves)
+        const doc = new PDFDocument({
+            size: 'A4',
+            layout: 'landscape',
+            margins: { top: 0, bottom: 0, left: 0, right: 0 }
+        });
+
         const buffers = [];
         doc.on("data", buffers.push.bind(buffers));
 
-        const pageWidth = doc.page.width;
-        const pageHeight = doc.page.height;
-        const scale = pageWidth / 1920;
+        // 1. Draw background image (fills entire page)
+        doc.image(templatePath, 0, 0, { width: pageW, height: pageH });
 
-        doc.image(certificateTemplatePath, 0, 0, { width: pageWidth, height: pageHeight });
+        // 2. Register custom fonts
+        doc.registerFont('Allura', alluraFontPath);
+        doc.registerFont('OpenSans', openSansPath);
+        doc.registerFont('OpenSansBold', openSansBoldPath);
 
-        const measureTextWidth = (text, fontPath, fontSize) => {
-            doc.font(fontPath).fontSize(fontSize);
-            return doc.widthOfString(text);
+        // 3. Draw text overlays
+        // All positions are relative fractions of page dimensions (matching original canvas layout)
+
+        // "This is proudly presented to"
+        doc.font('OpenSans')
+            .fontSize(20)
+            .fillColor('#000000');
+        const titleText = "This is proudly presented to";
+        const titleW = doc.widthOfString(titleText);
+        doc.text(titleText, (pageW - titleW) / 2, pageH * 0.38, { lineBreak: false });
+
+        // Candidate Name (Allura cursive)
+        doc.font('Allura')
+            .fontSize(79)
+            .fillColor('#000000');
+        const nameW = doc.widthOfString(certificate.name);
+        doc.text(certificate.name, (pageW - nameW) / 2, pageH * 0.425, { lineBreak: false });
+
+        // Description line 1: "In recognition of the successful completion of the [JOBROLE] Internship Program"
+        const descFontSize = 19.45;
+        const descY = pageH * 0.58;
+
+        const baseText = "In recognition of the successful completion of the ";
+        const jobroleText = `${certificate.jobrole}`;
+        const internship = " Internship Program";
+
+        // Measure widths to center the composite line
+        doc.font('OpenSans').fontSize(descFontSize);
+        const baseW = doc.widthOfString(baseText);
+        const internW = doc.widthOfString(internship);
+        doc.font('OpenSansBold').fontSize(descFontSize);
+        const jobW = doc.widthOfString(jobroleText);
+
+        const totalLineW = baseW + jobW + internW;
+        let cursorX = (pageW - totalLineW) / 2;
+
+        doc.font('OpenSans').fontSize(descFontSize).fillColor('#000000');
+        doc.text(baseText, cursorX, descY, { lineBreak: false });
+        cursorX += baseW;
+
+        doc.font('OpenSansBold').fontSize(descFontSize).fillColor('#000000');
+        doc.text(jobroleText, cursorX, descY, { lineBreak: false });
+        cursorX += jobW;
+
+        doc.font('OpenSans').fontSize(descFontSize).fillColor('#000000');
+        doc.text(internship, cursorX, descY, { lineBreak: false });
+
+        // Description line 2
+        doc.font('OpenSans').fontSize(descFontSize).fillColor('#000000');
+        const line2 = "and in appreciation of outstanding commitment, professionalism, and dedication to both personal and professional growth.";
+        const line2W = doc.widthOfString(line2);
+        doc.text(line2, (pageW - line2W) / 2, pageH * 0.625, { lineBreak: false });
+
+        // 4. QR Code (bottom-left area)
+        // Original canvas size was 260 * (canvas.width / 1920). 
+        // In PDF points: 260 * (841.89 / 1920) ≈ 114
+        const qrSize = 114;
+        const qrX = pageW * 0.065;
+        const qrY = pageH * 0.73;
+        doc.image(qrPngBuffer, qrX, qrY, { width: qrSize, height: qrSize });
+
+        // 5. Date labels and values (bottom section)
+        const dateFontSize = 19;
+        const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+
+        const leftColX = pageW * 0.28;
+        const rightColX = pageW * 0.63;
+        const topRowY = pageH * 0.78;
+        const bottomRowY = pageH * 0.83;
+
+        const drawLabelValue = (label, value, x, y) => {
+            doc.font('OpenSans').fontSize(dateFontSize).fillColor('#ffffff');
+            doc.text(label, x, y, { lineBreak: false, continued: true });
+            doc.text(value, { lineBreak: false });
         };
 
-        const drawText = (text, x, baselineY, options = {}) => {
-            const {
-                fontPath,
-                fontSize,
-                color = '#000000',
-                align = 'left',
-                baselineFactor = 0.78,
-            } = options;
+        drawLabelValue("Internship Start Date: ", formatDate(certificate.fromDate), leftColX, topRowY);
+        drawLabelValue("Internship End Date: ", formatDate(certificate.toDate), leftColX, bottomRowY);
+        drawLabelValue("Id: ", `${certificate._id}`, rightColX, topRowY);
+        drawLabelValue("Certificate Issue Date: ", formatDate(new Date()), rightColX, bottomRowY);
 
-            const topY = baselineY - (fontSize * baselineFactor);
-            doc.font(fontPath).fontSize(fontSize).fillColor(color);
-
-            if (align === 'center') {
-                const textWidth = measureTextWidth(text, fontPath, fontSize);
-                doc.text(text, (pageWidth - textWidth) / 2, topY, { lineBreak: false });
-                return;
-            }
-
-            doc.text(text, x, topY, { lineBreak: false });
-        };
-
-        const drawCenteredSegmentLine = (segments, baselineY) => {
-            const widths = segments.map((segment) => measureTextWidth(segment.text, segment.fontPath, segment.fontSize));
-            const totalWidth = widths.reduce((sum, width) => sum + width, 0);
-            let cursorX = (pageWidth - totalWidth) / 2;
-
-            segments.forEach((segment, index) => {
-                drawText(segment.text, cursorX, baselineY, {
-                    fontPath: segment.fontPath,
-                    fontSize: segment.fontSize,
-                    color: segment.color || '#000000',
-                    baselineFactor: segment.baselineFactor,
-                });
-                cursorX += widths[index];
-            });
-        };
-
-        const titleSize = Math.floor(46 * scale);
-        const nameSize = Math.floor(180 * scale);
-        const descSize = Math.floor(46 * scale);
-        const dateSize = Math.floor(43 * scale);
-
-        drawText("This is proudly presented to", 0, pageHeight * 0.44, {
-            fontPath: regularCondensedFontPath,
-            fontSize: titleSize,
-            color: '#000000',
-            align: 'center',
-            baselineFactor: 0.84,
-        });
-
-        drawText(certificate.name, 0, pageHeight * 0.54, {
-            fontPath: signatureFontPath,
-            fontSize: nameSize,
-            color: '#000000',
-            align: 'center',
-            baselineFactor: 0.80,
-        });
-
-        drawCenteredSegmentLine([
-            {
-                text: "In recognition of the successful completion of the ",
-                fontPath: regularCondensedFontPath,
-                fontSize: descSize,
-                color: '#000000',
-                baselineFactor: 0.84,
-            },
-            {
-                text: `${certificate.jobrole}`,
-                fontPath: boldCondensedFontPath,
-                fontSize: descSize,
-                color: '#000000',
-                baselineFactor: 0.84,
-            },
-            {
-                text: " Internship Program",
-                fontPath: regularCondensedFontPath,
-                fontSize: descSize,
-                color: '#000000',
-                baselineFactor: 0.84,
-            },
-        ], pageHeight * 0.61);
-
-        drawText(
-            "and in appreciation of outstanding commitment, professionalism, and dedication to both personal and professional growth.",
-            0,
-            pageHeight * 0.655,
-            {
-                fontPath: regularCondensedFontPath,
-                fontSize: descSize,
-                color: '#000000',
-                align: 'center',
-                baselineFactor: 0.84,
-            }
-        );
-
-        const qrSize = Math.floor(260 * scale);
-        doc.image(styledQrCodeBuffer, pageWidth * 0.065, pageHeight * 0.73, {
-            width: qrSize,
-            height: qrSize,
-        });
-
-        const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-        });
-
-        const drawLabelValue = (label, value, x, baselineY) => {
-            const labelWidth = measureTextWidth(label, regularCondensedFontPath, dateSize);
-            drawText(label, x, baselineY, {
-                fontPath: regularCondensedFontPath,
-                fontSize: dateSize,
-                color: '#ffffff',
-                baselineFactor: 0.84,
-            });
-            drawText(value, x + labelWidth, baselineY, {
-                fontPath: regularCondensedFontPath,
-                fontSize: dateSize,
-                color: '#ffffff',
-                baselineFactor: 0.84,
-            });
-        };
-
-        drawLabelValue("Internship Start Date: ", formatDate(certificate.fromDate), pageWidth * 0.28, pageHeight * 0.83);
-        drawLabelValue("Internship End Date: ", formatDate(certificate.toDate), pageWidth * 0.28, pageHeight * 0.88);
-        drawLabelValue("Id: ", `${certificate._id}`, pageWidth * 0.63, pageHeight * 0.83);
-        drawLabelValue("Certificate Issue Date: ", formatDate(new Date()), pageWidth * 0.63, pageHeight * 0.88);
-
+        // Finalize PDF
         doc.end();
 
         return new Promise((resolve, reject) => {
@@ -483,41 +432,6 @@ exports.sendCertificateEmail = async (req, res) => {
     }
 };
 
-// Email helper
-// async function sendCertificateByEmail(to, subject, message, recipientName, certificatePath) {
-//     console.log(`Email to: ${to}`);
-//     try {
-//         const mailOptions = {
-//             from: process.env.EMAIL_USER,
-//             to,
-//             subject,
-//             html: `
-//                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-//                     <h2>Certificate of Completion</h2>
-//                     <p>Dear ${recipientName},</p>
-//                     <p>${message}</p>
-//                     <p>Please find your certificate attached.</p>
-//                     <p>This certificate can be verified online.</p>
-//                     <p>Regards,<br>OM Softwares</p>
-//                 </div>
-//             `,
-//             attachments: [
-//                 {
-//                     filename: `${recipientName.replace(/\s+/g, '_')}_certificate.pdf`,
-//                     path: certificatePath
-//                 }
-//             ]
-//         };
-
-//         const info = await transporter.sendMail(mailOptions);
-//         console.log(`Sent: ${info.messageId}`);
-//         return info;
-//     } catch (error) {
-//         console.error(`Error:`, error);
-//         throw error;
-//     }
-// }
-
 // New buffer-based email function for serverless compatibility
 async function sendCertificateByEmailBuffer(to, subject, message, recipientName, pdfBuffer, filename) {
     console.log(`Email to: ${to}`);
@@ -554,205 +468,6 @@ async function sendCertificateByEmailBuffer(to, subject, message, recipientName,
     }
 }
 
-// Offer letter
-// exports.issueOfferLetter = async (req, res) => {
-//     console.log("New offer");
-//     try {
-//         const { name, position, email, startDate, additionalDetails, issuedBy } = req.body;
-//         console.log(`For: ${name}, ${position}`);
-
-//         if (!name || !position || !email) {
-//             console.log("Missing fields");
-//             return res.status(400).json({ message: "Name, position, and email are required" });
-//         }
-
-//         // Generate PDF in memory
-//         console.log(`Generate PDF in memory`);
-//         const pdfBuffer = await generateOfferLetterPDFInMemory({
-//             name,
-//             position,
-//             startDate: startDate ? new Date(startDate) : new Date(),
-//             additionalDetails,
-//             issuedBy: issuedBy || "OM Softwares",
-//             issuedOn: new Date()
-//         });
-
-//         // Send email with PDF attachment from memory
-//         console.log(`Send to: ${email}`);
-//         await sendOfferLetterByEmailFromMemory(
-//             email,
-//             `Offer: ${position}`,
-//             `We're pleased to offer you the ${position} position at OM Softwares.`,
-//             name,
-//             pdfBuffer
-//         );
-
-//         console.log(`Offer letter sent successfully without storing permanently`);
-
-//         res.status(201).json({
-//             message: "Offer letter sent",
-//             recipientEmail: email
-//         });
-
-//     } catch (error) {
-//         console.error("Error:", error.message);
-//         res.status(500).json({ message: "Server error", error: error.message });
-//     }
-// };
-
-// // Offer PDF helper - Generate in memory
-// async function generateOfferLetterPDFInMemory(offerData) {
-//     console.log(`Generate offer PDF in memory`);    try {
-//         const doc = new PDFDocument({ margin: 50 });
-//         const buffers = [];
-
-//         // Collect PDF data in memory
-//         doc.on('data', buffers.push.bind(buffers));
-//           // Header
-//         doc.fontSize(20).font('Helvetica-Bold').text('OM SOFTWARES', { align: 'center' });
-//         doc.moveDown();
-//         doc.fontSize(16).font('Helvetica-Bold').text('JOB OFFER LETTER', { align: 'center' });
-//         doc.moveDown(2);
-
-//         // Date
-//         doc.fontSize(12).font('Helvetica').text(`Date: ${new Date().toLocaleDateString()}`, { align: 'right' });
-//         doc.moveDown(2);
-
-//         // Name
-//         doc.fontSize(12).font('Helvetica').text(`Dear ${offerData.name},`, { align: 'left' });
-//         doc.moveDown();
-
-//         // Content
-//         doc.fontSize(12).font('Helvetica').text(
-//             `We're pleased to offer you the ${offerData.position} position at OM Softwares. ` +
-//             `Start date: ${offerData.startDate.toLocaleDateString()}.`, 
-//             { align: 'left' }
-//         );
-//         doc.moveDown();
-
-//         // Details
-//         if (offerData.additionalDetails) {
-//             doc.fontSize(12).font('Helvetica').text(offerData.additionalDetails, { align: 'left' });
-//             doc.moveDown();
-//         }
-
-//         // Terms
-//         doc.fontSize(12).font('Helvetica').text(
-//             'This offer depends on your acceptance of our policies. ' +
-//             'Please sign and return to HR.', 
-//             { align: 'left' }
-//         );
-//         doc.moveDown(2);
-
-//         // Signature
-//         doc.fontSize(12).font('Helvetica').text('Sincerely,', { align: 'left' });
-//         doc.moveDown(2);
-//         doc.fontSize(12).font('Helvetica-Bold').text(offerData.issuedBy, { align: 'left' });
-//         doc.fontSize(12).font('Helvetica').text('Director', { align: 'left' });
-
-//         // Acceptance
-//         doc.moveDown(4);
-//         doc.fontSize(12).font('Helvetica-Bold').text('Acceptance:', { align: 'left' });
-//         doc.moveDown();
-//         doc.fontSize(12).font('Helvetica').text(
-//             'I accept this offer.', 
-//             { align: 'left' }
-//         );
-//         doc.moveDown(2);
-
-//         // Signature lines
-//         doc.fontSize(12).font('Helvetica').text('Signature: _______________________', { align: 'left' });
-//         doc.moveDown();
-//         doc.fontSize(12).font('Helvetica').text(`Name: ${offerData.name}`, { align: 'left' });
-//         doc.moveDown();
-//         doc.fontSize(12).font('Helvetica').text('Date: _______________________', { align: 'left' });
-//           // Finalize
-//         doc.end();
-
-//         return new Promise((resolve, reject) => {
-//             doc.on('end', () => {
-//                 const pdfBuffer = Buffer.concat(buffers);
-//                 console.log(`PDF generated in memory for: ${offerData.name}`);
-//                 resolve(pdfBuffer);
-//             });
-//             doc.on('error', reject);
-//         });
-//     } catch (error) {
-//         console.error("Error:", error);
-//         throw error;
-//     }
-// }
-
-// // Offer email helper - Send from memory
-// async function sendOfferLetterByEmailFromMemory(to, subject, message, recipientName, pdfBuffer) {
-//     console.log(`Email to: ${to}`);
-//     try {
-//         const mailOptions = {
-//             from: process.env.EMAIL_USER,
-//             to,
-//             subject,
-//             html: `
-//                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-//                     <h2>Offer Letter</h2>
-//                     <p>Dear ${recipientName},</p>
-//                     <p>${message}</p>
-//                     <p>Please find your offer letter attached.</p>
-//                     <p>Sign and return to HR to accept.</p>
-//                     <p>Regards,<br>OM Softwares</p>
-//                 </div>
-//             `,
-//             attachments: [
-//                 {
-//                     filename: `${recipientName.replace(/\s+/g, '_')}_offer.pdf`,
-//                     content: pdfBuffer,
-//                     contentType: 'application/pdf'
-//                 }
-//             ]
-//         };
-
-//         const info = await transporter.sendMail(mailOptions);
-//         console.log(`Sent: ${info.messageId}`);
-//         return info;
-//     } catch (error) {
-//         console.error(`Error:`, error);
-//         throw error;
-//     }
-// }
-
-// // Original file-based offer email helper (kept for backwards compatibility if needed)
-// async function sendOfferLetterByEmail(to, subject, message, recipientName, offerLetterPath) {
-//     console.log(`Email to: ${to}`);
-//     try {
-//         const mailOptions = {
-//             from: process.env.EMAIL_USER,
-//             to,
-//             subject,
-//             html: `
-//                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-//                     <h2>Offer Letter</h2>
-//                     <p>Dear ${recipientName},</p>
-//                     <p>${message}</p>
-//                     <p>Please find your offer letter attached.</p>
-//                     <p>Sign and return to HR to accept.</p>
-//                     <p>Regards,<br>OM Softwares</p>
-//                 </div>
-//             `,
-//             attachments: [
-//                 {
-//                     filename: `${recipientName.replace(/\s+/g, '_')}_offer.pdf`,
-//                     path: offerLetterPath
-//                 }
-//             ]
-//         };
-
-//         const info = await transporter.sendMail(mailOptions);
-//         console.log(`Sent: ${info.messageId}`);
-//         return info;
-//     } catch (error) {
-//         console.error(`Error:`, error);
-//         throw error;
-//     }
-// }
 
 // Utility function to clean up old PDFs (can be called manually if needed)
 exports.cleanupOldPDFs = async () => {

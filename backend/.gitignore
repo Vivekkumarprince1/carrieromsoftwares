@@ -2,3 +2,4 @@
 .env1
 node_modules
 .vercel
+.env*.local
