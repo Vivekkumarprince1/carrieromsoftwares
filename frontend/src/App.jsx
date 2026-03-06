@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -30,157 +30,172 @@ import OfferAcceptance from './pages/OfferAcceptance';
 import NotificationsPage from './pages/NotificationsPage';
 
 import './index.css';
-// import './App.css';
+
+const AppContent = () => {
+  const location = useLocation();
+
+  // List of routes where the footer should be hidden
+  const hideFooterRoutes = ['/login', '/register', '/apply'];
+
+  // Check if current path matches any of the hideFooterRoutes
+  const shouldHideFooter = hideFooterRoutes.some(path =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`)
+  );
+
+  return (
+    <div className="app-container flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-grow">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-email" element={<EmailVerification />} />
+          <Route path="/jobs" element={<Jobs />} />
+          <Route path="/jobs/create" element={
+            <AdminRoute>
+              <JobForm />
+            </AdminRoute>
+          } />
+          <Route path="/jobs/edit/:id" element={
+            <AdminRoute>
+              <JobForm />
+            </AdminRoute>
+          } />
+          <Route
+            path="/applications/:id"
+            element={
+              <PrivateRoute>
+                <ApplicationDetail />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/apply/:jobId"
+            element={
+              <PrivateRoute>
+                <Apply />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/my-applications"
+            element={
+              <PrivateRoute>
+                <MyApplications />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <PrivateRoute>
+                <NotificationsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <AdminRoute>
+                <Dashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/certificates"
+            element={
+              <AdminRoute>
+                <Certificates />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/offer-letters"
+            element={
+              <AdminRoute>
+                <OfferLetters />
+              </AdminRoute>
+            }
+          />
+          {/* Public certificate verification routes */}
+          <Route path="/verify" element={<VerifyCertificate />} />
+          <Route path="/verify/:id" element={<VerifyCertificate />} />
+
+          {/* Contact page */}
+          <Route path="/contact" element={<Contact />} />
+
+          {/* Review routes */}
+          <Route
+            path="/reviews/submit"
+            element={
+              <PrivateRoute>
+                <SubmitReview />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/reviews"
+            element={
+              <AdminRoute>
+                <AdminReviewManagement />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/employees"
+            element={
+              <AdminRoute>
+                <EmployeeManagement />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/recommendations"
+            element={
+              <AdminRoute>
+                <RecommendationManagement />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/employee/profile"
+            element={
+              <PrivateRoute>
+                <EmployeeProfile />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Public offer acceptance route */}
+          <Route path="/offer/accept/:token" element={<OfferAcceptance />} />
+
+        </Routes>
+      </main>
+
+      {!shouldHideFooter && <Footer />}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+    </div>
+  );
+};
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="app-container flex flex-col min-h-screen">
-          <Navbar />
-          <main className="flex-grow">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/verify-email" element={<EmailVerification />} />
-              <Route path="/jobs" element={<Jobs />} />
-              <Route path="/jobs/create" element={
-                <AdminRoute>
-                  <JobForm />
-                </AdminRoute>
-              } />
-              <Route path="/jobs/edit/:id" element={
-                <AdminRoute>
-                  <JobForm />
-                </AdminRoute>
-              } />
-              <Route
-                path="/applications/:id" 
-                element={
-                  <PrivateRoute>
-                    <ApplicationDetail />
-                  </PrivateRoute>
-                }
-              />
-              <Route 
-                path="/apply/:jobId" 
-                element={
-                  <PrivateRoute>
-                    <Apply />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/my-applications" 
-                element={
-                  <PrivateRoute>
-                    <MyApplications />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/notifications" 
-                element={
-                  <PrivateRoute>
-                    <NotificationsPage />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <AdminRoute>
-                    <Dashboard />
-                  </AdminRoute>
-                } 
-              />
-              <Route 
-                path="/certificates" 
-                element={
-                  <AdminRoute>
-                    <Certificates />
-                  </AdminRoute>
-                } 
-              />
-              <Route 
-                path="/offer-letters" 
-                element={
-                  <AdminRoute>
-                    <OfferLetters />
-                  </AdminRoute>
-                } 
-              />
-              {/* Public certificate verification routes */}
-              <Route path="/verify" element={<VerifyCertificate />} />
-              <Route path="/verify/:id" element={<VerifyCertificate />} />
-              
-              {/* Contact page */}
-              <Route path="/contact" element={<Contact />} />
-              
-              {/* Review routes */}
-              <Route 
-                path="/reviews/submit" 
-                element={
-                  <PrivateRoute>
-                    <SubmitReview />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/admin/reviews" 
-                element={
-                  <AdminRoute>
-                    <AdminReviewManagement />
-                  </AdminRoute>
-                } 
-              />
-              <Route 
-                path="/admin/employees" 
-                element={
-                  <AdminRoute>
-                    <EmployeeManagement />
-                  </AdminRoute>
-                } 
-              />
-              <Route 
-                path="/admin/recommendations" 
-                element={
-                  <AdminRoute>
-                    <RecommendationManagement />
-                  </AdminRoute>
-                } 
-              />
-              <Route 
-                path="/employee/profile" 
-                element={
-                  <PrivateRoute>
-                    <EmployeeProfile />
-                  </PrivateRoute>
-                } 
-              />
-              
-              {/* Public offer acceptance route */}
-              <Route path="/offer/accept/:token" element={<OfferAcceptance />} />
-              
-            </Routes>
-          </main>
-
-          <Footer />
-          <ToastContainer
-            position="top-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="dark"
-          />
-        </div>
+        <AppContent />
       </AuthProvider>
     </Router>
   );

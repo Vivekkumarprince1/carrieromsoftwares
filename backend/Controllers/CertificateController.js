@@ -172,14 +172,14 @@ async function generateCertificatePDFBuffer(certificate) {
     try {
         const frontendBaseUrl = (process.env.FRONTEND_URL || "https://careers.omsoftwares.in").replace(/\/+$/, "");
         const verifyUrl = `${frontendBaseUrl}/verify/${certificate._id}`;
-        
+
         // Manual QR Code generation for high customization to match the provided image
         const qrCodeData = QRCode.create(verifyUrl, { errorCorrectionLevel: 'H' });
         const moduleCount = qrCodeData.modules.size;
-        const qrCanvasSize = 600; 
+        const qrCanvasSize = 1200;
         const dotCanvas = createCanvas(qrCanvasSize, qrCanvasSize);
         const dctx = dotCanvas.getContext('2d');
-        
+
         // Add a small padding (quiet zone) for better scannability
         const padding = 30;
         const effectiveSize = qrCanvasSize - (padding * 2);
@@ -203,26 +203,26 @@ async function generateCertificatePDFBuffer(certificate) {
 
         // Helper for custom finder patterns (Eyes) - Improved for scannability
         const drawFinderPattern = (row, col) => {
-            const centerX = padding + col * moduleSize + (7 * moduleSize) / 2;
-            const centerY = padding + row * moduleSize + (7 * moduleSize) / 2;
-            const color = getColorAtY(row + 3); // Use color from the middle of the eye
-            
-            // 1. Outer Ring (3 modules thick equivalent but rounded)
-            dctx.fillStyle = color;
+            const centerX = padding + (col + 3.5) * moduleSize;
+            const centerY = padding + (row + 3.5) * moduleSize;
+            const eyeColor = getColorAtY(row + 3.5); // consistent with gradient
+
+            // 1. Outer Ring Circle
+            dctx.fillStyle = eyeColor;
             dctx.beginPath();
-            dctx.roundRect(padding + col * moduleSize, padding + row * moduleSize, 7 * moduleSize, 7 * moduleSize, moduleSize * 1.5);
+            dctx.arc(centerX, centerY, 3.5 * moduleSize, 0, Math.PI * 2);
             dctx.fill();
 
-            // 2. Black Gap
+            // 2. Black Gap Circle
             dctx.fillStyle = '#111111';
             dctx.beginPath();
-            dctx.roundRect(padding + (col + 1) * moduleSize, padding + (row + 1) * moduleSize, 5 * moduleSize, 5 * moduleSize, moduleSize);
+            dctx.arc(centerX, centerY, 2.5 * moduleSize, 0, Math.PI * 2);
             dctx.fill();
 
-            // 3. Inner Solid Block
-            dctx.fillStyle = color;
+            // 3. Inner Solid Circle
+            dctx.fillStyle = eyeColor;
             dctx.beginPath();
-            dctx.roundRect(padding + (col + 2) * moduleSize, padding + (row + 2) * moduleSize, 3 * moduleSize, 3 * moduleSize, moduleSize * 0.7);
+            dctx.arc(centerX, centerY, 1.5 * moduleSize, 0, Math.PI * 2);
             dctx.fill();
         };
 
@@ -249,7 +249,7 @@ async function generateCertificatePDFBuffer(certificate) {
                     const centerX = padding + col * moduleSize + moduleSize / 2;
                     const centerY = padding + row * moduleSize + moduleSize / 2;
                     // Slightly larger dots (0.9 vs 0.85) to ensure they overlap/touch enough for scanners
-                    const radius = (moduleSize / 2) * 0.95; 
+                    const radius = (moduleSize / 2) * 0.95;
                     dctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
                     dctx.fill();
                 }
@@ -271,28 +271,41 @@ async function generateCertificatePDFBuffer(certificate) {
 
         // ==== DYNAMIC CONTENT OVERLAY ====
 
-        // Position the recipient name in the green section (main focus) - Increased size
-        // Try elegant fonts first, fallback to Britannic, then system fonts
+        const scale = canvas.width / 1920;
+
+        // "This is proudly presented to"
+        const titleSize = Math.floor(40 * scale);
+        ctx.font = fontManager.isFontRegistered('Open Sans Condensed')
+            ? fontManager.getFontString(titleSize, 'Open Sans Condensed', 'normal', 'Arial, sans-serif')
+            : titleSize + "px 'Arial', sans-serif";
+        ctx.fillStyle = "#000";
+        ctx.textAlign = "center";
+
+        ctx.fillText("This is proudly presented to", canvas.width / 2, canvas.height * 0.44);
+
+        // Position the recipient name in the green section
+        const nameSize = Math.floor(180 * scale);
         if (fontManager.isFontRegistered('Allura')) {
-            ctx.font = fontManager.getFontString(180, 'Allura', 'normal', 'cursive');
-        } else if (fontManager.isFontRegistered('Great Vibes')) {
-            ctx.font = fontManager.getFontString(180, 'Great Vibes', 'normal', 'cursive');
-        } else if (fontManager.isFontRegistered('Britannic')) {
-            ctx.font = fontManager.getFontString(180, 'Britannic', 'bold', 'Georgia, serif');
+            ctx.font = fontManager.getFontString(nameSize, 'Allura', 'normal', 'cursive');
         } else {
-            ctx.font = "bold 180px 'Georgia', serif"; // Fallback system font with increased size
+            ctx.font = "bold " + nameSize + "px 'Georgia', serif";
         }
 
-        ctx.fillStyle = "#000"; // Black text on the green background
+        ctx.fillStyle = "#000";
         ctx.textAlign = "center";
-        ctx.fillText(certificate.name, canvas.width / 2, canvas.height * 0.56); // Centered in green area
+        ctx.fillText(certificate.name, canvas.width / 2, canvas.height * 0.54);
 
-        // Description paragraph: Montserrat Regular, 32 pt
-        const descriptionFont = fontManager.isFontRegistered('Montserrat', 'normal')
-            ? fontManager.getFontString(32, 'Montserrat', 'normal', 'Arial, sans-serif')
-            : "32px Arial, sans-serif";
+        // Description text - OPEN SANS CONDENSED(80)
+        const descSize = Math.floor(35 * scale);
+        const descriptionFont = fontManager.isFontRegistered('Open Sans Condensed')
+            ? fontManager.getFontString(descSize, 'Open Sans Condensed', 'normal', 'Arial, sans-serif')
+            : descSize + "px 'Arial', sans-serif";
 
-        ctx.font = descriptionFont;
+        // Job role bold
+        const jobroleFont = fontManager.isFontRegistered('Open Sans Condensed', 'bold')
+            ? fontManager.getFontString(descSize, 'Open Sans Condensed', 'bold', 'Arial, sans-serif')
+            : "bold " + descSize + "px 'Arial', sans-serif";
+
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
 
@@ -301,95 +314,90 @@ async function generateCertificatePDFBuffer(certificate) {
         const jobroleText = `${certificate.jobrole}`;
         const internship = " Internship Program";
 
-        // Bold job role text: Montserrat SemiBold, 32 pt
-        const jobroleFont = fontManager.isFontRegistered('Montserrat', '600')
-            ? fontManager.getFontString(32, 'Montserrat', '600', 'Arial, sans-serif')
-            : "600 32px Arial, sans-serif";
-        const baseFont = descriptionFont;
-
-        // Measure widths with the same fonts used during rendering to avoid visible spacing gaps
-        ctx.font = baseFont;
+        ctx.font = descriptionFont;
         const baseWidth = ctx.measureText(baseText).width;
         const internshipWidth = ctx.measureText(internship).width;
         ctx.font = jobroleFont;
         const jobroleWidth = ctx.measureText(jobroleText).width;
 
-        // Calculate positions for proper alignment
         const totalWidth = baseWidth + jobroleWidth + internshipWidth;
         let startX = canvas.width / 2 - totalWidth / 2;
 
-        // Draw the base text with FontManager
-        ctx.font = baseFont;
-        ctx.fillText(baseText, startX + baseWidth / 2, canvas.height * 0.63);
+        ctx.font = descriptionFont;
+        ctx.fillText(baseText, startX + baseWidth / 2, canvas.height * 0.61);
 
-        // Draw the jobrole text in bold with increased size
         ctx.font = jobroleFont;
-        ctx.fillText(jobroleText, startX + baseWidth + jobroleWidth / 2, canvas.height * 0.63);
+        ctx.fillText(jobroleText, startX + baseWidth + jobroleWidth / 2, canvas.height * 0.61);
 
-        // Draw the internship text after jobrole text
-        ctx.font = baseFont;
-        ctx.fillText(internship, startX + baseWidth + jobroleWidth + internshipWidth / 2, canvas.height * 0.63);
+        ctx.font = descriptionFont;
+        ctx.fillText(internship, startX + baseWidth + jobroleWidth + internshipWidth / 2, canvas.height * 0.61);
 
-
-
-        // Second line: Montserrat Regular, 18 pt
-        const secondLineFont = descriptionFont;
-        ctx.font = secondLineFont;
+        // Second line:
+        ctx.font = descriptionFont;
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
         const description = "and in appreciation of outstanding commitment, professionalism, and dedication to both personal and professional growth.";
-        ctx.fillText(description, canvas.width / 2, canvas.height * 0.67);
-
-        // Add domain information if available
-        // if (certificate.domain) {
-        //     ctx.font = "18px Arial";
-        //     ctx.fillStyle = "#000";
-        //     ctx.fillText(`Domain: ${certificate.domain}`, canvas.width / 2, canvas.height * 0.65);
-        // }
-
+        ctx.fillText(description, canvas.width / 2, canvas.height * 0.655);
 
         // ==== QR CODE (bottom-left) ====
+        const qrSize = Math.floor(260 * scale);
         const qrCode = await loadImage(styledQrCodeBuffer);
-        const qrSize = 240;
-        const qrX = 145;
-        const qrY = canvas.height - qrSize - 130;
+        const qrX = canvas.width * 0.065;
+        const qrY = canvas.height * 0.73;
         ctx.drawImage(qrCode, qrX, qrY, qrSize, qrSize);
 
-        // ==== DATES & ID (positioned in the template's designated areas) ====
-        // Internship dates, ID and issue date: Montserrat Medium, 30 pt
-        const dateFont = fontManager.isFontRegistered('Montserrat', '500')
-            ? fontManager.getFontString(32, 'Montserrat', '500', 'Arial, sans-serif')
-            : "500 32px Arial, sans-serif";
-        ctx.font = dateFont;
-        ctx.fillStyle = "#fff";
-
-        // Left side - Internship dates
-        ctx.textAlign = "left";
-        const leftX = 1000;
-        const leftY = canvas.height - 245;
-        // ctx.fillText(`Internship Start Date:`, leftX, leftY);
-        ctx.fillText(new Date(certificate.fromDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }), leftX, leftY + 13);
-
-        // ctx.fillText(`Internship End Date:`, leftX, leftY + 50);
-        ctx.fillText(new Date(certificate.toDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }), leftX - 5, leftY + 73);
-
-        // Right side - Certificate details
-        const rightX = canvas.width - 400;
-        // ctx.fillText(`Id:`, rightX, leftY);
-        ctx.fillText(`${certificate._id}`, rightX - 210, leftY + 13);
-
-        // ctx.fillText(`Certificate Issue Date:`, rightX, leftY + 50);
-        ctx.fillText(new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }), rightX + 105, leftY + 73);
-
-        // Bottom note: Montserrat Light, 12 pt
-        // const bottomNoteFont = fontManager.isFontRegistered('Montserrat', '300')
-        //     ? fontManager.getFontString(12, 'Montserrat', '300', 'Arial, sans-serif')
-        //     : "300 12px Arial, sans-serif";
-        // ctx.font = bottomNoteFont;
-        // ctx.fillStyle = "#fff";
+        // Verify text under QR code
+        // ctx.font = fontManager.getFontString(Math.floor(40 * scale), 'Open Sans Condensed', 'normal', 'Arial');
+        // ctx.fillStyle = "#ccc";
         // ctx.textAlign = "center";
-        // ctx.fillText("Scan the QR code to verify this certificate online.", canvas.width / 2, canvas.height - 42);
+        // ctx.fillText("Can Be Verified At", qrX + qrSize / 2, qrY + qrSize + Math.floor(45 * scale));
+        // ctx.fillText(`https://careers.omsoftwares.in/verify`, qrX + qrSize / 2, qrY + qrSize + Math.floor(85 * scale));
 
+        // ==== DATES & ID ====
+        // OPEN SANS CONDENSED(70)
+        const dateSize = Math.floor(33 * scale);
+        const dateFont = fontManager.isFontRegistered('Open Sans Condensed')
+            ? fontManager.getFontString(dateSize, 'Open Sans Condensed', 'normal', 'Arial, sans-serif')
+            : dateSize + "px 'Arial', sans-serif";
+        const jobroleValueFont = fontManager.isFontRegistered('Open Sans Condensed', 'bold')
+            ? fontManager.getFontString(dateSize, 'Open Sans Condensed', 'bold', 'Arial, sans-serif')
+            : "bold " + dateSize + "px 'Arial', sans-serif";
+
+        ctx.fillStyle = "#ccc";
+        ctx.textAlign = "left";
+
+        // Exact calculated positions mapping for the date text based on template
+        const leftColX = canvas.width * 0.28;
+        const rightColX = canvas.width * 0.63;
+        const topRowY = canvas.height * 0.83;
+        const bottomRowY = canvas.height * 0.88;
+
+        const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+
+        const drawLabelValue = (label, value, x, y) => {
+            ctx.font = dateFont;
+            ctx.fillStyle = "#fff";
+            const labelW = ctx.measureText(label).width;
+            ctx.fillText(label, x, y);
+            ctx.fillText(value, x + labelW, y);
+        };
+
+        drawLabelValue("Internship Start Date: ", formatDate(certificate.fromDate), leftColX, topRowY);
+        drawLabelValue("Internship End Date: ", formatDate(certificate.toDate), leftColX, bottomRowY);
+        drawLabelValue("Id: ", `${certificate._id}`, rightColX, topRowY);
+        drawLabelValue("Certificate Issue Date: ", formatDate(new Date()), rightColX, bottomRowY);
+
+        // Bottom note: small font
+        // const bottomNoteSize = Math.floor(35 * scale);
+        // const bottomNoteFont = fontManager.isFontRegistered('Open Sans Condensed')
+        //     ? fontManager.getFontString(bottomNoteSize, 'Open Sans Condensed', 'normal', 'Arial, sans-serif')
+        //     : bottomNoteSize + "px 'Arial', sans-serif";
+        // ctx.font = bottomNoteFont;
+        // ctx.fillStyle = "#999";
+        // ctx.textAlign = "center";
+
+        // ctx.fillText("Note: This is a digitally issued certificate and is valid without a physical signature. It can be verified via the QR code provided.", 
+        //              canvas.width * 0.55, canvas.height * 0.97);
 
         // ==== CONVERT TO PDF ====
         const doc = new PDFDocument({ size: 'A4', layout: 'landscape' });

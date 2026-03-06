@@ -65,6 +65,9 @@ class FontManager {
             { file: "GreatVibes-Regular.ttf", family: "Great Vibes", weight: "normal" },
             { file: "DancingScript-Regular.ttf", family: "Dancing Script", weight: "normal" },
             { file: "DancingScript-Bold.ttf", family: "Dancing Script", weight: "bold" },
+            { file: "OpenSansCondensed-Light.ttf", family: "Open Sans Condensed", weight: "300" },
+            { file: "OpenSansCondensed-Light.ttf", family: "Open Sans Condensed", weight: "normal" },
+            { file: "OpenSansCondensed-Bold.ttf", family: "Open Sans Condensed", weight: "bold" },
         ];
 
         let registeredCount = 0;

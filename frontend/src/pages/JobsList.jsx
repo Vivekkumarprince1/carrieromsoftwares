@@ -24,11 +24,11 @@ const Jobs = () => {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [searchExpanded, setSearchExpanded] = useState(false);
   const searchInputRef = useRef(null);
-  
+
   // States for confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [jobToDelete, setJobToDelete] = useState(null);
-  
+
   // Handle window resize for responsive view mode
   useEffect(() => {
     const handleResize = () => {
@@ -38,11 +38,11 @@ const Jobs = () => {
         setSearchExpanded(false);
       }
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [searchExpanded]);
-  
+
   // Focus search input when expanded
   useEffect(() => {
     if (searchExpanded && searchInputRef.current) {
@@ -61,32 +61,32 @@ const Jobs = () => {
         }
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [searchExpanded]);
-  
+
   // Add scroll listener for enhanced UI experiences
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolling(window.scrollY > 50);
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
+
   // Handle success message from application submission
   useEffect(() => {
     if (location.state?.success && location.state?.message) {
       setSuccessMessage(location.state.message);
-      
+
       const timer = setTimeout(() => {
         setSuccessMessage('');
         // Clear the location state
         navigate('.', { replace: true, state: {} });
       }, 2000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [location, navigate]);
@@ -110,7 +110,7 @@ const Jobs = () => {
           return newProgress > 90 ? 90 : newProgress;
         });
       }, 200);
-      
+
       return () => {
         clearInterval(interval);
         setLoadingProgress(100);
@@ -124,7 +124,7 @@ const Jobs = () => {
     try {
       const response = await jobService.getAllJobs();
       setJobs(response.data);
-      
+
       // If user is logged in, check application status for all jobs
       if (currentUser) {
         await checkAllApplicationStatuses(response.data);
@@ -138,7 +138,7 @@ const Jobs = () => {
 
   const checkAllApplicationStatuses = async (jobList) => {
     const statuses = {};
-    
+
     // Check application status for each job
     await Promise.all(jobList.map(async (job) => {
       try {
@@ -149,7 +149,7 @@ const Jobs = () => {
         statuses[job._id] = { hasApplied: false };
       }
     }));
-    
+
     setApplicationStatuses(statuses);
   };
 
@@ -158,7 +158,7 @@ const Jobs = () => {
     if (!status || !status.hasApplied) {
       return { hasApplied: false, canApply: true };
     }
-    
+
     return {
       hasApplied: true,
       canApply: status.status === 'rejected',
@@ -169,11 +169,11 @@ const Jobs = () => {
 
   const renderApplyButton = (job, isCompact = false) => {
     const statusInfo = getApplicationStatusInfo(job._id);
-    
+
     if (!statusInfo.hasApplied) {
       // User hasn't applied yet
       return (
-        <button 
+        <button
           className={`bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white ${isCompact ? 'px-4 py-2' : 'px-8 py-3 w-full'} rounded-lg font-medium transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 shadow-lg hover:shadow-yellow-600/20 flex items-center justify-center gap-2`}
           onClick={(e) => {
             if (isCompact) e.stopPropagation();
@@ -189,7 +189,7 @@ const Jobs = () => {
     } else if (statusInfo.canApply) {
       // User can reapply (previous application was rejected)
       return (
-        <button 
+        <button
           className={`bg-gradient-to-r from-yellow-600 to-orange-700 hover:from-yellow-500 hover:to-orange-600 text-white ${isCompact ? 'px-4 py-2' : 'px-8 py-3 w-full'} rounded-lg font-medium transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 shadow-lg hover:shadow-orange-600/20 flex items-center justify-center gap-2`}
           onClick={(e) => {
             if (isCompact) e.stopPropagation();
@@ -205,7 +205,7 @@ const Jobs = () => {
     } else {
       // User has applied and cannot apply again
       return (
-        <button 
+        <button
           className={`bg-gradient-to-r from-gray-600 to-gray-700 text-gray-300 ${isCompact ? 'px-4 py-2' : 'px-8 py-3 w-full'} rounded-lg font-medium cursor-not-allowed opacity-75 flex items-center justify-center gap-2`}
           disabled
         >
@@ -238,7 +238,7 @@ const Jobs = () => {
 
   const confirmDelete = async () => {
     if (!jobToDelete) return;
-    
+
     try {
       await jobService.deleteJob(jobToDelete.id);
       setJobs(jobs.filter(job => job._id !== jobToDelete.id));
@@ -247,10 +247,10 @@ const Jobs = () => {
       }
       setShowDeleteModal(false);
       setJobToDelete(null);
-      
+
       // Show success message
       setSuccessMessage(`Job "${jobToDelete.title}" deleted successfully`);
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage('');
@@ -274,7 +274,7 @@ const Jobs = () => {
       setError(`You have already applied for this job. Current status: ${appStatus.status}. You can only apply again if your application is rejected.`);
       return;
     }
-    
+
     navigate(`/apply/${job._id}`);
   };
 
@@ -282,11 +282,11 @@ const Jobs = () => {
     navigate(`/jobs/edit/${jobId}?tab=applications`);
   };
 
-  const filteredJobs = jobs.filter(job => 
+  const filteredJobs = jobs.filter(job =>
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.location.toLowerCase().includes(searchTerm.toLowerCase())
-  ).filter(job => 
+  ).filter(job =>
     filterType ? job.type === filterType : true
   ).sort((a, b) => {
     if (sortBy === 'newest') {
@@ -366,7 +366,7 @@ const Jobs = () => {
           </div>
         </div>
       )}
-      
+
       {/* Hero Section with Background Image */}
       <div className="relative mb-6 rounded-2xl overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 via-purple-900/80 to-gray-900/90 z-10 opacity-80"></div>
@@ -378,7 +378,7 @@ const Jobs = () => {
           <p className="text-gray-200 text-lg md:text-xl max-w-2xl mx-auto mb-8 leading-relaxed">
             Explore exciting job opportunities tailored for your skills and ambitions
           </p>
-          
+
           {/* Search Box in Hero */}
           <div className="max-w-3xl mx-auto">
             <div className="relative flex items-center">
@@ -393,7 +393,7 @@ const Jobs = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               {searchTerm && (
-                <button 
+                <button
                   className="absolute right-4 text-gray-300 hover:text-white focus:outline-none"
                   onClick={() => setSearchTerm('')}
                 >
@@ -406,20 +406,20 @@ const Jobs = () => {
           </div>
         </div>
       </div>
-      
-      {error && 
+
+      {error &&
         <div className="bg-red-900/40 border border-red-500 text-red-100 px-4 py-3 rounded-lg mb-6 animate-fade-in">
           <p>{error}</p>
         </div>
       }
-      
+
       {/* Filter and Sort Controls */}
       <div className="bg-gradient-to-r from-gray-900/95 to-gray-800/95 rounded-xl overflow-hidden shadow-xl border border-gray-700/50 backdrop-blur-md mb-6 transform hover:scale-[1.01] transition-all duration-300">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between p-4 gap-4">
           {/* Left side - Filter controls */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full lg:w-auto">
             <div className="relative group flex-1 sm:flex-none">
-              <select 
+              <select
                 className="appearance-none bg-gray-800/80 border border-gray-700/80 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/70 focus:border-transparent transition-all duration-300 pr-10 hover:bg-gray-700/80 cursor-pointer w-full sm:w-auto min-w-0 sm:min-w-[180px]"
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
@@ -436,7 +436,7 @@ const Jobs = () => {
                 </svg>
               </div>
             </div>
-            
+
             <div className="relative group flex-1 sm:flex-none">
               <select
                 className="appearance-none bg-gray-800/80 border border-gray-700/80 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/70 focus:border-transparent transition-all duration-300 pr-10 hover:bg-gray-700/80 cursor-pointer w-full sm:w-auto min-w-0 sm:min-w-[160px]"
@@ -456,11 +456,11 @@ const Jobs = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Right side - Admin controls */}
           <div className="flex items-center justify-center lg:justify-end w-full lg:w-auto">
             {currentUser && currentUser.role === 'admin' && (
-              <button 
+              <button
                 onClick={handleAdd}
                 className="bg-green-600 text-white px-4 sm:px-5 py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 relative overflow-hidden group w-full sm:w-auto"
               >
@@ -499,7 +499,7 @@ const Jobs = () => {
                 <span>Loading Jobs...</span>
               </h2>
               <div className="w-24 bg-gray-700 h-2.5 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-yellow-400 to-amber-600 transition-all duration-300"
                   style={{ width: `${loadingProgress}%` }}
                 ></div>
@@ -536,8 +536,8 @@ const Jobs = () => {
               </svg>
               <h3 className="text-xl font-medium text-white mb-2">No matching jobs found</h3>
               <p className="text-gray-400 text-center max-w-md">Try adjusting your search criteria or browse all available positions</p>
-              <button 
-                onClick={() => {setSearchTerm(''); setFilterType('');}}
+              <button
+                onClick={() => { setSearchTerm(''); setFilterType(''); }}
                 className="mt-6 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
               >
                 <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -550,13 +550,13 @@ const Jobs = () => {
         ) : (
           <div className="space-y-6">
             {filteredJobs.map((job, index) => (
-              <div 
-                key={job._id} 
+              <div
+                key={job._id}
                 className={`bg-gradient-to-r from-gray-900/95 to-gray-800/90 border border-gray-700/50 hover:border-gray-600/70 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl shadow-lg ${expandedJobId === job._id ? 'ring-2 ring-yellow-500/50' : ''} ${animateList ? 'animate-fade-in-up' : 'opacity-0'}`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div>
-                  <div 
+                  <div
                     className="p-5 flex md:flex-row justify-between gap-4 relative cursor-pointer"
                     onClick={() => handleToggleJobDetails(job._id)}
                   >
@@ -569,7 +569,7 @@ const Jobs = () => {
                       {job.imageUrl ? (
                         <div className="hidden sm:block">
                           <div className="h-20 w-20 rounded-lg overflow-hidden shadow-md bg-gradient-to-br from-gray-800 to-gray-700 p-1">
-                            <img 
+                            <img
                               src={getImageUrl(job.imageUrl)}
                               alt={job.title}
                               className="h-full w-full object-cover rounded-md transition-transform duration-500 hover:scale-110"
@@ -633,7 +633,7 @@ const Jobs = () => {
                       )}
                       {currentUser && currentUser.role === 'admin' && (
                         <div className="hidden md:flex gap-2">
-                          <button 
+                          <button
                             className="bg-blue-900/80 hover:bg-blue-800 text-white px-3 py-2 rounded-lg transition duration-300 ease-in-out flex items-center gap-1 hover:shadow-md"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -646,7 +646,7 @@ const Jobs = () => {
                             </svg>
                             <span className="hidden sm:inline ml-1">Applications</span>
                           </button>
-                          <button 
+                          <button
                             className="bg-amber-900/80 hover:bg-amber-800 text-white px-3 py-2 rounded-lg transition duration-300 ease-in-out flex items-center gap-1 hover:shadow-md"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -659,7 +659,7 @@ const Jobs = () => {
                             </svg>
                             <span className="hidden sm:inline ml-1">Edit</span>
                           </button>
-                          <button 
+                          <button
                             className="bg-red-900/80 hover:bg-red-800 text-white px-3 py-2 rounded-lg transition duration-300 ease-in-out flex items-center gap-1 hover:shadow-md"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -674,7 +674,7 @@ const Jobs = () => {
                           </button>
                         </div>
                       )}
-                      <button 
+                      <button
                         className="bg-gray-700/80 hover:bg-gray-600/80 text-white rounded-full p-2 transition duration-300 ease-in-out"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -682,10 +682,10 @@ const Jobs = () => {
                         }}
                         aria-label={expandedJobId === job._id ? "Collapse job details" : "Expand job details"}
                       >
-                        <svg 
-                          className={`w-5 h-5 transition-transform duration-300 ${expandedJobId === job._id ? 'transform rotate-180' : ''}`} 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          viewBox="0 0 20 20" 
+                        <svg
+                          className={`w-5 h-5 transition-transform duration-300 ${expandedJobId === job._id ? 'transform rotate-180' : ''}`}
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
                           fill="currentColor"
                         >
                           <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -693,7 +693,7 @@ const Jobs = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Mobile bottom section with full-width apply button */}
                   <div className="md:hidden border-t border-gray-700/50 px-5 py-4">
                     <div className="flex flex-col gap-3">
@@ -704,7 +704,7 @@ const Jobs = () => {
                       )}
                       {currentUser && currentUser.role === 'admin' && (
                         <div className="flex gap-2 justify-center">
-                          <button 
+                          <button
                             className="bg-blue-900/80 hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition duration-300 ease-in-out flex items-center gap-1 hover:shadow-md flex-1"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -717,7 +717,7 @@ const Jobs = () => {
                             </svg>
                             <span className="ml-1">Applications</span>
                           </button>
-                          <button 
+                          <button
                             className="bg-amber-900/80 hover:bg-amber-800 text-white px-4 py-2 rounded-lg transition duration-300 ease-in-out flex items-center gap-1 hover:shadow-md flex-1"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -730,7 +730,7 @@ const Jobs = () => {
                             </svg>
                             <span className="ml-1">Edit</span>
                           </button>
-                          <button 
+                          <button
                             className="bg-red-900/80 hover:bg-red-800 text-white px-4 py-2 rounded-lg transition duration-300 ease-in-out flex items-center gap-1 hover:shadow-md flex-1"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -764,7 +764,7 @@ const Jobs = () => {
                           <p className="text-gray-300 leading-relaxed whitespace-pre-line">{job.description}</p>
                         </div>
                       </div>
-                      
+
                       <div className="bg-gray-800/30 rounded-xl p-5 border border-gray-700/50">
                         <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
                           <svg className="w-5 h-5 mr-2 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -788,7 +788,7 @@ const Jobs = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     {currentUser && (
                       <div className="pt-4 flex justify-center">
                         {renderApplyButton(job, false)}
@@ -800,7 +800,7 @@ const Jobs = () => {
             ))}
           </div>
         )}
-        
+
         {!currentUser && (
           <div className="bg-gradient-to-r from-yellow-900/40 to-amber-900/30 border border-yellow-600/50 rounded-xl overflow-hidden shadow-lg backdrop-blur-sm p-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -809,14 +809,14 @@ const Jobs = () => {
                 <p className="text-yellow-100">Sign in to your account or create a new one to start your career journey.</p>
               </div>
               <div className="flex gap-3">
-                <Link 
-                  to="/login" 
+                <Link
+                  to="/login"
                   className="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-2 rounded-lg transition duration-300 ease-in-out shadow-md hover:shadow-lg"
                 >
                   Sign In
                 </Link>
-                <Link 
-                  to="/register" 
+                <Link
+                  to="/register"
                   className="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2 rounded-lg transition duration-300 ease-in-out shadow-md hover:shadow-lg"
                 >
                   Create Account
