@@ -245,18 +245,7 @@ const EmployeeProfile = () => {
   }, [recommendations]);
 
   if (loading || !currentUser) {
-    return (
-      <div className="min-h-screen bg-black py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
-            <p className="mt-4 text-gray-300">
-              {!currentUser ? 'Checking authentication...' : 'Loading employee profile...'}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Check if user has proper permissions
@@ -465,21 +454,6 @@ const EmployeeProfile = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Loading Application */}
-                {loadingApplication && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-center py-6"
-                  >
-                    <div className="flex justify-center mb-3">
-                      <FaSpinner className="w-8 h-8 text-blue-400 animate-spin" />
-                    </div>
-                    <p className="text-gray-400 text-sm">Loading application details...</p>
-                  </motion.div>
-                )}
-
                 {/* Application Preview */}
                 {selectedApplication && !loadingApplication && (
                   <motion.div 

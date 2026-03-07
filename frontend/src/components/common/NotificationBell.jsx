@@ -181,12 +181,7 @@ const NotificationBell = ({ onNotificationUpdate }) => {
 
           {/* Content */}
           <div className="max-h-96 overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <span className="ml-2 text-gray-600">Loading...</span>
-              </div>
-            ) : error ? (
+            {loading ? null : error ? (
               <div className="px-4 py-6 text-center text-red-600">
                 {error}
               </div>

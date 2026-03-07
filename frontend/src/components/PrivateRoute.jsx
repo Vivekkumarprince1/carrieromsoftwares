@@ -7,7 +7,7 @@ const PrivateRoute = ({ children }) => {
   const location = useLocation();
 
   if (loading) {
-    return <div className="text-center p-5">Loading...</div>;
+    return null;
   }
 
   // Check if token exists but is expired

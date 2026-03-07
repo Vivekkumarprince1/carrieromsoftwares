@@ -218,11 +218,7 @@ const OfferAcceptance = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-primary-black flex items-center justify-center">
-        <div className="text-white text-xl">Loading offer details...</div>
-      </div>
-    );
+    return null;
   }
 
   if (error && !offerLetter) {

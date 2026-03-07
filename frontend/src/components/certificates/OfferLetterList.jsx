@@ -99,14 +99,7 @@ const OfferLetterList = ({
   };
 
   if (loading) {
-    return (
-      <div className="bg-secondary-black rounded-lg shadow-md border border-dark-gray p-6">
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lime-400"></div>
-          <span className="ml-3 text-white">Loading offer letters...</span>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (!offerLetters || offerLetters.length === 0) {

@@ -163,14 +163,7 @@ const ApplicationsDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-black p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col items-center justify-center p-8">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
-          <p className="mt-4 text-gray-300 font-medium">Loading dashboard data...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const icons = {

@@ -1,10 +1,16 @@
 const Certificate = require("../models/certificate");
 const User = require("../models/user");
 const fs = require("fs");
+const mongoose = require("mongoose");
 const path = require("path");
 const QRCode = require("qrcode");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
+
+function normalizeCertificateLookupId(rawCertificateId = "") {
+    const normalizedCertificateId = String(rawCertificateId).trim().replace(/^OM[-\s]*/i, "");
+    return normalizedCertificateId;
+}
 
 function resolveBackendAssetPath(...segments) {
     const candidates = [
@@ -62,7 +68,7 @@ exports.issue = async (req, res) => {
         // Don't generate PDF immediately - generate only when needed
         res.status(201).json({
             message: "Certificate issued successfully",
-            certificateId: savedCertificate._id,
+            certificateId: `OM-${savedCertificate._id}`,
             certificateUrl: `/certificates/${savedCertificate._id}.pdf`
         });
 
@@ -75,7 +81,11 @@ exports.issue = async (req, res) => {
 exports.verifyCertificate = async (req, res) => {
     console.log(`Verify: ${req.params.id}`);
     try {
-        const certId = req.params.id;
+        const certId = normalizeCertificateLookupId(req.params.id);
+
+        if (!mongoose.Types.ObjectId.isValid(certId)) {
+            return res.status(400).json({ message: "Invalid certificate ID" });
+        }
 
         console.log(`Finding: ${certId}`);
         const certificate = await Certificate.findById(certId).populate("userId", "name email");
@@ -168,7 +178,7 @@ exports.generateCertificate = async (req, res) => {
 
         res.status(200).json({
             message: "Certificate generated successfully",
-            certificateId: certificate._id,
+            certificateId: `OM-${certificate._id}`,
             certificateUrl: `/certificates/${certificate._id}.pdf`
         });
     } catch (error) {
@@ -351,7 +361,7 @@ async function generateCertificatePDFBuffer(certificate) {
 
         drawLabelValue("Internship Start Date: ", formatDate(certificate.fromDate), leftColX, topRowY);
         drawLabelValue("Internship End Date: ", formatDate(certificate.toDate), leftColX, bottomRowY);
-        drawLabelValue("Id: ", `${certificate._id}`, rightColX, topRowY);
+        drawLabelValue("Id: ", `OM-${certificate._id}`, rightColX, topRowY);
         drawLabelValue("Certificate Issue Date: ", formatDate(new Date()), rightColX, bottomRowY);
 
         // Finalize PDF

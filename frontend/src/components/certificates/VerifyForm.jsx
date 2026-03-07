@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { certificateService } from '../../services/api';
 import { format } from 'date-fns';
 
+const normalizeCertificateId = (value = '') => value.trim();
+
 const VerifyForm = ({ certificateId: propCertificateId }) => {
   const [certificateId, setCertificateId] = useState(propCertificateId || '');
   const [loading, setLoading] = useState(false);
@@ -11,19 +13,25 @@ const VerifyForm = ({ certificateId: propCertificateId }) => {
   // Auto-verify when certificateId is provided via props
   useEffect(() => {
     if (propCertificateId && propCertificateId.trim()) {
-      setCertificateId(propCertificateId);
+      setCertificateId(normalizeCertificateId(propCertificateId));
       // Auto-verify the certificate
       verifyAutomatically(propCertificateId);
     }
   }, [propCertificateId]);
 
   const verifyAutomatically = async (id) => {
+    const normalizedId = normalizeCertificateId(id);
+
+    if (!normalizedId) {
+      return;
+    }
+
     setLoading(true);
     setError('');
     setCertificate(null);
     
     try {
-      const response = await certificateService.verifyCertificate(id);
+      const response = await certificateService.verifyCertificate(normalizedId);
       setCertificate(response.data.certificate);
     } catch (err) {
       setError(err.response?.data?.message || 'Certificate verification failed');
@@ -42,9 +50,11 @@ const VerifyForm = ({ certificateId: propCertificateId }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!certificateId.trim()) return;
+    const normalizedId = normalizeCertificateId(certificateId);
+    if (!normalizedId) return;
     
-    await verifyAutomatically(certificateId);
+    setCertificateId(normalizedId);
+    await verifyAutomatically(normalizedId);
   };
 
   const handleDownload = async () => {
@@ -93,12 +103,15 @@ const VerifyForm = ({ certificateId: propCertificateId }) => {
             <input
               id="certificateId"
               type="text"
-              placeholder="Enter certificate ID to verify"
+              placeholder="Enter certificate ID, with or without OM prefix"
               value={certificateId}
               onChange={handleChange}
               required
               className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
             />
+            <p className="mt-2 text-sm text-gray-400">
+              Example: <span className="text-gray-300">OM-123...</span> or <span className="text-gray-300">123...</span>
+            </p>
           </div>
           <button 
             type="submit" 
@@ -108,13 +121,6 @@ const VerifyForm = ({ certificateId: propCertificateId }) => {
             {loading ? 'Verifying...' : 'Verify Certificate'}
           </button>
         </form>
-
-        {loading && (
-          <div className="flex justify-center my-6">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-lime-400"></div>
-            <span className="sr-only">Loading...</span>
-          </div>
-        )}
 
         {error && (
           <div className="mt-4 p-4 bg-red-900/30 border border-red-500/30 rounded-md text-red-400">

@@ -1,11 +1,24 @@
 import React, { useState, useCallback, memo } from 'react';
 import { applicationService } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare, Target, CheckCircle, FileText, Layers, Star } from 'lucide-react';
 
 const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
   const [fileUploading, setFileUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [focused, setFocused] = useState(false);
+
+  const getQuestionIcon = () => {
+    const iconClass = "w-5 h-5";
+    switch (question.questionType) {
+      case 'text': return <MessageSquare className={iconClass} />;
+      case 'multipleChoice': return <Target className={iconClass} />;
+      case 'checkbox': return <Layers className={iconClass} />;
+      case 'file': return <FileText className={iconClass} />;
+      case 'rating': return <Star className={iconClass} />;
+      default: return <CheckCircle className={iconClass} />;
+    }
+  };
 
   const handleTextChange = useCallback((e) => {
     onChange(question._id, e.target.value);
@@ -73,53 +86,59 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
     switch (question.questionType) {
       case 'text':
         return (
-          <textarea
-            className={`w-full px-6 py-4.5 bg-white/5 border ${focused ? 'border-lime-brand/50 bg-white/10 ring-4 ring-lime-brand/5' : 'border-white/10'} 
-                      rounded-2xl text-white transition-all duration-300 shadow-inner font-medium resize-none text-sm
-                      focus:outline-none ${error ? 'border-red-500/50 bg-red-500/5' : ''}`}
-            rows="3"
-            value={value?.answer || ''}
-            onChange={handleTextChange}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            required={question.required}
-            placeholder="Type your response here..."
-          />
+          <div className="relative group">
+            <textarea
+              className={`w-full px-8 py-7 bg-black/40 border-2 ${focused ? 'border-lime-brand/50 bg-lime-brand/[0.02] shadow-[0_0_50px_rgba(163,198,20,0.15)]' : 'border-white/5'} 
+                        rounded-[2.5rem] text-white transition-all duration-700 shadow-[inset_0_4px_20px_rgba(0,0,0,0.8)] font-medium resize-none text-base
+                        focus:outline-none placeholder:text-white/10 ${error ? 'border-red-500/50 bg-red-500/5' : ''}`}
+              rows="5"
+              value={value?.answer || ''}
+              onChange={handleTextChange}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              required={question.required}
+              placeholder="Deep dive into your response..."
+            />
+            <div className={`absolute bottom-6 right-8 text-[10px] font-black uppercase tracking-widest transition-opacity duration-500 ${focused ? 'opacity-40 text-lime-brand' : 'opacity-0'}`}>
+              Syncing Input...
+            </div>
+          </div>
         );
 
       case 'multipleChoice':
         return (
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
             {question.options.map((option, index) => (
               <label
                 key={index}
-                className={`flex items-center p-4 rounded-2xl border cursor-pointer transition-all duration-300 group ${value?.answer === option
-                    ? 'bg-lime-brand/10 border-lime-brand/50 shadow-glow-lime/10'
-                    : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
+                className={`flex items-center p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] border cursor-pointer transition-all duration-700 group relative overflow-hidden glass-surface-interactive ${value?.answer === option
+                  ? 'bg-lime-brand/10 border-lime-brand/50 shadow-[0_20px_50px_rgba(163,198,20,0.2)] scale-[1.03]'
+                  : 'border-white/[0.05] hover:border-white/20'
                   }`}
               >
-                <div className="relative flex-shrink-0">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-lime-brand/10 rounded-full blur-[100px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                <div className="relative flex-shrink-0 z-20">
                   <input
                     type="radio"
-                    className="peer absolute opacity-0 w-6 h-6 cursor-pointer"
+                    className="peer absolute opacity-0 w-8 h-8 cursor-pointer"
                     name={`question_${question._id}`}
                     value={option}
                     checked={value?.answer === option}
                     onChange={handleRadioChange}
                     required={question.required && !value?.answer}
                   />
-                  <div className={`w-6 h-6 border-2 rounded-full transition-all flex items-center justify-center ${value?.answer === option ? 'border-lime-brand' : 'border-white/20 group-hover:border-white/40'
+                  <div className={`w-8 h-8 border-2 rounded-full transition-all duration-500 flex items-center justify-center ${value?.answer === option ? 'border-lime-brand bg-white shadow-[0_0_20px_rgba(255,255,255,0.4)]' : 'border-white/10 group-hover:border-white/30'
                     }`}>
                     {value?.answer === option && (
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="w-3 h-3 bg-lime-brand rounded-full shadow-glow-lime"
+                        className="w-3.5 h-3.5 bg-black rounded-full"
                       />
                     )}
                   </div>
                 </div>
-                <span className={`ml-4 text-sm font-bold transition-colors ${value?.answer === option ? 'text-lime-brand' : 'text-gray-400 group-hover:text-white'}`}>
+                <span className={`ml-6 text-lg font-black tracking-tight transition-colors relative z-20 ${value?.answer === option ? 'text-white' : 'text-white/30 group-hover:text-white/60'}`}>
                   {option}
                 </span>
               </label>
@@ -129,32 +148,33 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
 
       case 'checkbox':
         return (
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
             {question.options.map((option, index) => {
               const checked = Array.isArray(value?.answer) && value.answer.includes(option);
               return (
                 <label
                   key={index}
-                  className={`flex items-center p-4 rounded-2xl border cursor-pointer transition-all duration-300 group ${checked
-                      ? 'bg-lime-brand/10 border-lime-brand/50 shadow-glow-lime/10'
-                      : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
+                  className={`flex items-center p-6 sm:p-7 rounded-[2rem] sm:rounded-[2.5rem] border cursor-pointer transition-all duration-700 group relative overflow-hidden glass-surface-interactive ${checked
+                    ? 'bg-lime-brand/10 border-lime-brand/40 shadow-[0_15px_40px_rgba(163,198,20,0.15)] scale-[1.02]'
+                    : 'border-white/[0.05] hover:border-white/20'
                     }`}
                 >
-                  <div className="relative flex-shrink-0">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-lime-brand/5 rounded-full blur-3xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                  <div className="relative flex-shrink-0 z-20">
                     <input
                       type="checkbox"
-                      className="peer absolute opacity-0 w-6 h-6 cursor-pointer"
+                      className="peer absolute opacity-0 w-8 h-8 cursor-pointer"
                       value={option}
                       checked={checked}
                       onChange={handleCheckboxChange}
                     />
-                    <div className={`w-6 h-6 border-2 rounded-lg transition-all flex items-center justify-center ${checked ? 'border-lime-brand bg-lime-brand/20' : 'border-white/20 group-hover:border-white/40'
+                    <div className={`w-8 h-8 border-2 rounded-2xl transition-all duration-500 flex items-center justify-center ${checked ? 'border-lime-brand bg-white' : 'border-white/10 group-hover:border-white/30'
                       }`}>
                       {checked && (
                         <motion.svg
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
-                          className="w-4 h-4 text-lime-brand"
+                          className="w-5 h-5 text-black"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -163,7 +183,7 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
                       )}
                     </div>
                   </div>
-                  <span className={`ml-4 text-sm font-bold transition-colors ${checked ? 'text-lime-brand' : 'text-gray-400 group-hover:text-white'}`}>
+                  <span className={`ml-6 text-base font-black tracking-tight transition-colors relative z-20 ${checked ? 'text-white' : 'text-white/20 group-hover:text-white/50'}`}>
                     {option}
                   </span>
                 </label>
@@ -175,26 +195,25 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
       case 'file':
         return (
           <div>
-            <div className={`relative group cursor-pointer transition-all duration-500 border-2 border-dashed rounded-2xl p-6 hover:bg-lime-brand/5 ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10 hover:border-lime-brand/50 bg-white/5'
+            <div className={`relative group cursor-pointer transition-all duration-700 border-2 border-dashed rounded-[2.5rem] p-10 hover:bg-lime-brand/5 ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/5 hover:border-lime-brand/30 bg-black/40 shadow-[inset_0_4px_30px_rgba(0,0,0,0.8)]'
               }`}>
+              <div className="absolute inset-0 bg-lime-brand/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
               <input
                 type="file"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 onChange={handleFileChange}
                 required={question.required && !value?.fileUrl}
               />
-              <div className="flex items-center space-x-4">
-                <div className={`p-4 rounded-xl transition-all ${value?.fileUrl ? 'bg-lime-brand text-black' : 'bg-white/10 text-gray-400 group-hover:text-lime-brand'}`}>
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
+              <div className="flex flex-col items-center justify-center text-center relative z-20">
+                <div className={`mb-6 p-7 rounded-3xl transition-all duration-500 shadow-2xl ${value?.fileUrl ? 'bg-lime-brand text-black scale-110' : 'bg-white/5 text-gray-500 group-hover:bg-lime-brand group-hover:text-black group-hover:rotate-12'}`}>
+                  <FileText className="w-8 h-8" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white mb-1">
-                    {value?.fileUrl ? value.answer : 'Attach Supporting Document'}
+                  <p className="text-xl font-black text-white mb-2 tracking-tight uppercase">
+                    {value?.fileUrl ? value.answer : 'Transmission Interface'}
                   </p>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black">
-                    {value?.fileUrl ? 'Click to replace' : 'PDF, DOC, DOCX (Max 10MB)'}
+                  <p className="text-[10px] text-white/20 uppercase tracking-[0.3em] font-black group-hover:text-lime-brand transition-colors">
+                    {value?.fileUrl ? 'Signal Received / Re-upload to overwrite' : 'Supporting Evidence Protocol / Max 10MB'}
                   </p>
                 </div>
               </div>
@@ -227,32 +246,50 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
       case 'rating':
         const maxRating = question.maxRating || 5;
         return (
-          <div className="mt-4">
-            <div className="flex flex-wrap gap-3">
+          <div className="mt-8">
+            <div className="flex flex-wrap gap-5">
               {[...Array(maxRating)].map((_, index) => {
                 const ratingValue = index + 1;
                 const isActive = value?.answer >= ratingValue;
+                const isSelected = value?.answer === ratingValue;
                 return (
                   <motion.button
                     key={index}
                     type="button"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className={`w-12 h-12 flex items-center justify-center rounded-2xl font-black text-sm transition-all duration-300
+                    whileHover={{ scale: 1.15, y: -5 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`w-14 h-14 sm:w-20 sm:h-20 flex flex-col items-center justify-center rounded-[1.5rem] sm:rounded-[2rem] font-black transition-all duration-700 relative overflow-hidden group
                               ${isActive
-                        ? 'bg-lime-brand text-black shadow-glow-lime/20'
-                        : 'bg-white/5 text-gray-500 border border-white/5 hover:border-lime-brand/30 hover:text-lime-brand'}`}
+                        ? 'bg-lime-brand text-black shadow-[0_20px_40px_rgba(163,198,20,0.3)]'
+                        : 'bg-white/[0.02] text-white/20 border-2 border-white/[0.03] hover:border-lime-brand/30 hover:text-white/60 hover:bg-white/[0.05]'}`}
                     onClick={() => handleRatingChange(ratingValue)}
                     aria-label={`Rate ${ratingValue} out of ${maxRating}`}
                   >
-                    {ratingValue}
+                    <span className={`text-lg sm:text-2xl relative z-10 ${isActive ? 'opacity-100' : 'opacity-40'}`}>{ratingValue}</span>
+                    {isSelected && (
+                      <motion.div
+                        layoutId="active-glow"
+                        className="absolute inset-0 bg-white/20 blur-xl rounded-full"
+                      />
+                    )}
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-indicator"
+                        className="absolute bottom-2"
+                      >
+                        <div className="w-1.5 h-1.5 bg-black rounded-full opacity-40" />
+                      </motion.div>
+                    )}
                   </motion.button>
                 );
               })}
             </div>
-            <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-gray-500">
-              {value?.answer ? `Currently selected: ${value.answer} / ${maxRating}` : 'Select your proficiency level'}
-            </p>
+            <div className="mt-10 flex items-center p-5 glass-surface rounded-[2rem] inline-flex border border-white/5">
+              <Sparkles className="w-4 h-4 text-lime-brand mr-4 animate-pulse" />
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40">
+                {value?.answer ? `Intelligence Index established at: ${value.answer} / ${maxRating}` : 'Awaiting manual proficiency calibration'}
+              </p>
+            </div>
           </div>
         );
 
@@ -263,41 +300,50 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className={`mb-8 p-8 rounded-[2rem] border transition-all duration-500 overflow-hidden relative group ${focused ? 'bg-white/10 border-lime-brand/30' : 'bg-white/5 border-white/5 hover:border-white/10'
+      initial={{ opacity: 0, y: 40, filter: 'blur(10px)' }}
+      whileInView={{ opacity: 1, y: 0, filter: 'blur(0)' }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      className={`mb-10 lg:mb-16 p-8 md:p-10 lg:p-14 rounded-[3rem] sm:rounded-[4rem] border transition-all duration-700 overflow-hidden relative group ${focused ? 'bg-white/[0.05] border-lime-brand/50 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)]' : 'bg-white/[0.02] border-white/[0.05] hover:border-white/20'
         }`}
     >
-      {/* Decorative Gradient Background */}
-      <div className="absolute -top-20 -right-20 w-40 h-40 bg-lime-brand/5 rounded-full blur-3xl pointer-events-none group-hover:bg-lime-brand/10 transition-all duration-700"></div>
-
-      <label className="block mb-6 relative z-10">
-        <span className="text-[10px] font-black text-lime-brand tracking-[0.2em] uppercase mb-2 block">
-          Question Inquiry
-        </span>
-        <span className="text-lg md:text-xl font-bold text-white leading-tight">
-          {question.questionText}
-          {question.required && <span className="text-lime-brand ml-2 text-2xl leading-none">*</span>}
-        </span>
-      </label>
+      {/* Premium Decorative Depth Glows */}
+      <div className="absolute -top-40 -right-40 w-96 h-96 bg-lime-brand/10 rounded-full blur-[120px] pointer-events-none group-hover:bg-lime-brand/15 transition-all duration-[2000ms]"></div>
+      <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/5 rounded-full blur-[100px] pointer-events-none"></div>
 
       <div className="relative z-10">
-        {renderQuestionInput()}
+        <div className="flex items-start mb-12">
+          <div className={`p-4 rounded-2xl mr-8 transition-all duration-700 ${focused ? 'bg-lime-brand text-black shadow-[0_0_40px_rgba(163,198,20,0.5)] rotate-6 scale-110' : 'bg-white/5 text-white/20 group-hover:bg-white/10 group-hover:text-white/40'}`}>
+            {getQuestionIcon()}
+          </div>
+          <div className="flex-1">
+            <span className="text-[11px] font-black tracking-[0.4em] text-lime-brand uppercase mb-4 block opacity-60">
+              Diagnostic Metric
+            </span>
+            <label className="block">
+              <span className="text-2xl md:text-4xl font-black text-white leading-[1.1] tracking-tighter block max-w-2xl">
+                {question.questionText}
+                {question.required && <span className="text-lime-brand ml-2 animate-pulse">*</span>}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div className="pl-0 lg:pl-20">
+          {renderQuestionInput()}
+        </div>
       </div>
 
       <AnimatePresence>
         {error && (
           <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0 }}
-            className="text-red-500 text-[10px] font-black mt-4 uppercase tracking-widest flex items-center bg-red-500/10 p-3 rounded-xl border border-red-500/20"
+            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
+            exit={{ opacity: 0, height: 0, marginTop: 0 }}
+            className="text-red-400 text-[10px] font-black uppercase tracking-widest flex items-center bg-red-500/10 p-4 rounded-2xl border border-red-500/20 md:ml-20"
           >
-            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            Error: {error}
+            <div className="w-2 h-2 bg-red-500 rounded-full mr-3 animate-pulse"></div>
+            Validation Failed: {error}
           </motion.div>
         )}
       </AnimatePresence>

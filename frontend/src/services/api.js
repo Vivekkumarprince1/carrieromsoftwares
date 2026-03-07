@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { isTokenExpired } from '../utils/tokenUtils';
+import { startGlobalLoading, stopGlobalLoading, trackedFetch } from '../utils/loadingTracker';
 
 const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '')).replace(/\/+$/, '');
 const buildApiUrl = (endpoint) => `${API_URL}${endpoint}`;
@@ -23,6 +24,10 @@ const apiFileUpload = axios.create({
 
 api.interceptors.request.use(
   (config) => {
+    config.__trackedWithGlobalLoader = startGlobalLoading(
+      config.showGlobalLoader ?? config.method?.toLowerCase() === 'get'
+    );
+
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -35,6 +40,10 @@ api.interceptors.request.use(
 // Add interceptors to the file upload instance as well
 apiFileUpload.interceptors.request.use(
   (config) => {
+    config.__trackedWithGlobalLoader = startGlobalLoading(
+      config.showGlobalLoader ?? config.method?.toLowerCase() === 'get'
+    );
+
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -47,10 +56,12 @@ apiFileUpload.interceptors.request.use(
 // Add response interceptor to handle common errors
 api.interceptors.response.use(
   (response) => {
+    stopGlobalLoading(response.config?.__trackedWithGlobalLoader);
     console.log('API Response:', response.config.url, response.status, response.data);
     return response;
   },
   (error) => {
+    stopGlobalLoading(error.config?.__trackedWithGlobalLoader);
     console.error('API Error:', error.config?.url, error.response?.status, error.response?.data);
     
     // Handle session expiry or unauthorized access
@@ -77,10 +88,12 @@ api.interceptors.response.use(
 // Add response interceptor to the file upload instance
 apiFileUpload.interceptors.response.use(
   (response) => {
+    stopGlobalLoading(response.config?.__trackedWithGlobalLoader);
     console.log('File Upload API Response:', response.config.url, response.status, response.data);
     return response;
   },
   (error) => {
+    stopGlobalLoading(error.config?.__trackedWithGlobalLoader);
     console.error('File Upload API Error:', error.config?.url, error.response?.status, error.response?.data);
     
     // Handle session expiry or unauthorized access
@@ -370,7 +383,7 @@ export const certificateService = {
   // Download certificate as a blob
   downloadCertificate: (id) => {
     // Using direct fetch to avoid issues with axios interceptors
-    return fetch(buildApiUrl(`/api/certification/download/${id}`), {
+    return trackedFetch(buildApiUrl(`/api/certification/download/${id}`), {
       method: 'GET',
       headers: {
         'Accept': 'application/pdf',
@@ -394,7 +407,7 @@ export const certificateService = {
   
   // Certificate issuance routes
   issueCertificate: (certData) => api.post('/api/certification/issue', certData),
-  verifyCertificate: (id) => api.get(`/api/certification/verify/${id}`),
+  verifyCertificate: (id) => api.get(`/api/certification/verify/${encodeURIComponent(String(id).trim())}`),
   // Send certificate via email
   sendCertificateEmail: (id, emailData) => api.post(`/api/certification/${id}/send-email`, emailData),
 };
@@ -414,7 +427,7 @@ export const offerLetterService = {
   
   // Download offer letter as a blob
   downloadOfferLetter: (id) => {
-    return fetch(buildApiUrl(`/api/certification/offer-letters/${id}/download`), {
+    return trackedFetch(buildApiUrl(`/api/certification/offer-letters/${id}/download`), {
       method: 'GET',
       headers: {
         'Accept': 'application/pdf',
@@ -441,7 +454,7 @@ export const offerLetterService = {
 export const contractService = {
   // Public endpoints for offer acceptance (no auth required)
   getOfferForAcceptance: (token) => {
-    return fetch(`${API_URL}/api/contracts/offer/accept/${token}`, {
+    return trackedFetch(`${API_URL}/api/contracts/offer/accept/${token}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -450,7 +463,7 @@ export const contractService = {
   },
   
   acceptOffer: (token, data) => {
-    return fetch(`${API_URL}/api/contracts/offer/accept/${token}`, {
+    return trackedFetch(`${API_URL}/api/contracts/offer/accept/${token}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -460,7 +473,7 @@ export const contractService = {
   },
   
   rejectOffer: (token, data) => {
-    return fetch(`${API_URL}/api/contracts/offer/reject/${token}`, {
+    return trackedFetch(`${API_URL}/api/contracts/offer/reject/${token}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -470,7 +483,7 @@ export const contractService = {
   },
   
   submitContract: (token, contractData) => {
-    return fetch(`${API_URL}/api/contracts/offer/${token}/contract`, {
+    return trackedFetch(`${API_URL}/api/contracts/offer/${token}/contract`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -480,7 +493,7 @@ export const contractService = {
   },
   
   uploadDocument: (formData) => {
-    return fetch(`${API_URL}/api/contracts/upload-document`, {
+    return trackedFetch(`${API_URL}/api/contracts/upload-document`, {
       method: 'POST',
       body: formData
     }).then(response => response.json());
@@ -491,7 +504,7 @@ export const contractService = {
     formData.append('document', file);
     formData.append('documentType', documentType);
     
-    return fetch(`${API_URL}/api/contracts/${contractId}/upload`, {
+    return trackedFetch(`${API_URL}/api/contracts/${contractId}/upload`, {
       method: 'POST',
       body: formData
     }).then(response => response.json());
@@ -510,7 +523,7 @@ export const contractService = {
   updateContractStatus: (contractId, data) => api.put(`/api/contracts/${contractId}/status`, data),
   
   generateContractPDF: (contractId) => {
-    return fetch(`${API_URL}/api/contracts/${contractId}/pdf`, {
+    return trackedFetch(`${API_URL}/api/contracts/${contractId}/pdf`, {
       method: 'GET',
       headers: {
         'Accept': 'application/pdf',
@@ -634,5 +647,24 @@ export const notificationService = {
     return api.get(`/api/notifications/admin/all${queryParams ? '?' + queryParams : ''}`);
   }
 };
+
+export const systemService = {
+  checkHealth: () => trackedFetch(buildApiUrl('/api/health'), {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json'
+    }
+  }, {
+    enabled: false
+  }).then(async (response) => {
+    if (!response.ok) {
+      throw new Error(`Health check failed with status ${response.status}`);
+    }
+
+    return response.json();
+  })
+};
+
+export { trackedFetch };
 
 export default api;

@@ -685,12 +685,7 @@ const EmployeeManagement = () => {
               </div>
             </div>
           </div>
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="mt-4 text-gray-300">Loading users...</p>
-            </div>
-          ) : users.length === 0 ? (
+          {loading ? null : users.length === 0 ? (
             <div className="p-8 text-center">
               <FaUser className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-white">No users found</h3>

@@ -397,14 +397,7 @@ const ApplicationDetail = () => {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-12 max-w-7xl">
-        <div className="flex flex-col items-center justify-center min-h-[50vh]">
-          <div className="w-16 h-16 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
-          <p className="mt-6 text-lg text-gray-300">Loading application details...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (!application) {
@@ -999,9 +992,6 @@ const ApplicationDetail = () => {
                   <div className="mt-6">
                     <h3 className="font-medium text-white mb-4">
                       Offer Acceptance & Contract Details
-                      {contractLoading && (
-                        <span className="ml-2 text-sm text-gray-400">(Loading...)</span>
-                      )}
                     </h3>
                     
                     {contract ? (

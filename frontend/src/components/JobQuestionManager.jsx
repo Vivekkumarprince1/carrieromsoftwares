@@ -144,12 +144,7 @@ const JobQuestionManager = ({ jobId, onQuestionsChanged }) => {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <div className="w-12 h-12 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
-        <p className="mt-4 text-gray-300">Loading application questions...</p>
-      </div>
-    );
+    return null;
   }
 
   return (

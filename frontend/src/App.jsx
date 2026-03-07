@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import GlobalLoader from './components/common/GlobalLoader';
+import { systemService } from './services/api';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -31,6 +34,9 @@ import NotificationsPage from './pages/NotificationsPage';
 
 import './index.css';
 
+const STARTUP_LOADER_MIN_MS = 300;
+const HEALTH_RETRY_DELAY_MS = 700;
+
 const AppContent = () => {
   const location = useLocation();
 
@@ -44,6 +50,7 @@ const AppContent = () => {
 
   return (
     <div className="app-container flex flex-col min-h-screen">
+      <GlobalLoader />
       <Navbar />
       <main className="flex-grow">
         <Routes>
@@ -192,6 +199,61 @@ const AppContent = () => {
 };
 
 function App() {
+  const [backendReady, setBackendReady] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    let retryTimeout;
+    let readyTimeout;
+    const startedAt = Date.now();
+
+    const checkBackendHealth = async () => {
+      try {
+        await systemService.checkHealth();
+
+        if (isMounted) {
+          const elapsed = Date.now() - startedAt;
+          const remainingDelay = Math.max(0, STARTUP_LOADER_MIN_MS - elapsed);
+
+          readyTimeout = window.setTimeout(() => {
+            if (isMounted) {
+              setBackendReady(true);
+            }
+          }, remainingDelay);
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        retryTimeout = window.setTimeout(checkBackendHealth, HEALTH_RETRY_DELAY_MS);
+      }
+    };
+
+    checkBackendHealth();
+
+    return () => {
+      isMounted = false;
+      if (retryTimeout) {
+        window.clearTimeout(retryTimeout);
+      }
+      if (readyTimeout) {
+        window.clearTimeout(readyTimeout);
+      }
+    };
+  }, []);
+
+  if (!backendReady) {
+    return (
+      <GlobalLoader
+        forceVisible
+        message="Starting backend"
+        subMessage="Please wait. The app will appear as soon as the server is ready."
+        backdropClassName="bg-black"
+      />
+    );
+  }
+
   return (
     <Router>
       <AuthProvider>

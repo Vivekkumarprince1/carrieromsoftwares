@@ -1,10 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { motion, AnimatePresence } from 'framer-motion';
 import { jobService, applicationService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { ArrowLeft, MapPin, Briefcase, ChevronRight, Check, Upload, AlertCircle, Sparkles } from 'lucide-react';
 import JobQuestionAnswer from '../components/JobQuestionAnswer';
+
+const LIQUID_VARIANTS = {
+  enter: { opacity: 0, x: -20 },
+  active: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 20 }
+};
 
 const Apply = () => {
   const { jobId } = useParams();
@@ -40,6 +47,7 @@ const Apply = () => {
   const totalSteps = 3;
   const [recaptchaValue, setRecaptchaValue] = useState(null);
   const [existingApplication, setExistingApplication] = useState(null);
+  const [focusedField, setFocusedField] = useState(null);
   const recaptchaRef = useRef(null);
 
   useEffect(() => {
@@ -232,7 +240,7 @@ const Apply = () => {
     }
   };
 
-  const handleAnswerChange = (questionId, answer, file = null) => {
+  const handleAnswerChange = useCallback((questionId, answer, file = null) => {
     setQuestionAnswers(prevAnswers => {
       const newAnswers = [...prevAnswers];
       const answerIndex = newAnswers.findIndex(a => a.questionId === questionId);
@@ -258,7 +266,7 @@ const Apply = () => {
     if (formErrors[errorKey]) {
       setFormErrors(prev => ({ ...prev, [errorKey]: null }));
     }
-  };
+  }, [jobQuestions, formErrors]);
 
   const handleRecaptchaChange = (value) => {
     setRecaptchaValue(value);
@@ -459,7 +467,7 @@ const Apply = () => {
   };
 
   if (loading) {
-    return <div className="text-center p-5">Loading job details...</div>;
+    return null;
   }
 
   if (!job) {
@@ -467,459 +475,472 @@ const Apply = () => {
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-black selection:bg-lime-brand/30 selection:text-white grain-overlay relative overflow-x-hidden mesh-gradient-aura">
       {showErrorOverlay && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] transition-all duration-300"></div>
       )}
 
-      <div className="min-h-screen bg-primary-black text-white relative overflow-hidden font-sans">
-        {/* Animated Background Gradients */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+      {/* Dynamic Ambient Glows - Enhanced for Depth */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-lime-brand/15 rounded-full blur-[180px] opacity-20 animate-pulse-slow"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-lime-brand/10 rounded-full blur-[150px] opacity-10 animate-float"></div>
+        <div className="absolute top-[30%] left-[20%] w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] opacity-5"></div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-20 max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 py-8 lg:py-20">
+        {/* Context Sidebar & Mobile Header */}
+        <div className="lg:w-1/3 flex flex-col pt-0 lg:pt-4">
           <motion.div
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.1, 0.2, 0.1],
-              rotate: [0, 90, 0]
-            }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-lime-brand/20 rounded-full blur-[120px]"
-          />
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.05, 0.1, 0.05],
-              x: [0, 50, 0]
-            }}
-            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="absolute bottom-[10%] left-[-5%] w-[35%] h-[35%] bg-lime-brand/10 rounded-full blur-[100px]"
-          />
-        </div>
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="lg:sticky lg:top-32"
+          >
+            {/* Desktop Hero Header - Hidden on Mobile */}
+            <div className="hidden lg:block mb-10 lg:mb-20">
+              <motion.span
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-[11px] font-black text-lime-brand tracking-[0.5em] uppercase mb-6 lg:mb-8 block"
+              >
+                Protocol 07-A / Execution
+              </motion.span>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-4xl sm:text-5xl lg:text-7xl font-black text-white leading-[1.0] mb-8 lg:mb-12 tracking-tighter"
+              >
+                Join the <br className="hidden lg:block" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-br from-lime-brand via-white to-lime-brand/50 bg-[length:200%_200%] animate-pulse">
+                  Foundry
+                </span>
+              </motion.h1>
 
-        <section className="pt-16 pb-12 relative z-10">
-          <div className="container mx-auto px-4 max-w-4xl">
-            {/* Header with Glassmorphism - Compact Version */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8 text-center"
-            >
-
-              <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight leading-tight">
-                Apply for <span className="text-transparent bg-clip-text bg-gradient-to-r from-lime-brand to-lime-brand-light">{job.title}</span>
-              </h1>
-              <div className="flex flex-wrap gap-3 items-center justify-center">
-                <div className="flex items-center bg-white/5 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 shadow-lg">
-                  <svg className="w-3.5 h-3.5 mr-2 text-lime-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span className="text-xs font-medium text-gray-200">{job.location}</span>
-                </div>
-                <div className="bg-lime-brand/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-lime-brand/30 shadow-lg text-lime-brand font-bold text-xs uppercase tracking-wider">
-                  {job.salary}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Quick Opportunity Brief Bar */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-              className="mb-8 bg-white/5 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-xl overflow-hidden relative group"
-            >
-              <div className="absolute -top-10 -right-10 w-24 h-24 bg-lime-brand/5 rounded-full blur-2xl pointer-events-none"></div>
-
-              <div className="flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left">
-                <div className="flex-1">
-                  <h4 className="text-[10px] uppercase tracking-[0.25em] text-lime-brand font-black mb-2 flex items-center justify-center md:justify-start">
-                    <span className="w-1.5 h-1.5 bg-lime-brand rounded-full mr-2"></span>
-                    Mission
-                  </h4>
-                  <p className="text-gray-300 text-sm leading-relaxed font-medium line-clamp-2 md:line-clamp-none">
-                    {job.description}
-                  </p>
-                </div>
-
-                <div className="w-px h-12 bg-white/10 hidden md:block self-center"></div>
-
-                <div className="flex-[1.5]">
-                  <h4 className="text-[10px] uppercase tracking-[0.25em] text-lime-brand font-black mb-2 flex items-center justify-center md:justify-start">
-                    <span className="w-1.5 h-1.5 bg-lime-brand rounded-full mr-2"></span>
-                    Core Prerequisites
-                  </h4>
-                  <div className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-1">
-                    {Array.isArray(job.requirements) ? (
-                      job.requirements.slice(0, 3).map((req, index) => (
-                        <div key={index} className="flex items-center text-[11px] text-gray-400 font-bold uppercase tracking-wide">
-                          <svg className="w-3 h-3 text-lime-brand mr-1.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          {req}
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-300 text-xs font-medium">{job.requirements}</p>
-                    )}
-                    {Array.isArray(job.requirements) && job.requirements.length > 3 && (
-                      <div className="text-[10px] text-lime-brand/60 italic font-black">+ {job.requirements.length - 3} more</div>
-                    )}
+              <div className="grid grid-cols-1 gap-5">
+                <div className="flex items-center glass-surface p-5 rounded-3xl group hover:border-lime-brand/30 transition-all duration-500">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mr-5 group-hover:bg-lime-brand/20 transition-all duration-500 text-lime-brand shadow-inner">
+                    <Briefcase className="w-5 h-5 text-lime-brand" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Position / Title</p>
+                    <p className="text-base font-bold text-white tracking-tight">{job.title}</p>
                   </div>
                 </div>
-              </div>
-            </motion.div>
 
-            {/* Stepper Progress UI */}
-            <div className="mb-10 max-w-xl mx-auto">
-              <div className="relative flex justify-between items-center">
-                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-white/10 -translate-y-1/2 -z-10"></div>
-                <motion.div
-                  className="absolute top-1/2 left-0 h-0.5 bg-lime-brand -translate-y-1/2 -z-10 origin-left"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: (currentStep - 1) / (totalSteps - 1) }}
-                  transition={{ duration: 0.5 }}
-                />
-
-                {[1, 2, 3].map((step) => (
-                  <div key={step} className="flex flex-col items-center">
-                    <motion.div
-                      initial={false}
-                      animate={{
-                        scale: currentStep === step ? 1.1 : 0.9,
-                        backgroundColor: currentStep >= step ? "var(--color-primary)" : "rgba(255,255,255,0.05)",
-                        borderColor: currentStep >= step ? "var(--color-primary)" : "rgba(255,255,255,0.1)",
-                        color: currentStep >= step ? "#000" : "#fff"
-                      }}
-                      className="w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shadow-2xl backdrop-blur-md cursor-default transition-all duration-300"
-                    >
-                      {currentStep > step ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : step}
-                    </motion.div>
-                    <span className={`text-[8px] uppercase tracking-[0.2em] mt-2 font-black ${currentStep === step ? 'text-lime-brand' : 'text-gray-500'}`}>
-                      {step === 1 ? 'Identity' : step === 2 ? 'Experience' : 'Submission'}
-                    </span>
+                <div className="grid grid-cols-2 gap-5">
+                  <div className="flex items-center glass-surface p-5 rounded-3xl group hover:border-lime-brand/30 transition-all duration-500">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mr-4 group-hover:bg-lime-brand/20 transition-all duration-500 text-lime-brand">
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-0.5">Location</p>
+                      <p className="text-xs font-bold text-gray-200">{job.location}</p>
+                    </div>
                   </div>
-                ))}
+
+                  <div className="flex items-center glass-surface p-5 rounded-3xl group hover:border-lime-brand/30 transition-all duration-500">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mr-4 group-hover:bg-lime-brand/20 transition-all duration-500 text-lime-brand">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-0.5">Compensation</p>
+                      <p className="text-xs font-bold text-gray-200">{job.salary}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Feedback Messages */}
-            <AnimatePresence>
-              {error && (
+            {/* Premium Integrated Stepper (Desktop) */}
+            <div className="hidden lg:flex flex-col space-y-8 pl-4">
+              {[1, 2, 3].map((step) => (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-500 flex items-center shadow-lg backdrop-blur-md"
+                  key={step}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + step * 0.1 }}
+                  className="group cursor-default"
                 >
-                  <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="font-bold text-sm">{error}</span>
+                  <div className="flex items-center">
+                    <div className="relative">
+                      <div className={`w-0.5 h-16 rounded-full transition-all duration-700 ${currentStep >= step ? 'bg-lime-brand shadow-[0_0_20px_rgba(163,198,20,0.8)]' : 'bg-white/5'}`} />
+                      {currentStep === step && (
+                        <motion.div
+                          layoutId="stepper-orb"
+                          className="absolute top-0 -left-1.5 w-3.5 h-3.5 bg-lime-brand rounded-full shadow-[0_0_15px_rgba(163,198,20,1)] z-10"
+                        />
+                      )}
+                    </div>
+                    <div className="flex flex-col pl-8">
+                      <span className={`text-[11px] font-black uppercase tracking-[0.3em] transition-all duration-500 ${currentStep === step ? 'text-lime-brand' : 'text-white/20'}`}>
+                        {step === 1 ? 'Base Index' : step === 2 ? 'Core Matrix' : 'Final Protocol'}
+                      </span>
+                      <span className={`text-[9px] font-bold uppercase tracking-widest mt-2 transition-all duration-500 ${currentStep === step ? 'text-white/40 opacity-100' : 'opacity-0'}`}>
+                        {step === 1 ? 'System Identification' : step === 2 ? 'Competency Extraction' : 'Signal Transmission'}
+                      </span>
+                    </div>
+                  </div>
                 </motion.div>
-              )}
-              {success && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mb-6 p-4 bg-lime-brand/10 border border-lime-brand/50 rounded-2xl text-lime-brand flex items-center shadow-lg backdrop-blur-md"
-                >
-                  <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="font-bold text-sm">{success}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              ))}
+            </div>
 
-            {/* Application Form Engine - Full Width */}
-            <div className="w-full">
-              <div className="bg-white/5 backdrop-blur-2xl p-6 md:p-12 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden min-h-[600px] flex flex-col">
-                {/* Glassmorphism Accents */}
-                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-lime-brand/5 rounded-full blur-3xl pointer-events-none"></div>
+            {/* Minimal Mobile Header - Only Job Name & Location */}
+            <div className="lg:hidden mt-12 mb-6 flex flex-col items-center text-center px-4">
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-4xl font-black text-white tracking-tighter mb-4"
+              >
+                {job.title}
+              </motion.h1>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.6 }}
+                transition={{ delay: 0.2 }}
+                className="flex items-center gap-3 bg-white/5 px-6 py-2.5 rounded-full border border-white/5"
+              >
+                <MapPin className="w-4 h-4 text-lime-brand" />
+                <span className="text-[11px] font-black text-white uppercase tracking-[0.3em]">{job.location}</span>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
-                  <AnimatePresence mode="wait">
-                    {currentStep === 1 && (
-                      <motion.div
-                        key="step1"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-10"
-                      >
-                        <div>
-                          <h2 className="text-3xl font-black mb-2 tracking-tight">Personal Identity</h2>
-                          <p className="text-gray-400 font-medium">Let's start with who you are.</p>
+        {/* Application Engine Card */}
+        <div className="lg:w-2/3">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8 }}
+            className="glass-panel rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 lg:p-16 relative overflow-hidden"
+          >
+            {/* Visual Accent */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-lime-brand/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+            <form onSubmit={handleSubmit} className="relative z-10 flex flex-col min-h-[500px]">
+              <AnimatePresence>
+                {currentStep === 1 && (
+                  <motion.div
+                    key="step1"
+                    initial="enter"
+                    animate="active"
+                    exit="exit"
+                    variants={LIQUID_VARIANTS}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    className="space-y-12"
+                  >
+                    <div>
+                      <h2 className="text-4xl font-black mb-3 tracking-tight text-white/90">Personal Identity</h2>
+                      <p className="text-gray-500 font-medium tracking-wide">Establish your core profile markers.</p>
+                    </div>
+
+                    {/* Quick Resume Upload Zone */}
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black text-lime-brand tracking-[0.2em] uppercase">
+                        PROFESSIONAL RESUME
+                      </label>
+                      <div className={`relative group cursor-pointer transition-all duration-500 border-2 border-dashed rounded-2xl sm:rounded-3xl p-6 sm:p-10 hover:bg-lime-brand/5 overflow-hidden ${formErrors.resume ? 'border-red-500/50 bg-red-500/5' : 'border-white/10 hover:border-lime-brand/50'
+                        }`}>
+                        <input
+                          type="file"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          id="resume"
+                          name="resume"
+                          onChange={handleFileChange}
+                          accept=".pdf,.doc,.docx"
+                          required
+                        />
+                        <div className="flex flex-col items-center justify-center text-center">
+                          <motion.div
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            className={`mb-4 sm:mb-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-xl transition-all ${formData.resume ? 'bg-lime-brand text-black' : 'bg-white/10 text-gray-400 group-hover:text-lime-brand group-hover:bg-white/20'
+                              }`}
+                          >
+                            <Upload className="w-8 h-8 sm:w-10 sm:h-10" />
+                          </motion.div>
+                          <p className="text-lg sm:text-xl font-bold text-white mb-2 tracking-tight">
+                            {formData.resume ? formData.resume.name : 'Upload Credentials'}
+                          </p>
+                          <p className="text-[10px] sm:text-sm text-gray-500 font-medium uppercase tracking-widest">PDF, DOC, DOCX (MAX 10MB)</p>
                         </div>
+                      </div>
 
-                        {/* Quick Resume Upload Zone */}
-                        <div className="space-y-4">
-                          <label className="text-[10px] font-black text-lime-brand tracking-[0.2em] uppercase">
-                            PROFESSIONAL RESUME
-                          </label>
-                          <div className={`relative group cursor-pointer transition-all duration-500 border-2 border-dashed rounded-3xl p-10 hover:bg-lime-brand/5 overflow-hidden ${formErrors.resume ? 'border-red-500/50 bg-red-500/5' : 'border-white/10 hover:border-lime-brand/50'
-                            }`}>
-                            <input
-                              type="file"
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                              id="resume"
-                              name="resume"
-                              onChange={handleFileChange}
-                              accept=".pdf,.doc,.docx"
-                              required
-                            />
-                            <div className="flex flex-col items-center justify-center text-center">
-                              <motion.div
-                                whileHover={{ scale: 1.1, rotate: 5 }}
-                                className={`mb-6 p-6 rounded-2xl shadow-xl transition-all ${formData.resume ? 'bg-lime-brand text-black' : 'bg-white/10 text-gray-400 group-hover:text-lime-brand group-hover:bg-white/20'
-                                  }`}
-                              >
-                                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                              </motion.div>
-                              <p className="text-xl font-bold text-white mb-2 tracking-tight">
-                                {formData.resume ? formData.resume.name : 'Upload Credentials'}
-                              </p>
-                              <p className="text-sm text-gray-500 font-medium">Standard PDF or Word formats (MAX 10MB)</p>
-                            </div>
-                          </div>
+                      {/* Parsing Intelligence Feedback */}
+                      {parsing && (
+                        <div className="flex items-center space-x-4 text-lime-brand bg-lime-brand/10 p-4 rounded-2xl border border-lime-brand/20 animate-pulse">
+                          <div className="w-3 h-3 bg-lime-brand rounded-full"></div>
+                          <span className="text-sm font-black uppercase tracking-widest">AI Extraction Active...</span>
+                        </div>
+                      )}
+                    </div>
 
-                          {/* Parsing Intelligence Feedback */}
-                          {parsing && (
-                            <div className="flex items-center space-x-4 text-lime-brand bg-lime-brand/10 p-4 rounded-2xl border border-lime-brand/20 animate-pulse">
-                              <div className="w-3 h-3 bg-lime-brand rounded-full"></div>
-                              <span className="text-sm font-black uppercase tracking-widest">AI Extraction Active...</span>
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-4">
+                        <label htmlFor="fullName" className="flex items-center gap-2 text-[11px] font-black text-lime-brand/70 tracking-[0.3em] uppercase px-1 mb-1">
+                          <span className={`w-2 h-2 rounded-full ${focusedField === 'fullName' ? 'bg-lime-brand animate-ping' : 'bg-white/10'}`}></span>
+                          Identity Label
+                        </label>
+                        <div className="relative group">
+                          <input
+                            type="text"
+                            className={`w-full px-8 py-5 bg-black/40 border transition-all duration-500 rounded-[1.5rem] text-white focus:outline-none font-bold placeholder:text-white/10
+                                      ${focusedField === 'fullName' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
+                            id="fullName"
+                            name="fullName"
+                            value={formData.fullName}
+                            onChange={handleChange}
+                            onFocus={() => setFocusedField('fullName')}
+                            onBlur={() => setFocusedField(null)}
+                            placeholder="Full Legal Name"
+                            required
+                          />
+                          {focusedField === 'fullName' && (
+                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="absolute -right-4 -top-4 bg-lime-brand text-black text-[9px] font-black px-3 py-1 rounded-full shadow-lg z-20">
+                              ACTIVE SYNC
+                            </motion.div>
                           )}
                         </div>
+                      </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          <div className="space-y-3">
-                            <label htmlFor="fullName" className="text-[10px] font-black text-gray-500 tracking-[0.2em] uppercase px-1">FULL NAME</label>
-                            <input
-                              type="text"
-                              className={`w-full px-6 py-4.5 bg-white/5 border ${formErrors.fullName ? 'border-red-500/50' : 'border-white/10'} rounded-2xl text-white focus:outline-none focus:border-lime-brand/50 focus:bg-white/10 focus:ring-4 focus:ring-lime-brand/5 shadow-inner transition-all font-medium`}
-                              id="fullName"
-                              name="fullName"
-                              value={formData.fullName}
-                              onChange={handleChange}
-                              placeholder="E.g. Elon Musk"
-                              required
-                            />
-                          </div>
-
-                          <div className="space-y-3">
-                            <label htmlFor="email" className="text-[10px] font-black text-gray-500 tracking-[0.2em] uppercase px-1">EMAIL ADDRESS</label>
-                            <input
-                              type="email"
-                              className={`w-full px-6 py-4.5 bg-white/5 border ${formErrors.email ? 'border-red-500/50' : 'border-white/10'} rounded-2xl text-white focus:outline-none focus:border-lime-brand/50 focus:bg-white/10 focus:ring-4 focus:ring-lime-brand/5 shadow-inner transition-all font-medium`}
-                              id="email"
-                              name="email"
-                              value={formData.email}
-                              onChange={handleChange}
-                              placeholder="name@domain.com"
-                              required
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <label htmlFor="phone" className="text-[10px] font-black text-gray-500 tracking-[0.2em] uppercase px-1">CONTACT NUMBER</label>
+                      <div className="space-y-4">
+                        <label htmlFor="email" className="flex items-center gap-2 text-[11px] font-black text-lime-brand/70 tracking-[0.3em] uppercase px-1 mb-1">
+                          <span className={`w-2 h-2 rounded-full ${focusedField === 'email' ? 'bg-lime-brand animate-ping' : 'bg-white/10'}`}></span>
+                          Signal Link
+                        </label>
+                        <div className="relative group">
                           <input
-                            type="tel"
-                            className={`w-full px-6 py-4.5 bg-white/5 border ${formErrors.phone ? 'border-red-500/50' : 'border-white/10'} rounded-2xl text-white focus:outline-none focus:border-lime-brand/50 focus:bg-white/10 focus:ring-4 focus:ring-lime-brand/5 shadow-inner transition-all font-medium`}
-                            id="phone"
-                            name="phone"
-                            value={formData.phone}
+                            type="email"
+                            className={`w-full px-8 py-5 bg-black/40 border transition-all duration-500 rounded-[1.5rem] text-white focus:outline-none font-bold placeholder:text-white/10
+                                      ${focusedField === 'email' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
+                            id="email"
+                            name="email"
+                            value={formData.email}
                             onChange={handleChange}
-                            placeholder="10-digit number"
-                            maxLength={10}
+                            onFocus={() => setFocusedField('email')}
+                            onBlur={() => setFocusedField(null)}
+                            placeholder="communication@node.com"
                             required
                           />
                         </div>
-                      </motion.div>
-                    )}
+                      </div>
+                    </div>
 
-                    {currentStep === 2 && (
-                      <motion.div
-                        key="step2"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-10"
-                      >
-                        <div>
-                          <h2 className="text-3xl font-black mb-2 tracking-tight">Your Trajectory</h2>
-                          <p className="text-gray-400 font-medium">Education and experience define your path.</p>
-                        </div>
+                    <div className="space-y-4">
+                      <label htmlFor="phone" className="flex items-center gap-2 text-[11px] font-black text-lime-brand/70 tracking-[0.3em] uppercase px-1 mb-1">
+                        <span className={`w-2 h-2 rounded-full ${focusedField === 'phone' ? 'bg-lime-brand animate-ping' : 'bg-white/10'}`}></span>
+                        Direct Frequency
+                      </label>
+                      <div className="relative group">
+                        <input
+                          type="tel"
+                          className={`w-full px-8 py-5 bg-black/40 border transition-all duration-500 rounded-[1.5rem] text-white focus:outline-none font-bold placeholder:text-white/10
+                                    ${focusedField === 'phone' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
+                          id="phone"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          onFocus={() => setFocusedField('phone')}
+                          onBlur={() => setFocusedField(null)}
+                          placeholder="Primary contact digits"
+                          maxLength={10}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
 
-                        <div className="space-y-3">
-                          <label htmlFor="skills" className="text-[10px] font-black text-gray-500 tracking-[0.2em] uppercase px-1">TECHNICAL ARSENAL</label>
-                          <textarea
-                            className="w-full px-6 py-4.5 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:border-lime-brand/50 focus:bg-white/10 focus:ring-4 focus:ring-lime-brand/5 shadow-inner transition-all font-medium resize-none text-sm"
-                            id="skills"
-                            name="skills"
-                            value={formData.skills}
-                            onChange={handleChange}
-                            rows="3"
-                            placeholder="Python, React, System Design, AI..."
-                          ></textarea>
-                        </div>
+                {currentStep === 2 && (
+                  <motion.div
+                    key="step2"
+                    initial="enter"
+                    animate="active"
+                    exit="exit"
+                    variants={LIQUID_VARIANTS}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    className="space-y-12"
+                  >
+                    <div>
+                      <h2 className="text-4xl font-black mb-3 tracking-tight text-white/90">Your Trajectory</h2>
+                      <p className="text-gray-500 font-medium tracking-wide">The sum of your professional experience matrix.</p>
+                    </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          <div className="space-y-3">
-                            <label htmlFor="experience" className="text-[10px] font-black text-gray-500 tracking-[0.2em] uppercase px-1">CAREER MILESTONES</label>
-                            <textarea
-                              className="w-full px-6 py-4.5 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:border-lime-brand/50 focus:bg-white/10 focus:ring-4 focus:ring-lime-brand/5 shadow-inner transition-all font-medium resize-none text-sm"
-                              id="experience"
-                              name="experience"
-                              value={formData.experience}
-                              onChange={handleChange}
-                              rows="5"
-                              placeholder="Summary of previous roles..."
-                            ></textarea>
-                          </div>
+                    <div className="space-y-4">
+                      <label htmlFor="skills" className="flex items-center gap-2 text-[11px] font-black text-lime-brand/70 tracking-[0.3em] uppercase px-1 mb-1">
+                        <span className={`w-2 h-2 rounded-full ${focusedField === 'skills' ? 'bg-lime-brand animate-ping' : 'bg-white/10'}`}></span>
+                        Technical Arsenal
+                      </label>
+                      <textarea
+                        className={`w-full px-8 py-6 bg-black/40 border transition-all duration-500 rounded-[2rem] text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
+                                  ${focusedField === 'skills' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
+                        id="skills"
+                        name="skills"
+                        value={formData.skills}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('skills')}
+                        onBlur={() => setFocusedField(null)}
+                        rows="3"
+                        placeholder="Expertise parameters separated by commas..."
+                      ></textarea>
+                    </div>
 
-                          <div className="space-y-3">
-                            <label htmlFor="education" className="text-[10px] font-black text-gray-500 tracking-[0.2em] uppercase px-1">ACADEMIC FOUNDATION</label>
-                            <textarea
-                              className="w-full px-6 py-4.5 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:border-lime-brand/50 focus:bg-white/10 focus:ring-4 focus:ring-lime-brand/5 shadow-inner transition-all font-medium resize-none text-sm"
-                              id="education"
-                              name="education"
-                              value={formData.education}
-                              onChange={handleChange}
-                              rows="5"
-                              placeholder="Degrees, certifications..."
-                            ></textarea>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-4">
+                        <label htmlFor="experience" className="flex items-center gap-2 text-[11px] font-black text-lime-brand/70 tracking-[0.3em] uppercase px-1 mb-1">
+                          <span className={`w-2 h-2 rounded-full ${focusedField === 'experience' ? 'bg-lime-brand animate-ping' : 'bg-white/10'}`}></span>
+                          Career Milestones
+                        </label>
+                        <textarea
+                          className={`w-full px-8 py-6 bg-black/40 border transition-all duration-500 rounded-[2rem] text-sm text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
+                                    ${focusedField === 'experience' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
+                          id="experience"
+                          name="experience"
+                          value={formData.experience}
+                          onChange={handleChange}
+                          onFocus={() => setFocusedField('experience')}
+                          onBlur={() => setFocusedField(null)}
+                          rows="5"
+                          placeholder="Brief summary of professional trajectory..."
+                        ></textarea>
+                      </div>
 
-                    {currentStep === 3 && (
-                      <motion.div
-                        key="step3"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-10"
-                      >
-                        <div>
-                          <h2 className="text-3xl font-black mb-2 tracking-tight">Final Details</h2>
-                          <p className="text-gray-400 font-medium">Add extra flavor to your application.</p>
-                        </div>
+                      <div className="space-y-4">
+                        <label htmlFor="education" className="flex items-center gap-2 text-[11px] font-black text-lime-brand/70 tracking-[0.3em] uppercase px-1 mb-1">
+                          <span className={`w-2 h-2 rounded-full ${focusedField === 'education' ? 'bg-lime-brand animate-ping' : 'bg-white/10'}`}></span>
+                          Academic Foundation
+                        </label>
+                        <textarea
+                          className={`w-full px-8 py-6 bg-black/40 border transition-all duration-500 rounded-[2rem] text-sm text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
+                                    ${focusedField === 'education' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
+                          id="education"
+                          name="education"
+                          value={formData.education}
+                          onChange={handleChange}
+                          onFocus={() => setFocusedField('education')}
+                          onBlur={() => setFocusedField(null)}
+                          rows="5"
+                          placeholder="Degrees, certifications, and institutions..."
+                        ></textarea>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
 
-                        <div className="space-y-3">
-                          <label htmlFor="coverLetter" className="text-[10px] font-black text-gray-500 tracking-[0.2em] uppercase px-1">WHY US? (COVER LETTER)</label>
-                          <textarea
-                            className={`w-full px-6 py-4.5 bg-white/5 border ${formErrors.coverLetter ? 'border-red-500/50' : 'border-white/10'} rounded-2xl text-white focus:outline-none focus:border-lime-brand/50 focus:bg-white/10 focus:ring-4 focus:ring-lime-brand/5 shadow-inner transition-all font-medium resize-none text-sm`}
-                            id="coverLetter"
-                            name="coverLetter"
-                            value={formData.coverLetter}
-                            onChange={handleChange}
-                            rows="6"
-                            placeholder="Tell us about your passion for this role..."
-                            required
-                          ></textarea>
-                        </div>
+                {currentStep === 3 && (
+                  <motion.div
+                    key="step3"
+                    initial="enter"
+                    animate="active"
+                    exit="exit"
+                    variants={LIQUID_VARIANTS}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    className="space-y-12"
+                  >
+                    <div>
+                      <h2 className="text-4xl font-black mb-3 tracking-tight text-white/90">Final Protocol</h2>
+                      <p className="text-gray-500 font-medium tracking-wide">Finalize the synchronization of your application signal.</p>
+                    </div>
 
-                        {/* Dynamic Questions Integration */}
-                        {jobQuestions.length > 0 && (
-                          <div className="space-y-8 pt-6 border-t border-white/5">
-                            <h3 className="text-xl font-bold tracking-tight">Specific Inquiries</h3>
-                            <div className="space-y-6">
-                              {jobQuestions.map(question => (
-                                <JobQuestionAnswer
-                                  key={question._id}
-                                  question={question}
-                                  onChange={handleAnswerChange}
-                                  value={questionAnswers.find(a => a.questionId === question._id)}
-                                  error={formErrors[`question_${question._id}`]}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                    <div className="space-y-4">
+                      <label htmlFor="coverLetter" className="flex items-center gap-2 text-[11px] font-black text-lime-brand/70 tracking-[0.3em] uppercase px-1 mb-1">
+                        <span className={`w-2 h-2 rounded-full ${focusedField === 'coverLetter' ? 'bg-lime-brand animate-ping' : 'bg-white/10'}`}></span>
+                        Signal Resonance (Cover Letter)
+                      </label>
+                      <textarea
+                        className={`w-full px-8 py-6 bg-black/40 border transition-all duration-500 rounded-[2rem] text-sm text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
+                                  ${focusedField === 'coverLetter' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
+                        id="coverLetter"
+                        name="coverLetter"
+                        value={formData.coverLetter}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('coverLetter')}
+                        onBlur={() => setFocusedField(null)}
+                        rows="6"
+                        placeholder="Articulate your alignment with the Foundry mission..."
+                        required
+                      ></textarea>
+                    </div>
 
-                        {/* reCAPTCHA Security Zone */}
-                        <div className="pt-6 border-t border-white/5">
-                          <div className="inline-block p-4 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl overflow-hidden max-w-full">
-                            <ReCAPTCHA
-                              ref={recaptchaRef}
-                              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
-                              onChange={handleRecaptchaChange}
-                              onExpired={handleRecaptchaExpired}
-                              theme="dark"
+                    {/* Dynamic Questions Integration */}
+                    {jobQuestions.length > 0 && (
+                      <div className="space-y-8 pt-6 border-t border-white/5">
+                        <h3 className="text-xl font-bold tracking-tight">Specific Inquiries</h3>
+                        <div className="space-y-6">
+                          {jobQuestions.map(question => (
+                            <JobQuestionAnswer
+                              key={question._id}
+                              question={question}
+                              onChange={handleAnswerChange}
+                              value={questionAnswers.find(a => a.questionId === question._id)}
+                              error={formErrors[`question_${question._id}`]}
                             />
-                          </div>
-                          {formErrors.recaptcha && <p className="text-red-500 text-[10px] font-black mt-3 uppercase tracking-widest">{formErrors.recaptcha}</p>}
+                          ))}
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Step Navigation Controls */}
-                  <div className="mt-auto pt-12 flex flex-col sm:flex-row gap-5">
-                    {currentStep > 1 && (
-                      <button
-                        type="button"
-                        onClick={prevStep}
-                        className="flex-1 py-5 px-8 rounded-2xl font-black text-xs uppercase tracking-[0.2em] border border-white/10 bg-white/5 hover:bg-white/10 transition-all flex items-center justify-center group"
-                      >
-                        <svg className="w-4 h-4 mr-3 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Previous
-                      </button>
+                      </div>
                     )}
 
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className={`flex-[2] py-5 px-8 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center transition-all duration-500 ${submitting
-                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                        : 'bg-lime-brand text-black hover:bg-lime-brand-light hover:-translate-y-1 shadow-glow-lime/20'
-                        }`}
-                    >
-                      {submitting ? (
-                        <div className="flex items-center">
-                          <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin mr-3"></div>
-                          Deploying... {uploadProgress}%
-                        </div>
-                      ) : currentStep === totalSteps ? (
-                        <>
-                          Submit Final Application
-                          <svg className="w-4 h-4 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
-                        </>
-                      ) : (
-                        <>
-                          Continue to {currentStep === 1 ? 'Background' : 'Submission'}
-                          <svg className="w-4 h-4 ml-3 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" />
-                          </svg>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
+                    {/* reCAPTCHA Security Zone */}
+                    <div className="pt-6 border-t border-white/5">
+                      <div className="inline-block p-4 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl overflow-hidden max-w-full">
+                        <ReCAPTCHA
+                          ref={recaptchaRef}
+                          sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
+                          onChange={handleRecaptchaChange}
+                          onExpired={handleRecaptchaExpired}
+                          theme="dark"
+                        />
+                      </div>
+                      {formErrors.recaptcha && <p className="text-red-500 text-[10px] font-black mt-3 uppercase tracking-widest">{formErrors.recaptcha}</p>}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Step Navigation Controls - Premium Magnetic Style */}
+              <div className="mt-12 sm:mt-auto pt-10 border-t border-white/5 flex flex-col sm:flex-row gap-5">
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="btn-magnetic w-full sm:flex-1 py-5 px-8 rounded-3xl font-black text-[11px] uppercase tracking-[0.4em] border border-white/5 bg-white/0 text-gray-500 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all duration-500 flex items-center justify-center group shadow-2xl"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-3 transform group-hover:-translate-x-2 transition-transform duration-500" />
+                    Previous Phase
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className={`btn-magnetic w-full ${currentStep === 1 ? 'sm:w-full' : 'sm:flex-[2.5]'} py-5 px-8 rounded-3xl font-black text-[11px] uppercase tracking-[0.4em] flex items-center justify-center transition-all duration-700 relative overflow-hidden group shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${submitting
+                    ? 'bg-gray-900/50 text-gray-700 cursor-not-allowed border border-white/5 backdrop-blur-md'
+                    : 'bg-lime-brand text-black hover:bg-white hover:scale-[1.01] active:scale-[0.98]'
+                    }`}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  {submitting ? (
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 border-2 border-black/10 border-t-black rounded-full animate-spin mr-3"></div>
+                      Broadcasting Signal... {uploadProgress}%
+                    </div>
+                  ) : currentStep === totalSteps ? (
+                    <>
+                      Execute Final Transmission
+                      <Sparkles className="w-4 h-4 ml-4 group-hover:translate-x-2 group-hover:rotate-12 transition-all duration-500" />
+                    </>
+                  ) : (
+                    <>
+                      Initiate Next Protocol
+                      <ChevronRight className="w-4 h-4 ml-4 transform group-hover:translate-x-2 transition-all duration-500" />
+                    </>
+                  )}
+                </button>
               </div>
-            </div>
-          </div>
-
-        </section>
+            </form>
+          </motion.div>
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 

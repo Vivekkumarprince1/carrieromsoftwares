@@ -275,12 +275,7 @@ const RecommendationManagement = () => {
               </div>
             </div>
           </div>
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="mt-4 text-gray-300">Loading recommendations...</p>
-            </div>
-          ) : recommendations.length === 0 ? (
+          {loading ? null : recommendations.length === 0 ? (
             <div className="p-8 text-center">
               <FaClipboardList className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-white">No recommendations found</h3>

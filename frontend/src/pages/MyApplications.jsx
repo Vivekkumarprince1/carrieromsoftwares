@@ -271,16 +271,7 @@ const MyApplications = () => {
   };
 
   if (loading) {
-    return (
-      <div className="bg-black min-h-screen py-10 px-4 flex items-center justify-center">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-yellow shadow-[0_0_15px_rgba(255,193,7,0.5)]"></div>
-          </div>
-          <p className="text-center text-gray-300 mt-6 text-lg">Loading your applications...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -466,12 +457,7 @@ const MyApplications = () => {
 
                           {selectedApplication && selectedApplication._id === application._id && (
                             <div className="px-5 pb-5 pt-6 border-t border-gray-700/50 transition-all duration-500 animate-fade-in-up">
-                              {loadingDetails ? (
-                                <div className="p-8 text-center">
-                                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-yellow mx-auto shadow-[0_0_10px_rgba(255,193,7,0.3)]"></div>
-                                  <p className="mt-4 text-gray-400 text-lg">Loading details...</p>
-                                </div>
-                              ) : (
+                              {loadingDetails ? null : (
                                 <div>
                                   {/* Application ID with copy button */}
                                   <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50 flex items-center justify-between">

@@ -213,14 +213,7 @@ const JobForm = () => {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-12 max-w-7xl">
-        <div className="flex flex-col items-center justify-center min-h-[50vh]">
-          <div className="w-16 h-16 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
-          <p className="mt-6 text-lg text-gray-300">Loading job information...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -594,12 +587,7 @@ const JobForm = () => {
             </div>
           )}
 
-          {loadingApplications ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-12 h-12 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
-              <p className="mt-4 text-gray-300">Loading applications...</p>
-            </div>
-          ) : applications.length === 0 ? (
+          {loadingApplications ? null : applications.length === 0 ? (
             <div className="bg-blue-900/30 border border-blue-500 text-blue-400 px-6 py-8 rounded-md text-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

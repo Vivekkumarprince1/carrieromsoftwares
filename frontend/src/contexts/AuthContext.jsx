@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import { authService } from '../services/api';
+import { authService, trackedFetch } from '../services/api';
 import { getTokenCheckInterval } from '../config/authConfig';
 
 export const AuthContext = createContext();
@@ -42,10 +42,12 @@ export const AuthProvider = ({ children }) => {
       if (token && currentUser) {
         try {
           // Try to make a simple authenticated request to verify token
-          const response = await fetch('/api/auth/user-data', {
+          const response = await trackedFetch('/api/auth/user-data', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
+          }, {
+            enabled: false
           });
           
           if (!response.ok) {

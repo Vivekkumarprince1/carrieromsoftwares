@@ -94,12 +94,7 @@ const NotificationSummary = ({ className = "" }) => {
         </Link>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="ml-2 text-gray-400">Loading...</span>
-        </div>
-      ) : error ? (
+      {loading ? null : error ? (
         <div className="text-center py-8">
           <p className="text-red-400 text-sm">{error}</p>
         </div>
