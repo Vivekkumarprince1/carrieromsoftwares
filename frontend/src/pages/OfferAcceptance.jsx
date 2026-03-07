@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { contractService } from '../services/api';
+import { formatCurrencyValue } from '../utils/currencyUtils';
 
 const OfferAcceptance = () => {
   const { token } = useParams();
@@ -348,8 +349,8 @@ const OfferReviewStep = ({
           <p className="text-white">{offerLetter.department}</p>
         </div>
         <div>
-          <label className="text-gray-400 text-sm">Annual Salary</label>
-          <p className="text-white font-medium">${offerLetter.salary?.toLocaleString()}</p>
+          <label className="text-gray-400 text-sm">Annual Salary (₹)</label>
+          <p className="text-white font-medium">{formatCurrencyValue(offerLetter.salary)}</p>
         </div>
         <div>
           <label className="text-gray-400 text-sm">Work Type</label>

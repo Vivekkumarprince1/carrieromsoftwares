@@ -6,6 +6,7 @@ import { jobService, applicationService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { ArrowLeft, MapPin, Briefcase, ChevronRight, Check, Upload, AlertCircle, Sparkles } from 'lucide-react';
 import JobQuestionAnswer from '../components/JobQuestionAnswer';
+import { formatCurrencyValue } from '../utils/currencyUtils';
 
 const LIQUID_VARIANTS = {
   enter: { opacity: 0, x: -20 },
@@ -544,7 +545,7 @@ const Apply = () => {
                     </div>
                     <div>
                       <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-0.5">Compensation</p>
-                      <p className="text-xs font-bold text-gray-200">{job.salary}</p>
+                      <p className="text-xs font-bold text-gray-200">{formatCurrencyValue(job.salary)}</p>
                     </div>
                   </div>
                 </div>

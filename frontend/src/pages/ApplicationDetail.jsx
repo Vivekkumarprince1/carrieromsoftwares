@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { applicationService, jobService, offerLetterService, contractService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import ApplicationOfferForm from '../components/ApplicationOfferForm';
+import { formatCurrencyValue } from '../utils/currencyUtils';
 import { getResumeViewUrl } from '../utils/urlUtils';
 
 const ApplicationDetail = () => {
@@ -877,7 +878,7 @@ const ApplicationDetail = () => {
                         </div>
                         <div>
                           <span className="text-gray-400">Salary:</span>
-                          <span className="text-white ml-2">${offerLetter.salary?.toLocaleString()}</span>
+                          <span className="text-white ml-2">{formatCurrencyValue(offerLetter.salary)}</span>
                         </div>
                         <div>
                           <span className="text-gray-400">Start Date:</span>

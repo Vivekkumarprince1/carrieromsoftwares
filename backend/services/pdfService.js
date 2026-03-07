@@ -1,6 +1,7 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const QRCode = require('qrcode');
+const { formatCurrencyValue } = require('../utils/currencyFormatter');
 exports.generateOfferLetter = async (candidateData, jobData) => {
   console.log(`Offer letter for: ${candidateData.fullName}`);
   try {
@@ -151,7 +152,7 @@ exports.generateOfferLetter = async (candidateData, jobData) => {
         .text('Salary:', 100, jobDetailsY + 75, { continued: true, width: 80 })
         .font('Helvetica')
         .fillColor('#34495e')
-        .text(`  ${jobData.salary}`, { align: 'left' });
+        .text(`  ${formatCurrencyValue(jobData.salary)}`, { align: 'left' });
     }
 
     doc.moveDown(7);

@@ -6,6 +6,7 @@ const QRCode = require("qrcode");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
+const { formatCurrencyValue } = require("../utils/currencyFormatter");
 
 // Email setup
 const transporter = nodemailer.createTransport({
@@ -383,8 +384,8 @@ exports.sendOfferLetterEmail = async (req, res) => {
                             <p style="margin: 5px 0;"><strong>Position:</strong> ${offerLetter.position}</p>
                             <p style="margin: 5px 0;"><strong>Department:</strong> ${offerLetter.department}</p>
                             ${isInternship 
-                                ? `<p style="margin: 5px 0;"><strong>Stipend:</strong> ${offerLetter.salary === 0 ? 'Unpaid' : '₹' + offerLetter.salary.toLocaleString()}</p>`
-                                : `<p style="margin: 5px 0;"><strong>Annual Salary:</strong> ₹${offerLetter.salary.toLocaleString()}</p>`
+                                ? `<p style="margin: 5px 0;"><strong>Stipend:</strong> ${offerLetter.salary === 0 ? 'Unpaid' : formatCurrencyValue(offerLetter.salary)}</p>`
+                                : `<p style="margin: 5px 0;"><strong>Annual Salary:</strong> ${formatCurrencyValue(offerLetter.salary)}</p>`
                             }
                             <p style="margin: 5px 0;"><strong>Start Date:</strong> ${formatEmailDate(offerLetter.startDate)}</p>
                             <p style="margin: 5px 0;"><strong>Location:</strong> ${offerLetter.joiningLocation}</p>
@@ -683,7 +684,7 @@ async function generateOfferLetterPDFInMemory(offerLetter) {
             currentY += 25;
 
             // Stipend
-            const stipendText = offerLetter.salary === 0 ? 'Unpaid' : '₹'+`${offerLetter.salary.toLocaleString()}`;
+            const stipendText = offerLetter.salary === 0 ? 'Unpaid' : formatCurrencyValue(offerLetter.salary);
             doc.text(`Stipend: ${stipendText}`, 50, currentY);
             currentY += 25;
 

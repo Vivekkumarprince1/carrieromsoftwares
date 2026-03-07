@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ExtendOfferModal from './ExtendOfferModal';
+import { formatCurrencyValue } from '../../utils/currencyUtils';
 
 const OfferLetterList = ({ 
   offerLetters, 
@@ -154,7 +155,7 @@ const OfferLetterList = ({
                   
                   <div className="flex items-center space-x-2">
                     <span className="text-gray-400 text-sm">
-                      ${letter.salary?.toLocaleString()}
+                      {formatCurrencyValue(letter.salary)}
                     </span>
                     <span className="text-gray-500 text-sm">•</span>
                     <span className="text-gray-400 text-sm">
@@ -252,7 +253,7 @@ const OfferLetterList = ({
                                 </p>
                                 {entry.previousOfferSnapshot?.salary !== undefined && (
                                   <p className="text-xs text-gray-300">
-                                    Salary: ${entry.previousOfferSnapshot.salary?.toLocaleString?.() || entry.previousOfferSnapshot.salary}
+                                    Salary: {formatCurrencyValue(entry.previousOfferSnapshot.salary)}
                                   </p>
                                 )}
                                 {entry.notes && <p className="text-xs text-gray-200 mt-1">Notes: {entry.notes}</p>}

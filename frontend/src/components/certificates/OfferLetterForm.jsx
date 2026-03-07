@@ -168,7 +168,7 @@ const OfferLetterForm = ({ onSubmit, loading, editData = null }) => {
             </div>
             <div>
               <label htmlFor="salary" className="block text-sm font-medium text-gray-300 mb-2">
-                Annual Salary (USD) *
+                Annual Salary (₹) *
               </label>
               <input
                 type="number"
@@ -177,7 +177,7 @@ const OfferLetterForm = ({ onSubmit, loading, editData = null }) => {
                 value={formData.salary}
                 onChange={handleChange}
                 required
-                placeholder="Enter annual salary"
+                placeholder="Enter annual salary in rupees"
                 className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
               />
             </div>

@@ -23,7 +23,7 @@ import '../../App.css';
                     <div className="xb-career ul_li_between">
                         <h3 className="xb-item--title"><a href="/test/job">Data Engineer - Machine Learning and Data Analytics</a></h3>
                         <div className="xb-item--content ul_li">
-                            <span className="xb-item--price">$40/ <span>hour</span></span>
+                            <span className="xb-item--price">₹40/ <span>hour</span></span>
                             <div className="xb-item--holder">
                                 <h4 className="xb-item--location">LOCATION</h4>
                                 <p>Remote and customer location when required</p>
@@ -33,7 +33,7 @@ import '../../App.css';
                     <div className="xb-career ul_li_between">
                         <h3 className="xb-item--title"><a href="/test/job">ReеLead Product Designer</a></h3>
                         <div className="xb-item--content ul_li">
-                            <span className="xb-item--price">$40/ <span>hour</span></span>
+                            <span className="xb-item--price">₹40/ <span>hour</span></span>
                             <div className="xb-item--holder">
                                 <h4 className="xb-item--location">LOCATION</h4>
                                 <p>Remote and customer location when required</p>
@@ -43,7 +43,7 @@ import '../../App.css';
                     <div className="xb-career ul_li_between">
                         <h3 className="xb-item--title"><a href="/test/job">UI/UX Designer</a></h3>
                         <div className="xb-item--content ul_li">
-                            <span className="xb-item--price">$40/ <span>hour</span></span>
+                            <span className="xb-item--price">₹40/ <span>hour</span></span>
                             <div className="xb-item--holder">
                                 <h4 className="xb-item--location">LOCATION</h4>
                                 <p>Remote and customer location when required</p>
@@ -53,7 +53,7 @@ import '../../App.css';
                     <div className="xb-career ul_li_between">
                         <h3 className="xb-item--title"><a href="/test/job">Platform Engineer - Operations</a></h3>
                         <div className="xb-item--content ul_li">
-                            <span className="xb-item--price">$40/ <span>hour</span></span>
+                            <span className="xb-item--price">₹40/ <span>hour</span></span>
                             <div className="xb-item--holder">
                                 <h4 className="xb-item--location">LOCATION</h4>
                                 <p>Remote and customer location when required</p>

@@ -80,7 +80,7 @@ const jobs = [
     ],
     location: 'Remote',
     type: 'Full-time',
-    salary: '$70,000 - $90,000',
+    salary: '₹70,000 - ₹90,000',
     department: 'Development',
     position: 'Frontend Developer',
     questions: [
@@ -125,7 +125,7 @@ const jobs = [
     ],
     location: 'New Delhi, India',
     type: 'Full-time',
-    salary: '$80,000 - $100,000',
+    salary: '₹80,000 - ₹100,000',
     department: 'Development',
     position: 'Backend Developer',
     questions: [
@@ -163,7 +163,7 @@ const jobs = [
     ],
     location: 'Bangalore, India',
     type: 'Full-time',
-    salary: '$65,000 - $85,000',
+    salary: '₹65,000 - ₹85,000',
     department: 'Design',
     position: 'UI/UX Designer',
     questions: [
@@ -201,7 +201,7 @@ const jobs = [
     ],
     location: 'Remote',
     type: 'Contract',
-    salary: '$90,000 - $110,000',
+    salary: '₹90,000 - ₹110,000',
     department: 'Operations',
     position: 'DevOps Engineer',
     isActive: true
@@ -224,7 +224,7 @@ const jobs = [
     ],
     location: 'Hybrid',
     type: 'Internship',
-    salary: '$1,500 - $2,000',
+    salary: '₹1,500 - ₹2,000',
     department: 'Data Science',
     position: 'Data Science Intern',
     questions: [

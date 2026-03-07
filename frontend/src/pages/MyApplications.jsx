@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { applicationService, jobService, offerLetterService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import JobUpdateBanner from '../components/notifications/JobUpdateBanner';
+import { formatCurrencyValue } from '../utils/currencyUtils';
 import { getResumeViewUrl } from '../utils/urlUtils';
 
 
@@ -618,7 +619,7 @@ const MyApplications = () => {
                                                 </div>
                                                 <div>
                                                   <span className="text-gray-400">Salary:</span>
-                                                  <span className="text-white ml-2">${offerLetters[selectedApplication._id].salary?.toLocaleString()}</span>
+                                                  <span className="text-white ml-2">{formatCurrencyValue(offerLetters[selectedApplication._id].salary)}</span>
                                                 </div>
                                                 <div>
                                                   <span className="text-gray-400">Start Date:</span>
