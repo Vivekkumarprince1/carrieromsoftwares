@@ -487,7 +487,7 @@ const Apply = () => {
         <div className="absolute top-[30%] left-[20%] w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] opacity-5"></div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-20 max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 py-8 lg:py-20">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-20 max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 pt-8 pb-32 lg:pt-20 lg:pb-64">
         {/* Context Sidebar & Mobile Header */}
         <div className="lg:w-1/3 flex flex-col pt-0 lg:pt-4">
           <motion.div
@@ -612,7 +612,7 @@ const Apply = () => {
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
-            className="glass-panel rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 lg:p-16 relative overflow-hidden"
+            className="glass-panel rounded-[2rem] sm:rounded-[3rem] p-5 sm:p-10 lg:p-16 relative overflow-hidden"
           >
             {/* Visual Accent */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-lime-brand/5 rounded-full blur-[100px] pointer-events-none"></div>
@@ -630,8 +630,8 @@ const Apply = () => {
                     className="space-y-12"
                   >
                     <div>
-                      <h2 className="text-4xl font-black mb-3 tracking-tight text-white/90">Personal Identity</h2>
-                      <p className="text-gray-500 font-medium tracking-wide">Establish your core profile markers.</p>
+                      <h2 className="text-2xl sm:text-4xl font-black mb-2 sm:mb-3 tracking-tight text-white/90">Personal Identity</h2>
+                      <p className="text-gray-500 text-xs sm:text-base font-medium tracking-wide">Establish your core profile markers.</p>
                     </div>
 
                     {/* Quick Resume Upload Zone */}
@@ -683,7 +683,7 @@ const Apply = () => {
                         <div className="relative group">
                           <input
                             type="text"
-                            className={`w-full px-8 py-5 bg-black/40 border transition-all duration-500 rounded-[1.5rem] text-white focus:outline-none font-bold placeholder:text-white/10
+                            className={`w-full px-6 py-4 sm:px-8 sm:py-5 bg-black/40 border transition-all duration-500 rounded-[1.2rem] sm:rounded-[1.5rem] text-sm sm:text-base text-white focus:outline-none font-bold placeholder:text-white/10
                                       ${focusedField === 'fullName' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
                             id="fullName"
                             name="fullName"
@@ -710,7 +710,7 @@ const Apply = () => {
                         <div className="relative group">
                           <input
                             type="email"
-                            className={`w-full px-8 py-5 bg-black/40 border transition-all duration-500 rounded-[1.5rem] text-white focus:outline-none font-bold placeholder:text-white/10
+                            className={`w-full px-6 py-4 sm:px-8 sm:py-5 bg-black/40 border transition-all duration-500 rounded-[1.2rem] sm:rounded-[1.5rem] text-sm sm:text-base text-white focus:outline-none font-bold placeholder:text-white/10
                                       ${focusedField === 'email' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
                             id="email"
                             name="email"
@@ -733,7 +733,7 @@ const Apply = () => {
                       <div className="relative group">
                         <input
                           type="tel"
-                          className={`w-full px-8 py-5 bg-black/40 border transition-all duration-500 rounded-[1.5rem] text-white focus:outline-none font-bold placeholder:text-white/10
+                          className={`w-full px-6 py-4 sm:px-8 sm:py-5 bg-black/40 border transition-all duration-500 rounded-[1.2rem] sm:rounded-[1.5rem] text-sm sm:text-base text-white focus:outline-none font-bold placeholder:text-white/10
                                     ${focusedField === 'phone' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
                           id="phone"
                           name="phone"
@@ -761,8 +761,8 @@ const Apply = () => {
                     className="space-y-12"
                   >
                     <div>
-                      <h2 className="text-4xl font-black mb-3 tracking-tight text-white/90">Your Trajectory</h2>
-                      <p className="text-gray-500 font-medium tracking-wide">The sum of your professional experience matrix.</p>
+                      <h2 className="text-2xl sm:text-4xl font-black mb-2 sm:mb-3 tracking-tight text-white/90">Your Trajectory</h2>
+                      <p className="text-gray-500 text-xs sm:text-base font-medium tracking-wide">The sum of your professional experience matrix.</p>
                     </div>
 
                     <div className="space-y-4">
@@ -771,7 +771,7 @@ const Apply = () => {
                         Technical Arsenal
                       </label>
                       <textarea
-                        className={`w-full px-8 py-6 bg-black/40 border transition-all duration-500 rounded-[2rem] text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
+                        className={`w-full px-6 py-4 sm:px-8 sm:py-6 bg-black/40 border transition-all duration-500 rounded-[1.5rem] sm:rounded-[2rem] text-sm sm:text-base text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
                                   ${focusedField === 'skills' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
                         id="skills"
                         name="skills"
@@ -791,7 +791,7 @@ const Apply = () => {
                           Career Milestones
                         </label>
                         <textarea
-                          className={`w-full px-8 py-6 bg-black/40 border transition-all duration-500 rounded-[2rem] text-sm text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
+                          className={`w-full px-6 py-4 sm:px-8 sm:py-6 bg-black/40 border transition-all duration-500 rounded-[1.5rem] sm:rounded-[2rem] text-sm text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
                                     ${focusedField === 'experience' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
                           id="experience"
                           name="experience"
@@ -810,7 +810,7 @@ const Apply = () => {
                           Academic Foundation
                         </label>
                         <textarea
-                          className={`w-full px-8 py-6 bg-black/40 border transition-all duration-500 rounded-[2rem] text-sm text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
+                          className={`w-full px-6 py-4 sm:px-8 sm:py-6 bg-black/40 border transition-all duration-500 rounded-[1.5rem] sm:rounded-[2rem] text-sm text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
                                     ${focusedField === 'education' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
                           id="education"
                           name="education"
@@ -837,8 +837,8 @@ const Apply = () => {
                     className="space-y-12"
                   >
                     <div>
-                      <h2 className="text-4xl font-black mb-3 tracking-tight text-white/90">Final Protocol</h2>
-                      <p className="text-gray-500 font-medium tracking-wide">Finalize the synchronization of your application signal.</p>
+                      <h2 className="text-2xl sm:text-4xl font-black mb-2 sm:mb-3 tracking-tight text-white/90">Final Protocol</h2>
+                      <p className="text-gray-500 text-xs sm:text-base font-medium tracking-wide">Finalize the synchronization of your application signal.</p>
                     </div>
 
                     <div className="space-y-4">
@@ -847,7 +847,7 @@ const Apply = () => {
                         Signal Resonance (Cover Letter)
                       </label>
                       <textarea
-                        className={`w-full px-8 py-6 bg-black/40 border transition-all duration-500 rounded-[2rem] text-sm text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
+                        className={`w-full px-6 py-4 sm:px-8 sm:py-6 bg-black/40 border transition-all duration-500 rounded-[1.5rem] sm:rounded-[2rem] text-sm text-white focus:outline-none font-medium placeholder:text-white/10 resize-none
                                   ${focusedField === 'coverLetter' ? 'border-lime-brand bg-white/[0.05] shadow-[0_20px_40px_-15px_rgba(163,198,20,0.2)] ring-8 ring-lime-brand/10' : 'border-white/5 hover:border-white/10'}`}
                         id="coverLetter"
                         name="coverLetter"
@@ -896,13 +896,13 @@ const Apply = () => {
                 )}
               </AnimatePresence>
 
-              {/* Step Navigation Controls - Premium Magnetic Style */}
-              <div className="mt-12 sm:mt-auto pt-10 border-t border-white/5 flex flex-col sm:flex-row gap-5">
+              {/* Step Navigation Controls - Condensed Split Layout */}
+              <div className={`mt-12 sm:mt-auto pt-10 border-t border-white/5 flex items-center ${currentStep > 1 ? 'justify-between' : 'justify-end'} gap-5`}>
                 {currentStep > 1 && (
                   <button
                     type="button"
                     onClick={prevStep}
-                    className="btn-magnetic w-full sm:flex-1 py-5 px-8 rounded-3xl font-black text-[11px] uppercase tracking-[0.4em] border border-white/5 bg-white/0 text-gray-500 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all duration-500 flex items-center justify-center group shadow-2xl"
+                    className="btn-magnetic w-auto py-3 px-6 rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.3em] border border-white/5 bg-white/0 text-gray-500 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all duration-500 flex items-center justify-center group shadow-xl"
                   >
                     <ArrowLeft className="w-4 h-4 mr-3 transform group-hover:-translate-x-2 transition-transform duration-500" />
                     Previous Phase
@@ -912,9 +912,9 @@ const Apply = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className={`btn-magnetic w-full ${currentStep === 1 ? 'sm:w-full' : 'sm:flex-[2.5]'} py-5 px-8 rounded-3xl font-black text-[11px] uppercase tracking-[0.4em] flex items-center justify-center transition-all duration-700 relative overflow-hidden group shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${submitting
+                  className={`btn-magnetic w-auto min-w-[140px] sm:min-w-[180px] py-3 sm:py-4 px-6 sm:px-8 rounded-2xl sm:rounded-3xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.3em] flex items-center justify-center transition-all duration-700 relative overflow-hidden group shadow-[0_15px_40px_rgba(0,0,0,0.4)] ${submitting
                     ? 'bg-gray-900/50 text-gray-700 cursor-not-allowed border border-white/5 backdrop-blur-md'
-                    : 'bg-lime-brand text-black hover:bg-white hover:scale-[1.01] active:scale-[0.98]'
+                    : 'bg-lime-brand text-black hover:bg-white hover:scale-[1.02] active:scale-[0.98]'
                     }`}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>

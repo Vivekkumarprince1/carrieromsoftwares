@@ -88,8 +88,8 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
         return (
           <div className="relative group">
             <textarea
-              className={`w-full px-8 py-7 bg-black/40 border-2 ${focused ? 'border-lime-brand/50 bg-lime-brand/[0.02] shadow-[0_0_50px_rgba(163,198,20,0.15)]' : 'border-white/5'} 
-                        rounded-[2.5rem] text-white transition-all duration-700 shadow-[inset_0_4px_20px_rgba(0,0,0,0.8)] font-medium resize-none text-base
+              className={`w-full px-6 py-5 sm:px-8 sm:py-7 bg-black/40 border-2 ${focused ? 'border-lime-brand/50 bg-lime-brand/[0.02] shadow-[0_0_50px_rgba(163,198,20,0.15)]' : 'border-white/5'} 
+                        rounded-[2rem] sm:rounded-[2.5rem] text-sm sm:text-base text-white transition-all duration-700 shadow-[inset_0_4px_20px_rgba(0,0,0,0.8)] font-medium resize-none
                         focus:outline-none placeholder:text-white/10 ${error ? 'border-red-500/50 bg-red-500/5' : ''}`}
               rows="5"
               value={value?.answer || ''}
@@ -111,7 +111,7 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
             {question.options.map((option, index) => (
               <label
                 key={index}
-                className={`flex items-center p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] border cursor-pointer transition-all duration-700 group relative overflow-hidden glass-surface-interactive ${value?.answer === option
+                className={`flex items-center p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[3rem] border cursor-pointer transition-all duration-700 group relative overflow-hidden glass-surface-interactive ${value?.answer === option
                   ? 'bg-lime-brand/10 border-lime-brand/50 shadow-[0_20px_50px_rgba(163,198,20,0.2)] scale-[1.03]'
                   : 'border-white/[0.05] hover:border-white/20'
                   }`}
@@ -138,7 +138,7 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
                     )}
                   </div>
                 </div>
-                <span className={`ml-6 text-lg font-black tracking-tight transition-colors relative z-20 ${value?.answer === option ? 'text-white' : 'text-white/30 group-hover:text-white/60'}`}>
+                <span className={`ml-4 sm:ml-6 text-sm sm:text-lg font-black tracking-tight transition-colors relative z-20 ${value?.answer === option ? 'text-white' : 'text-white/30 group-hover:text-white/60'}`}>
                   {option}
                 </span>
               </label>
@@ -154,7 +154,7 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
               return (
                 <label
                   key={index}
-                  className={`flex items-center p-6 sm:p-7 rounded-[2rem] sm:rounded-[2.5rem] border cursor-pointer transition-all duration-700 group relative overflow-hidden glass-surface-interactive ${checked
+                  className={`flex items-center p-5 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] border cursor-pointer transition-all duration-700 group relative overflow-hidden glass-surface-interactive ${checked
                     ? 'bg-lime-brand/10 border-lime-brand/40 shadow-[0_15px_40px_rgba(163,198,20,0.15)] scale-[1.02]'
                     : 'border-white/[0.05] hover:border-white/20'
                     }`}
@@ -183,7 +183,7 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
                       )}
                     </div>
                   </div>
-                  <span className={`ml-6 text-base font-black tracking-tight transition-colors relative z-20 ${checked ? 'text-white' : 'text-white/20 group-hover:text-white/50'}`}>
+                  <span className={`ml-4 sm:ml-6 text-sm sm:text-base font-black tracking-tight transition-colors relative z-20 ${checked ? 'text-white' : 'text-white/20 group-hover:text-white/50'}`}>
                     {option}
                   </span>
                 </label>
@@ -195,7 +195,7 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
       case 'file':
         return (
           <div>
-            <div className={`relative group cursor-pointer transition-all duration-700 border-2 border-dashed rounded-[2.5rem] p-10 hover:bg-lime-brand/5 ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/5 hover:border-lime-brand/30 bg-black/40 shadow-[inset_0_4px_30px_rgba(0,0,0,0.8)]'
+            <div className={`relative group cursor-pointer transition-all duration-700 border-2 border-dashed rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 hover:bg-lime-brand/5 ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/5 hover:border-lime-brand/30 bg-black/40 shadow-[inset_0_4px_30px_rgba(0,0,0,0.8)]'
               }`}>
               <div className="absolute inset-0 bg-lime-brand/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
               <input
@@ -304,7 +304,7 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
       whileInView={{ opacity: 1, y: 0, filter: 'blur(0)' }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      className={`mb-10 lg:mb-16 p-8 md:p-10 lg:p-14 rounded-[3rem] sm:rounded-[4rem] border transition-all duration-700 overflow-hidden relative group ${focused ? 'bg-white/[0.05] border-lime-brand/50 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)]' : 'bg-white/[0.02] border-white/[0.05] hover:border-white/20'
+      className={`mb-6 sm:mb-10 lg:mb-16 p-6 sm:p-10 lg:p-14 rounded-[2rem] sm:rounded-[4rem] border transition-all duration-700 overflow-hidden relative group ${focused ? 'bg-white/[0.05] border-lime-brand/50 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)]' : 'bg-white/[0.02] border-white/[0.05] hover:border-white/20'
         }`}
     >
       {/* Premium Decorative Depth Glows */}
@@ -312,8 +312,8 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
       <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/5 rounded-full blur-[100px] pointer-events-none"></div>
 
       <div className="relative z-10">
-        <div className="flex items-start mb-12">
-          <div className={`p-4 rounded-2xl mr-8 transition-all duration-700 ${focused ? 'bg-lime-brand text-black shadow-[0_0_40px_rgba(163,198,20,0.5)] rotate-6 scale-110' : 'bg-white/5 text-white/20 group-hover:bg-white/10 group-hover:text-white/40'}`}>
+        <div className="flex items-start mb-8 sm:mb-12">
+          <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl mr-4 sm:mr-8 transition-all duration-700 ${focused ? 'bg-lime-brand text-black shadow-[0_0_40px_rgba(163,198,20,0.5)] rotate-6 scale-110' : 'bg-white/5 text-white/20 group-hover:bg-white/10 group-hover:text-white/40'}`}>
             {getQuestionIcon()}
           </div>
           <div className="flex-1">
@@ -321,7 +321,7 @@ const JobQuestionAnswer = memo(({ question, onChange, value, error }) => {
               Diagnostic Metric
             </span>
             <label className="block">
-              <span className="text-2xl md:text-4xl font-black text-white leading-[1.1] tracking-tighter block max-w-2xl">
+              <span className="text-xl sm:text-2xl md:text-4xl font-black text-white leading-[1.1] tracking-tighter block max-w-2xl">
                 {question.questionText}
                 {question.required && <span className="text-lime-brand ml-2 animate-pulse">*</span>}
               </span>
